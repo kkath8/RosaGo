@@ -30,31 +30,28 @@
                 <p class="eyebrow">Start exploring</p>
                 <h2 id="register-title">Create your account</h2>
                 <p class="form-intro">A new way to discover Santa Rosa starts here.</p>
-                <p class="preview-note">Preview only — this form checks your details without creating an account.</p>
-
-                <noscript><p class="field-error">Enable JavaScript to try this registration form. Account creation is not available yet.</p></noscript>
-                <form id="registration-form" novalidate>
+                <form id="registration-form" action="{{ url_for('register') }}" method="post" novalidate>
                     <div class="name-fields">
                         <div class="field">
                             <label for="first-name">First Name</label>
-                            <input id="first-name" type="text" autocomplete="given-name" required aria-describedby="first-name-error">
+                            <input id="first-name" name="first_name" value="{{ form_data.get('first_name', '') }}" type="text" autocomplete="given-name" required aria-describedby="first-name-error">
                             <p class="field-error" id="first-name-error" hidden></p>
                         </div>
                         <div class="field">
                             <label for="last-name">Last Name</label>
-                            <input id="last-name" type="text" autocomplete="family-name" required aria-describedby="last-name-error">
+                            <input id="last-name" name="last_name" value="{{ form_data.get('last_name', '') }}" type="text" autocomplete="family-name" required aria-describedby="last-name-error">
                             <p class="field-error" id="last-name-error" hidden></p>
                         </div>
                     </div>
                     <div class="field">
                         <label for="email">Email Address</label>
-                        <input id="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" required aria-describedby="email-error">
+                        <input id="email" name="email" value="{{ form_data.get('email', '') }}" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" required aria-describedby="email-error">
                         <p class="field-error" id="email-error" hidden></p>
                     </div>
                     <div class="field">
                         <label for="password">Password</label>
                         <div class="password-input">
-                            <input id="password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="password-help password-error">
+                            <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="password-help password-error">
                             <button class="password-toggle" type="button" aria-controls="password" aria-label="Show password" aria-pressed="false">Show</button>
                         </div>
                         <p class="field-help" id="password-help">Use at least 8 characters.</p>
@@ -63,20 +60,20 @@
                     <div class="field">
                         <label for="confirm-password">Confirm Password</label>
                         <div class="password-input">
-                            <input id="confirm-password" type="password" autocomplete="new-password" required aria-describedby="confirm-password-error">
+                            <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" required aria-describedby="confirm-password-error">
                             <button class="password-toggle" type="button" aria-controls="confirm-password" aria-label="Show confirm password" aria-pressed="false">Show</button>
                         </div>
                         <p class="field-error" id="confirm-password-error" hidden></p>
                     </div>
                     <div class="terms-field">
                         <label class="checkbox-label" for="terms">
-                            <input id="terms" type="checkbox" required aria-describedby="terms-error">
+                            <input id="terms" name="terms" value="accepted" type="checkbox" required aria-describedby="terms-error" {% if form_data.get('terms') %}checked{% endif %}>
                             <span>I agree to the <strong>Terms</strong> and <strong>Privacy Policy</strong>.</span>
                         </label>
                         <p class="field-error" id="terms-error" hidden></p>
                     </div>
-                    <button class="submit-button" id="create-account" type="submit" disabled>Create Account <span aria-hidden="true">→</span></button>
-                    <p class="form-status" id="form-status" role="status" aria-live="polite" aria-atomic="true"></p>
+                    <button class="submit-button" id="create-account" type="submit">Create Account <span aria-hidden="true">→</span></button>
+                    <p class="form-status" id="form-status" data-state="{{ state }}" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">{{ message }}</p>
                 </form>
                 <p class="login-prompt">Already have an account? <a role="link" aria-disabled="true" tabindex="0" aria-describedby="login-help">Log in</a></p>
                 <p class="login-help" id="login-help">Login will be available in a future phase.</p>

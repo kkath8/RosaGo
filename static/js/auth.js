@@ -71,19 +71,24 @@ Object.values(fields).forEach((field) => {
 });
 
 form.addEventListener("submit", (event) => {
-    // This phase only validates locally. Never submit or store form values.
-    event.preventDefault();
     submitted = true;
     const invalidFields = Object.values(fields).filter((field) => !validateField(field));
     if (invalidFields.length) {
+        event.preventDefault();
         statusMessage.dataset.state = "error";
         statusMessage.textContent = "Please correct the highlighted fields and try again.";
         invalidFields[0].focus();
         return;
     }
-    statusMessage.dataset.state = "success";
-    statusMessage.textContent = "Registration form validated successfully. Account creation will be connected in the next phase.";
+    // Let the browser POST valid details to Flask for server-side validation.
+    document.getElementById("create-account").disabled = true;
+    statusMessage.textContent = "Creating your account…";
 });
 
-// Enable submission only after the local validation handler is attached.
-document.getElementById("create-account").disabled = false;
+if (statusMessage.textContent.trim()) {
+    statusMessage.focus();
+}
+
+window.addEventListener("pageshow", () => {
+    document.getElementById("create-account").disabled = false;
+});
