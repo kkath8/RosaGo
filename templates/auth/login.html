@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log in | RosaGO</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+    <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+</head>
+<body>
+    <main class="registration-layout">
+        <section class="welcome" aria-labelledby="welcome-title">
+            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGO home">Rosa<span>GO</span><span class="brand-dot" aria-hidden="true">.</span></a>
+            <p class="brand-description">Smart Tourism System for Santa Rosa, Laguna</p>
+            <div class="welcome-copy">
+                <p class="eyebrow">A little closer to local</p>
+                <h1 id="welcome-title">Your next story<br>starts in<br><span>Santa Rosa.</span></h1>
+                <p>From familiar streets to new discoveries, there’s more to explore in the Lion City of the South.</p>
+            </div>
+            <div class="destination-note">
+                <span class="destination-mark" aria-hidden="true">SR</span>
+                <div><strong>Santa Rosa, Laguna</strong><span>Local places. Lasting memories.</span></div>
+            </div>
+        </section>
+        <section class="form-panel" aria-labelledby="login-title">
+            <div class="registration-card">
+                <p class="eyebrow">Welcome back</p>
+                <h2 id="login-title">Log in to RosaGO</h2>
+                <p class="form-intro">Your next Santa Rosa discovery is waiting.</p>
+                <form id="login-form" method="post" action="{{ url_for('login') }}" novalidate>
+                    <div class="field">
+                        <label for="login-email">Email Address</label>
+                        <input id="login-email" name="email" value="{{ email }}" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" required aria-describedby="login-email-error">
+                        <p class="field-error" id="login-email-error" hidden></p>
+                    </div>
+                    <div class="field">
+                        <label for="login-password">Password</label>
+                        <div class="password-input">
+                            <input id="login-password" name="password" type="password" autocomplete="current-password" required aria-describedby="login-password-error">
+                            <button class="password-toggle" id="login-password-toggle" type="button" aria-controls="login-password" aria-label="Show password" aria-pressed="false">Show</button>
+                        </div>
+                        <p class="field-error" id="login-password-error" hidden></p>
+                    </div>
+                    <div class="login-options">
+                        <label class="checkbox-label" for="remember-me">
+                            <input id="remember-me" type="checkbox" aria-describedby="login-options-help">
+                            <span>Remember me</span>
+                        </label>
+                        <a class="forgot-password" role="link" aria-disabled="true" tabindex="0" aria-describedby="login-options-help">Forgot password?</a>
+                    </div>
+                    <p class="field-help login-options-help" id="login-options-help">Remember me and password reset are not active yet.</p>
+                    <button class="submit-button" id="login-submit" type="submit">Log In <span aria-hidden="true">→</span></button>
+                    <p class="form-status" id="login-status" data-state="{{ state }}" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">{{ message }}</p>
+                </form>
+                {% if session.get('user_id') and session.get('user_email') %}
+                <form class="logout-form" method="post" action="{{ url_for('logout') }}">
+                    <button class="submit-button" type="submit">Log Out</button>
+                </form>
+                {% endif %}
+                <p class="login-prompt">Don't have an account? <a href="{{ url_for('register') }}">Create account</a></p>
+            </div>
+            <p class="footer-note">Made for discovering Santa Rosa.</p>
+        </section>
+    </main>
+</body>
+</html>

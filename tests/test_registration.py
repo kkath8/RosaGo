@@ -1,5 +1,6 @@
 import os
 import runpy
+import secrets
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -15,6 +16,7 @@ class RegistrationTests(unittest.TestCase):
             patch.dict(os.environ, {
                 "SUPABASE_URL": "https://example.supabase.co",
                 "SUPABASE_KEY": "test-placeholder",
+                "FLASK_SECRET_KEY": secrets.token_hex(32),
             }),
             patch("supabase.create_client", return_value=self.supabase) as create,
         ):

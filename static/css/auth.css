@@ -89,12 +89,18 @@ h2 { margin: 0; font-size: clamp(25px, 2.4vw, 32px); line-height: 1.25; letter-s
 .submit-button:hover { background: var(--deep-red); }
 .submit-button:disabled { opacity: 0.6; cursor: not-allowed; }
 .submit-button span { font-size: 20px; }
+a.submit-button { text-decoration: none; }
 .form-status { margin: 0; font-size: 13px; }
 .form-status:not(:empty) { margin-top: 16px; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: #faf7f2; }
 .form-status[data-state="error"] { color: var(--deep-red); }
 .form-status[data-state="success"] { color: #24563c; border-color: #bfd5c6; background: #f1f8f3; }
 .login-prompt { margin: 24px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
-.login-prompt a { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: not-allowed; }
+.login-prompt a { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.login-options { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 6px 0 12px; }
+.forgot-password { font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: not-allowed; }
+.login-options-help { margin: 0 0 22px; }
+.logout-form { margin-top: 16px; }
+.logout-form .submit-button { width: auto; min-height: 40px; padding: 8px 18px; font-size: 13px; }
 .login-help, .footer-note { text-align: center; font-size: 11px; color: var(--muted); }
 .login-help { margin: 6px 0 0; }
 .footer-note { margin: 20px 0 0; }

@@ -75,8 +75,7 @@
                     <button class="submit-button" id="create-account" type="submit">Create Account <span aria-hidden="true">→</span></button>
                     <p class="form-status" id="form-status" data-state="{{ state }}" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">{{ message }}</p>
                 </form>
-                <p class="login-prompt">Already have an account? <a role="link" aria-disabled="true" tabindex="0" aria-describedby="login-help">Log in</a></p>
-                <p class="login-help" id="login-help">Login will be available in a future phase.</p>
+                <p class="login-prompt">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
             </div>
             <p class="footer-note">Made for discovering Santa Rosa.</p>
         </section>

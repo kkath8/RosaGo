@@ -1,16 +1,23 @@
 import os
 import re
 import logging
+import time
 
 from dotenv import load_dotenv
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from supabase import Client, ClientOptions, create_client
 from supabase_auth.errors import AuthApiError
+
+from auth_helpers import login_required
 
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY")
+
+if not FLASK_SECRET_KEY or not FLASK_SECRET_KEY.strip():
+    raise RuntimeError("Flask configuration error: FLASK_SECRET_KEY must be set.")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError(
@@ -24,6 +31,13 @@ supabase: Client = create_client(
 )
 
 app = Flask(__name__)
+app.config.update(
+    SECRET_KEY=FLASK_SECRET_KEY,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # Local HTTP only. Set this to True in production when HTTPS is used.
+    SESSION_COOKIE_SECURE=False,
+)
 
 
 class CallbackLogFilter(logging.Filter):
@@ -46,9 +60,10 @@ def auth_callback():
 
 
 @app.after_request
-def protect_callback_response(response):
-    if request.path == "/auth/callback":
+def protect_auth_response(response):
+    if request.path in ("/auth/callback", "/login", "/register", "/user"):
         response.headers["Cache-Control"] = "no-store"
+    if request.path == "/auth/callback":
         response.headers["Referrer-Policy"] = "no-referrer"
     return response
 
@@ -58,8 +73,125 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if session.get("user_id"):
+        return redirect(url_for("user_index"), code=303)
+
+    email = ""
+    message = ""
+    state = ""
+    status = 200
+
+    if request.method == "GET" and request.args.get("logged_out") == "1":
+        message = "You have been logged out successfully."
+        state = "success"
+    elif request.method == "GET" and request.args.get("login_required") == "1":
+        message = "Please log in to continue."
+        state = "error"
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        errors = []
+        if not email:
+            errors.append("Please enter your email address.")
+        elif not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+            errors.append("Please enter a valid email address.")
+        if not password.strip():
+            errors.append("Please enter your password.")
+
+        state = "error"
+        if errors:
+            message = " ".join(errors)
+            status = 400
+        else:
+            try:
+                # The SDK keeps in-memory auth state, so isolate each login attempt.
+                supabase = create_client(
+                    SUPABASE_URL, SUPABASE_KEY,
+                    options=ClientOptions(persist_session=False, auto_refresh_token=False),
+                )
+                with supabase.auth:
+                    result = supabase.auth.sign_in_with_password({
+                        "email": email,
+                        "password": password,
+                    })
+                    user = result.user if result else None
+                    auth_session = result.session if result else None
+                    authenticated = bool(
+                        user and user.id and user.email and user.email_confirmed_at
+                        and auth_session and auth_session.access_token
+                        and auth_session.refresh_token and auth_session.user
+                        and auth_session.user.id == user.id
+                        and auth_session.expires_at
+                        and auth_session.expires_at > time.time()
+                    )
+                if authenticated:
+                    session.clear()
+                    session["user_id"] = user.id
+                    session["user_email"] = user.email
+                    return redirect(url_for("user_index"), code=303)
+                else:
+                    message = "We could not confirm your login. Please try again."
+                    status = 401
+            except AuthApiError as error:
+                if error.code == "invalid_credentials":
+                    message = "Invalid email or password."
+                    status = 401
+                elif error.code == "email_not_confirmed":
+                    message = "Please verify your email before logging in. Check your inbox for the verification link."
+                    status = 403
+                elif error.status == 429 or error.code == "over_request_rate_limit":
+                    message = "Too many login attempts. Please wait before trying again."
+                    status = 429
+                else:
+                    message = "We could not complete your login. Please try again later."
+                    status = 503
+            except Exception:
+                # Never expose or log raw provider errors, passwords, or tokens.
+                message = "We could not complete your login. Please try again later."
+                status = 503
+
+    response = app.make_response((render_template(
+        "auth/login.html", email=email, message=message, state=state
+    ), status))
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.route("/user")
+@login_required
+def user_index():
+    return render_template("user/index.html")
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    # Login uses an isolated Supabase client and retains no tokens. There is no
+    # user-bound Supabase client here to sign out; do not use the shared client.
+    response = redirect(url_for("login", logged_out="1"), code=303)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.route("/auth/status")
+def auth_status():
+    # Temporary development endpoint for checking RosaGO session persistence.
+    if session.get("user_id") and session.get("user_email"):
+        response = jsonify(authenticated=True, email=session["user_email"])
+    else:
+        response = jsonify(authenticated=False)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    if session.get("user_id"):
+        return redirect(url_for("user_index"), code=303)
+
     form_data = {}
     message = ""
     state = ""
