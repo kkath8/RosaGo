@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create an account | RosaGO</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+    <script src="{{ url_for('static', filename='js/auth.js') }}" defer></script>
+</head>
+<body>
+    <main class="registration-layout">
+        <section class="welcome" aria-labelledby="welcome-title">
+            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGO home">Rosa<span>GO</span><span class="brand-dot" aria-hidden="true">.</span></a>
+            <p class="brand-description">Smart Tourism System for Santa Rosa, Laguna</p>
+
+            <div class="welcome-copy">
+                <p class="eyebrow">A little closer to local</p>
+                <h1 id="welcome-title">Your next story<br>starts in<br><span>Santa Rosa.</span></h1>
+                <p>From familiar streets to new discoveries, there’s more to explore in the Lion City of the South.</p>
+            </div>
+
+            <div class="destination-note">
+                <span class="destination-mark" aria-hidden="true">SR</span>
+                <div><strong>Santa Rosa, Laguna</strong><span>Local places. Lasting memories.</span></div>
+            </div>
+        </section>
+
+        <section class="form-panel" aria-labelledby="register-title">
+            <div class="registration-card">
+                <p class="eyebrow">Start exploring</p>
+                <h2 id="register-title">Create your account</h2>
+                <p class="form-intro">A new way to discover Santa Rosa starts here.</p>
+                <p class="preview-note">Preview only — this form checks your details without creating an account.</p>
+
+                <noscript><p class="field-error">Enable JavaScript to try this registration form. Account creation is not available yet.</p></noscript>
+                <form id="registration-form" novalidate>
+                    <div class="name-fields">
+                        <div class="field">
+                            <label for="first-name">First Name</label>
+                            <input id="first-name" type="text" autocomplete="given-name" required aria-describedby="first-name-error">
+                            <p class="field-error" id="first-name-error" hidden></p>
+                        </div>
+                        <div class="field">
+                            <label for="last-name">Last Name</label>
+                            <input id="last-name" type="text" autocomplete="family-name" required aria-describedby="last-name-error">
+                            <p class="field-error" id="last-name-error" hidden></p>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="email">Email Address</label>
+                        <input id="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" required aria-describedby="email-error">
+                        <p class="field-error" id="email-error" hidden></p>
+                    </div>
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <div class="password-input">
+                            <input id="password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="password-help password-error">
+                            <button class="password-toggle" type="button" aria-controls="password" aria-label="Show password" aria-pressed="false">Show</button>
+                        </div>
+                        <p class="field-help" id="password-help">Use at least 8 characters.</p>
+                        <p class="field-error" id="password-error" hidden></p>
+                    </div>
+                    <div class="field">
+                        <label for="confirm-password">Confirm Password</label>
+                        <div class="password-input">
+                            <input id="confirm-password" type="password" autocomplete="new-password" required aria-describedby="confirm-password-error">
+                            <button class="password-toggle" type="button" aria-controls="confirm-password" aria-label="Show confirm password" aria-pressed="false">Show</button>
+                        </div>
+                        <p class="field-error" id="confirm-password-error" hidden></p>
+                    </div>
+                    <div class="terms-field">
+                        <label class="checkbox-label" for="terms">
+                            <input id="terms" type="checkbox" required aria-describedby="terms-error">
+                            <span>I agree to the <strong>Terms</strong> and <strong>Privacy Policy</strong>.</span>
+                        </label>
+                        <p class="field-error" id="terms-error" hidden></p>
+                    </div>
+                    <button class="submit-button" id="create-account" type="submit" disabled>Create Account <span aria-hidden="true">→</span></button>
+                    <p class="form-status" id="form-status" role="status" aria-live="polite" aria-atomic="true"></p>
+                </form>
+                <p class="login-prompt">Already have an account? <a role="link" aria-disabled="true" tabindex="0" aria-describedby="login-help">Log in</a></p>
+                <p class="login-help" id="login-help">Login will be available in a future phase.</p>
+            </div>
+            <p class="footer-note">Made for discovering Santa Rosa.</p>
+        </section>
+    </main>
+</body>
+</html>

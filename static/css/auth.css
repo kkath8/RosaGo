@@ -1,0 +1,121 @@
+:root {
+    color-scheme: light;
+    --red: #c0392b;
+    --deep-red: #96281b;
+    --ink: #302822;
+    --muted: #72665e;
+    --border: #ddd4cc;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: #faf7f2;
+    color: var(--ink);
+    font-family: "Segoe UI", Arial, sans-serif;
+    line-height: 1.5;
+}
+
+button, input { font: inherit; }
+a { color: var(--deep-red); }
+[hidden] { display: none !important; }
+
+.registration-layout { min-height: 100vh; display: grid; grid-template-columns: 0.95fr 1.05fr; }
+.welcome {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(32px, 5vw, 80px);
+    background: var(--deep-red);
+    color: #fff7ed;
+}
+
+.welcome::after {
+    content: "";
+    position: absolute;
+    width: 440px;
+    height: 440px;
+    right: -290px;
+    bottom: 60px;
+    border: 1px solid #e67e22;
+    border-radius: 50%;
+    box-shadow: 0 0 0 45px #ffffff06, 0 0 0 90px #ffffff06;
+    pointer-events: none;
+}
+
+.welcome > * { position: relative; z-index: 1; }
+.brand { width: fit-content; color: white; font-size: 36px; font-weight: 750; letter-spacing: -1.5px; text-decoration: none; }
+.brand span { color: #f1c40f; }
+.brand .brand-dot { color: #e67e22; }
+.brand-description { max-width: 270px; margin: 8px 0 0; font-size: 14px; color: #f5dcd4; }
+.welcome-copy { margin: auto 0; padding: 72px 0; max-width: 460px; }
+.eyebrow { margin: 0 0 14px; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--deep-red); }
+.welcome .eyebrow { color: #f1c40f; }
+h1 { margin: 0 0 24px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(40px, 4.7vw, 70px); line-height: 1.12; font-weight: 400; letter-spacing: -1.5px; }
+h1 span { color: #f6ce78; }
+.welcome-copy > p:last-child { max-width: 330px; margin: 0; color: #f5dcd4; font-size: 16px; line-height: 1.8; }
+.destination-note { display: flex; align-items: center; gap: 14px; }
+.destination-mark { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #dc9b77; border-radius: 50%; color: #f6ce78; font-family: Georgia, serif; }
+.destination-note strong, .destination-note div span { display: block; }
+.destination-note strong { font-size: 14px; font-weight: 600; }
+.destination-note div span { color: #f5dcd4; font-size: 12px; margin-top: 3px; }
+.form-panel { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 48px 32px 24px; }
+.registration-card { width: 100%; max-width: 520px; background: white; border: 1px solid #eae1d8; border-radius: 12px; padding: 36px; box-shadow: 0 12px 40px #563a2010; }
+h2 { margin: 0; font-size: clamp(25px, 2.4vw, 32px); line-height: 1.25; letter-spacing: -0.8px; }
+.form-intro { margin: 12px 0 16px; color: var(--muted); font-size: 14px; }
+.preview-note { margin: 0 0 24px; padding: 10px 12px; border-left: 3px solid #e67e22; background: #fff8eb; font-size: 12px; color: #745027; }
+.name-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.field { min-width: 0; margin-bottom: 18px; }
+.field > label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
+.field input { width: 100%; min-width: 0; min-height: 46px; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; background: #fff; color: var(--ink); font-size: 16px; }
+.field input:hover { border-color: #aa9788; }
+:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+.welcome a:focus-visible { outline-color: #f1c40f; }
+.field input[aria-invalid="true"] { border-color: var(--red); }
+.password-input { position: relative; }
+.password-input input { padding-right: 72px; }
+.password-toggle { position: absolute; right: 3px; top: 3px; bottom: 3px; min-width: 60px; border: 0; border-radius: 4px; background: transparent; color: var(--deep-red); font-size: 12px; font-weight: 600; cursor: pointer; }
+.password-toggle:hover { background: #faf0ed; }
+.field-help, .field-error { margin: 6px 0 0; font-size: 12px; }
+.field-help { color: var(--muted); }
+.field-error { color: var(--deep-red); }
+.terms-field { margin: 6px 0 22px; }
+.checkbox-label { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; cursor: pointer; }
+.checkbox-label input { flex-shrink: 0; width: 18px; height: 18px; margin: 0; accent-color: var(--red); }
+.checkbox-label strong { font-weight: 600; }
+.submit-button { display: flex; justify-content: center; align-items: center; gap: 18px; width: 100%; min-height: 48px; border: 0; border-radius: 6px; background: var(--red); color: white; font-weight: 600; cursor: pointer; }
+.submit-button:hover { background: var(--deep-red); }
+.submit-button:disabled { opacity: 0.6; cursor: not-allowed; }
+.submit-button span { font-size: 20px; }
+.form-status { margin: 0; font-size: 13px; }
+.form-status:not(:empty) { margin-top: 16px; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: #faf7f2; }
+.form-status[data-state="error"] { color: var(--deep-red); }
+.form-status[data-state="success"] { color: #24563c; border-color: #bfd5c6; background: #f1f8f3; }
+.login-prompt { margin: 24px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+.login-prompt a { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: not-allowed; }
+.login-help, .footer-note { text-align: center; font-size: 11px; color: var(--muted); }
+.login-help { margin: 6px 0 0; }
+.footer-note { margin: 20px 0 0; }
+
+@media (max-width: 1000px) {
+    .welcome { padding: 36px 28px; }
+    .form-panel { padding: 32px 20px 24px; }
+    .registration-card { padding: 28px 24px; }
+    .name-fields { grid-template-columns: 1fr; gap: 0; }
+}
+
+@media (max-width: 700px) {
+    .registration-layout { grid-template-columns: 1fr; }
+    .welcome { padding: 28px 24px; }
+    .brand { font-size: 30px; }
+    .brand-description { max-width: none; font-size: 12px; }
+    .welcome-copy { padding: 32px 0 0; }
+    h1 { font-size: 38px; margin-bottom: 16px; }
+    h1 br { display: none; }
+    .welcome-copy > p:last-child { font-size: 14px; max-width: 420px; }
+    .destination-note { margin-top: 24px; }
+    .form-panel { padding: 24px 16px; }
+    .registration-card { padding: 28px 20px; }
+}
