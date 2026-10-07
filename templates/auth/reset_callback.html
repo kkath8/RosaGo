@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>Password recovery | RosaGO</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body>
+    <main class="registration-layout">
+        <section class="welcome" aria-labelledby="welcome-title">
+            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGO home">Rosa<span>GO</span><span class="brand-dot" aria-hidden="true">.</span></a>
+            <p class="brand-description">Smart Tourism System for Santa Rosa, Laguna</p>
+            <div class="welcome-copy">
+                <p class="eyebrow">A little closer to local</p>
+                <h1 id="welcome-title">Your next story<br>starts in<br><span>Santa Rosa.</span></h1>
+                <p>From familiar streets to new discoveries, there’s more to explore in the Lion City of the South.</p>
+            </div>
+            <div class="destination-note">
+                <span class="destination-mark" aria-hidden="true">SR</span>
+                <div><strong>Santa Rosa, Laguna</strong><span>Local places. Lasting memories.</span></div>
+            </div>
+        </section>
+        <section class="form-panel" aria-labelledby="recovery-heading">
+            <div class="registration-card" id="recovery-callback">
+                <p class="eyebrow">Password recovery</p>
+                <div role="status" aria-live="polite" aria-atomic="true">
+                    <h2 id="recovery-heading">Recovery link unavailable</h2>
+                    <p class="form-intro" id="recovery-message">{{ message }}</p>
+                </div>
+                <p class="login-prompt"><a href="{{ url_for('forgot_password') }}">Back to Forgot Password</a></p>
+            </div>
+            <p class="footer-note">Made for discovering Santa Rosa.</p>
+        </section>
+    </main>
+</body>
+</html>

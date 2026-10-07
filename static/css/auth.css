@@ -97,7 +97,7 @@ a.submit-button { text-decoration: none; }
 .login-prompt { margin: 24px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
 .login-prompt a { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .login-options { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 6px 0 12px; }
-.forgot-password { font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: not-allowed; }
+.forgot-password { font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
 .login-options-help { margin: 0 0 22px; }
 .logout-form { margin-top: 16px; }
 .logout-form .submit-button { width: auto; min-height: 40px; padding: 8px 18px; font-size: 13px; }

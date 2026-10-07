@@ -46,9 +46,9 @@
                             <input id="remember-me" type="checkbox" aria-describedby="login-options-help">
                             <span>Remember me</span>
                         </label>
-                        <a class="forgot-password" role="link" aria-disabled="true" tabindex="0" aria-describedby="login-options-help">Forgot password?</a>
+                        <a class="forgot-password" href="{{ url_for('forgot_password') }}">Forgot password?</a>
                     </div>
-                    <p class="field-help login-options-help" id="login-options-help">Remember me and password reset are not active yet.</p>
+                    <p class="field-help login-options-help" id="login-options-help">Remember me is not active yet.</p>
                     <button class="submit-button" id="login-submit" type="submit">Log In <span aria-hidden="true">→</span></button>
                     <p class="form-status" id="login-status" data-state="{{ state }}" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">{{ message }}</p>
                 </form>

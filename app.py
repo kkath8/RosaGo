@@ -2,13 +2,18 @@ import os
 import re
 import logging
 import time
+import httpx
+import secrets
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from supabase import Client, ClientOptions, create_client
-from supabase_auth.errors import AuthApiError
+from supabase_auth.errors import AuthApiError, AuthError
 
 from auth_helpers import login_required
+from recovery_helpers import RECOVERY_ERROR, RecoveryGrants, recovery_expiry, PendingRecoveries, pkce_s256_challenge
+from recovery_diagnostics import recovery_diagnostic
+from recovery_transport import send_pkce_recovery, RecoveryRequestRejected
 
 load_dotenv()
 
@@ -31,6 +36,8 @@ supabase: Client = create_client(
 )
 
 app = Flask(__name__)
+recovery_grants = RecoveryGrants()
+pending_recoveries = PendingRecoveries()
 app.config.update(
     SECRET_KEY=FLASK_SECRET_KEY,
     SESSION_COOKIE_HTTPONLY=True,
@@ -44,7 +51,7 @@ class CallbackLogFilter(logging.Filter):
     def filter(self, record):
         # Werkzeug otherwise includes callback query credentials in its access log.
         record.msg = re.sub(
-            r'(/auth/callback)\?[^\s"]*', r'\1?[redacted]', record.getMessage()
+            r'(/auth/(?:reset-callback|callback))\?[^\s"]*', r'\1?[redacted]', record.getMessage()
         )
         record.args = ()
         return True
@@ -61,16 +68,250 @@ def auth_callback():
 
 @app.after_request
 def protect_auth_response(response):
-    if request.path in ("/auth/callback", "/login", "/register", "/user"):
+    if request.path in ("/auth/callback", "/auth/reset-callback", "/reset-password", "/login", "/register", "/user"):
         response.headers["Cache-Control"] = "no-store"
-    if request.path == "/auth/callback":
+    if request.path in ("/auth/callback", "/auth/reset-callback"):
         response.headers["Referrer-Policy"] = "no-referrer"
+    if request.path == "/reset-password":
+        # Native POSTs under no-referrer send Origin: null. Preserve a
+        # verifiable same-origin POST without sharing cross-origin referrers.
+        response.headers["Referrer-Policy"] = "same-origin"
+    if request.path in ("/auth/reset-callback", "/reset-password"):
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'"
     return response
+
+
+@app.route("/auth/reset-callback", methods=["GET"])
+def reset_callback():
+    recovery_diagnostic("RECOVERY_PKCE_CALLBACK_RECEIVED")
+
+    def failure(status=400):
+        return render_template("auth/reset_callback.html", message=RECOVERY_ERROR), status
+
+    if request.headers.get("Origin") not in (None, request.host_url.rstrip("/")):
+        recovery_diagnostic("RECOVERY_ORIGIN_REJECTED")
+        return failure(403)
+    codes = request.args.getlist("code")
+    if (len(codes) != 1 or not codes[0].strip() or len(codes[0]) > 4096
+            or any(key in request.args for key in (
+                "error", "error_code", "error_description", "access_token",
+                "refresh_token", "token_hash", "code_verifier", "type"))):
+        recovery_diagnostic("RECOVERY_PKCE_CODE_REJECTED")
+        return failure()
+    recovery_diagnostic("RECOVERY_PKCE_CODE_PRESENT")
+    pending_id = session.get("pending_recovery_id")
+    reservation = pending_recoveries.reserve(pending_id)
+    if reservation is None:
+        recovery_diagnostic("RECOVERY_PENDING_REJECTED")
+        return failure()
+    lease, pending = reservation
+    recovery_diagnostic("RECOVERY_PENDING_FOUND")
+    try:
+        # Never exchange on the shared client: the SDK saves an in-memory session.
+        isolated = create_client(
+            SUPABASE_URL, SUPABASE_KEY,
+            options=ClientOptions(persist_session=False, auto_refresh_token=False),
+        )
+        with isolated.auth:
+            recovery_diagnostic("RECOVERY_PKCE_EXCHANGE_STARTED")
+            result = isolated.auth.exchange_code_for_session({
+                "auth_code": codes[0], "code_verifier": pending.verifier,
+            })
+            if not result or not result.session or not result.user:
+                recovery_diagnostic("RECOVERY_PKCE_EXCHANGE_FAILED")
+                return failure()
+            recovery_diagnostic("RECOVERY_PKCE_EXCHANGE_SUCCEEDED")
+            # A successful exchange burns this flow even if later validation fails.
+            # If replaced/expired while exchanging, do not grant any authorization.
+            if pending_recoveries.finalize(pending_id, lease) is None:
+                recovery_diagnostic("RECOVERY_PENDING_REJECTED")
+                return failure()
+            session.pop("pending_recovery_id", None)
+            recovery_diagnostic("RECOVERY_PENDING_CONSUMED")
+            token = result.session.access_token
+            if not isinstance(token, str) or not token:
+                return failure()
+            recovery_diagnostic("RECOVERY_CLAIMS_CHECK_STARTED")
+            verified = isolated.auth.get_claims(token)
+            recovery_diagnostic("RECOVERY_USER_CHECK_STARTED")
+            validated = isolated.auth.get_user(token)
+            user = validated.user if validated else None
+            if (not user or not user.id or result.user.id != user.id
+                    or not result.session.user or result.session.user.id != user.id):
+                recovery_diagnostic("RECOVERY_USER_VALIDATION_REJECTED")
+                return failure()
+            claims = verified.get("claims") if isinstance(verified, dict) else None
+            expires = recovery_expiry(claims, user, SUPABASE_URL.rstrip("/") + "/auth/v1", time.time())
+            if expires is None:
+                recovery_diagnostic("RECOVERY_CLAIMS_REJECTED")
+                return failure()
+            recovery_diagnostic("RECOVERY_PKCE_CLAIMS_VALIDATED")
+        handle = recovery_grants.issue(user.id, claims["session_id"], expires, token)
+        if not handle:
+            return failure()
+    except AuthError:
+        recovery_diagnostic("RECOVERY_PKCE_EXCHANGE_FAILED")
+        return failure()
+    except Exception:
+        recovery_diagnostic("RECOVERY_SDK_ERROR")
+        return failure(503)
+    finally:
+        # No-op after finalization. An unsuccessful exchange can be retried until expiry.
+        pending_recoveries.release(pending_id, lease)
+
+    recovery_grants.revoke(session.pop("password_recovery_id", None))
+    session["password_recovery_id"] = handle
+    recovery_diagnostic("RECOVERY_AUTHORIZED")
+    return redirect(url_for("reset_password"), code=303)
+
+
+@app.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    if request.method == "POST":
+        recovery_diagnostic("RESET_PASSWORD_POST_RECEIVED")
+    handle = session.get("password_recovery_id")
+    if not recovery_grants.valid(handle):
+        session.pop("password_recovery_id", None)
+        return render_template("auth/reset_callback.html", process_callback=False, message=RECOVERY_ERROR), 403
+    csrf = recovery_grants.csrf(handle)
+
+    def form_error(message, status=400):
+        return render_template("auth/reset_password.html", csrf=csrf, message=message), status
+
+    if request.method == "GET":
+        return render_template("auth/reset_password.html", csrf=csrf)
+    supplied_csrf = request.form.get("csrf_token", "")
+    if not csrf or not supplied_csrf:
+        recovery_diagnostic("RESET_PASSWORD_CSRF_MISSING")
+        return form_error("Please reload this page and try again.", 403)
+    if not secrets.compare_digest(supplied_csrf.encode(), csrf.encode()):
+        recovery_diagnostic("RESET_PASSWORD_CSRF_MISMATCH")
+        return form_error("Please reload this page and try again.", 403)
+    if request.headers.get("Origin") not in (None, request.host_url.rstrip("/")):
+        recovery_diagnostic("RESET_PASSWORD_ORIGIN_REJECTED")
+        return form_error("Please reload this page and try again.", 403)
+    password = request.form.get("new_password", "")
+    confirmation = request.form.get("confirm_password", "")
+    if not password.strip():
+        recovery_diagnostic("RESET_PASSWORD_VALIDATION_REJECTED")
+        return form_error("Please enter a new password.")
+    if len(password) < 8:
+        recovery_diagnostic("RESET_PASSWORD_VALIDATION_REJECTED")
+        return form_error("Use at least 8 characters for your password.")
+    if not confirmation:
+        recovery_diagnostic("RESET_PASSWORD_VALIDATION_REJECTED")
+        return form_error("Please confirm your new password.")
+    if password != confirmation:
+        recovery_diagnostic("RESET_PASSWORD_VALIDATION_REJECTED")
+        return form_error("Passwords do not match. Enter the same password in both fields.")
+    reservation = recovery_grants.reserve(handle)
+    if not reservation:
+        return form_error("Recovery access is unavailable or another update is processing.", 409)
+    lease, grant = reservation
+    try:
+        isolated = create_client(SUPABASE_URL, SUPABASE_KEY,
+            options=ClientOptions(persist_session=False, auto_refresh_token=False))
+        with isolated.auth:
+            # No refresh credential is retained: expired access must fail closed.
+            restored = isolated.auth.set_session(grant.access_token, "")
+            if (not restored or not restored.session or not restored.user
+                    or restored.user.id != grant.user_id
+                    or not restored.session.user or restored.session.user.id != grant.user_id
+                    or not recovery_grants.valid(handle)):
+                recovery_grants.revoke(handle)
+                session.pop("password_recovery_id", None)
+                return form_error("Recovery access is no longer valid. Please request a new link.", 403)
+            recovery_diagnostic("RECOVERY_PASSWORD_UPDATE_STARTED")
+            recovery_diagnostic("RESET_PASSWORD_UPDATE_STARTED")
+            updated = isolated.auth.update_user({"password": password})
+            # A completed update is never retried using this grant, even if the
+            # returned response is unexpected or client cleanup later fails.
+            recovery_grants.revoke(handle)
+            session.pop("password_recovery_id", None)
+            recovery_diagnostic("RECOVERY_GRANT_CONSUMED")
+            if not updated or not updated.user or updated.user.id != grant.user_id:
+                return form_error("We could not confirm the update. Please return to login.", 503)
+            recovery_diagnostic("RECOVERY_PASSWORD_UPDATE_SUCCEEDED")
+            recovery_diagnostic("RESET_PASSWORD_UPDATE_SUCCEEDED")
+    except AuthApiError as error:
+        recovery_diagnostic("RECOVERY_PASSWORD_UPDATE_FAILED")
+        # Explicit client rejection can safely retry (e.g. password policy).
+        if int(error.status) not in (400, 422, 429):
+            recovery_grants.revoke(handle)
+            session.pop("password_recovery_id", None)
+        return form_error("The password could not be updated. Please try again or request a new recovery link.")
+    except Exception:
+        # Network/SDK failure may happen after the provider applied the change.
+        # Discard authorization rather than repeat an ambiguous write.
+        recovery_diagnostic("RECOVERY_PASSWORD_UPDATE_FAILED")
+        recovery_grants.revoke(handle)
+        session.pop("password_recovery_id", None)
+        return form_error("We could not confirm the update. Please return to login or request a new recovery link.", 503)
+    finally:
+        recovery_grants.release(handle, lease)
+    return redirect(url_for("login", password_updated="1"), code=303)
 
 
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    email = ""
+    message = ""
+    state = ""
+    status = 200
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        if not email:
+            message = "Please enter your email address."
+            state, status = "error", 400
+        elif not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+            message = "Please enter a valid email address."
+            state, status = "error", 400
+        else:
+            message = "If an account exists for that email, a password reset link has been sent."
+            state = "success"
+            # Replace only the pending recovery flow; normal login is untouched.
+            pending_recoveries.consume(session.pop("pending_recovery_id", None))
+            pending_id = None
+            accepted = False
+            try:
+                pending_id = pending_recoveries.create()
+                recovery_diagnostic("RECOVERY_PENDING_CREATED")
+                challenge = pkce_s256_challenge(pending_recoveries.lookup(pending_id).verifier)
+                recovery_diagnostic("RECOVERY_PKCE_CREATED")
+                with httpx.Client() as client:
+                    send_pkce_recovery(
+                        email, challenge, supabase_url=SUPABASE_URL,
+                        supabase_key=SUPABASE_KEY, client=client,
+                    )
+                # Signed cookies contain only this opaque reference, never a verifier.
+                session["pending_recovery_id"] = pending_id
+                accepted = True
+                recovery_diagnostic("RECOVERY_REQUEST_ACCEPTED")
+            except RecoveryRequestRejected:
+                # Provider errors can depend on account existence or email limits.
+                # Keep the same response instead of disclosing those details.
+                pass
+            except Exception:
+                # Do not display or log raw errors or request data.
+                message = "We could not process your request right now. Please try again later."
+                state, status = "error", 503
+            finally:
+                if not accepted:
+                    pending_recoveries.consume(pending_id)
+                    session.pop("pending_recovery_id", None)
+                    recovery_diagnostic("RECOVERY_REQUEST_FAILED")
+
+    response = app.make_response((render_template(
+        "auth/forgot_password.html", email=email, message=message, state=state
+    ), status))
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -85,6 +326,9 @@ def login():
 
     if request.method == "GET" and request.args.get("logged_out") == "1":
         message = "You have been logged out successfully."
+        state = "success"
+    elif request.method == "GET" and request.args.get("password_updated") == "1":
+        message = "Your password has been updated successfully. You can now log in."
         state = "success"
     elif request.method == "GET" and request.args.get("login_required") == "1":
         message = "Please log in to continue."
