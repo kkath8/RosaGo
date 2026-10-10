@@ -109,8 +109,7 @@ class RecoveryCallbackTests(unittest.TestCase):
 
     def test_direct_access_denied_with_or_without_login(self):
         self.denied(self.client.get('/reset-password'), 403)
-        with self.client.session_transaction() as current:
-            current.update(user_id='normal', user_email='normal@example.com')
+        normal_handle = test_registration.seed_normal_session(self, 'normal@example.com')
         self.denied(self.client.get('/reset-password'), 403)
         self.factory.assert_not_called()
 
@@ -216,8 +215,7 @@ class RecoveryCallbackTests(unittest.TestCase):
             getattr(self.isolated.auth, method).side_effect = None
 
     def test_replay_cannot_exchange_again_or_overwrite_login(self):
-        with self.client.session_transaction() as current:
-            current.update(user_id='normal', user_email='normal@example.com')
+        normal_handle = test_registration.seed_normal_session(self, 'normal@example.com')
         handle = self.pending()
         self.assertEqual(self.callback().status_code, 303)
         self.assertEqual(self.callback().status_code, 400)

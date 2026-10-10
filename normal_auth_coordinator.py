@@ -1,4 +1,4 @@
-"""Isolated normal-auth coordination; not connected to Flask.
+"""Isolated normal-auth coordination used through normal_auth_flask.
 
 PROCESS-LOCAL DEVELOPMENT ONLY. Dependencies are injectable for offline tests.
 Only normal-store handles are accepted; no cookies, request identity fields,
@@ -21,6 +21,7 @@ from urllib.parse import urlsplit
 
 import httpx
 from supabase import ClientOptions, create_client
+from supabase_auth.errors import AuthApiError, AuthInvalidJwtError
 
 
 class AuthenticationRequired(Exception):
@@ -36,6 +37,38 @@ class SessionBusy(Exception):
 class ClientUnavailable(Exception):
     def __init__(self):
         super().__init__('Authenticated client unavailable.')
+
+
+class PasswordLoginError(Exception):
+    """Fixed public classification only; never retain provider exceptions."""
+    def __init__(self, reason):
+        messages = {
+            'invalid_credentials': 'Invalid email or password.',
+            'unconfirmed_email': 'Email confirmation required.',
+            'throttled': 'Password login is temporarily rate limited.',
+            'service_failure': 'Password login service unavailable.',
+            'invalid_result': 'Password login could not be verified.',
+        }
+        self.reason = reason if reason in messages else 'service_failure'
+        super().__init__(messages[self.reason])
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class VerifiedLoginCredentials:
+    """Approved server-only input for store.create; never serialize.
+
+    Expiry is checked before return; the eventual caller must check it again
+    before storage if any intervening work can delay session creation.
+    """
+    user_id: str
+    user_email: str
+    access_token: str
+    refresh_token: str
+    access_expires_at: float
+    session_id: str
+
+    def __repr__(self):
+        return '<VerifiedLoginCredentials redacted>'
 
 
 @dataclass(frozen=True, slots=True, repr=False)
@@ -77,6 +110,22 @@ def _text(value):
     return type(value) is str and bool(value.strip())
 
 
+def _normal_claims(claims, issuer):
+    """Shared password-only claims shape/policy, after SDK verification.
+
+    Identity binding and effective expiry remain the caller's responsibility.
+    """
+    if (not isinstance(claims, dict)
+            or not _text(claims.get('sub')) or not _text(claims.get('session_id'))
+            or claims.get('iss') != issuer or claims.get('aud') != 'authenticated'
+            or claims.get('role') != 'authenticated' or not _number(claims.get('exp'))):
+        return False
+    methods = claims.get('amr')
+    return (isinstance(methods, list) and bool(methods)
+            and all(isinstance(method, dict) and method.get('method') == 'password'
+                    and type(method.get('timestamp')) is int for method in methods))
+
+
 def _configuration(url, key):
     # Classification only: Supabase validates the public key on actual requests.
     # Never accept a privileged secret/service-role key in either adapter.
@@ -107,11 +156,12 @@ class SupabaseAdapters:
     session (set_session can refresh implicitly, so it is deliberately unused).
     """
     def __init__(self, url, public_key, *, sdk_factory=create_client,
-                 http_factory=httpx.Client):
+                 http_factory=httpx.Client, clock=time.time):
         self._url, self._key = _configuration(url, public_key)
         self.issuer = self._url + '/auth/v1'
         self._sdk_factory = sdk_factory
         self._http_factory = http_factory
+        self._clock = clock
 
     @contextmanager
     def _client(self, access_token=None):
@@ -122,6 +172,71 @@ class SupabaseAdapters:
                 httpx_client=http, schema='public'))
             # Supabase subclients share this owned HTTP client; it closes on exit.
             yield client
+
+    def password_login(self, email, password):
+        """Verify password sign-in without creating store or browser authority.
+
+        All ordinary failures are sanitized after owned-resource cleanup.
+        Shutdown/cancellation signals retain their normal propagation behavior.
+        """
+        stage = 'construction'
+        reason = 'service_failure'
+        try:
+            if not _text(email) or not _text(password):
+                raise PasswordLoginError('invalid_credentials')
+            with self._client() as client:
+                stage = 'sign_in'
+                response = client.auth.sign_in_with_password({'email': email, 'password': password})
+                stage = 'verification'
+                session = getattr(response, 'session', None)
+                response_user = getattr(response, 'user', None)
+                session_user = getattr(session, 'user', None)
+                access = getattr(session, 'access_token', None)
+                refresh = getattr(session, 'refresh_token', None)
+                expires = getattr(session, 'expires_at', None)
+                response_id = getattr(response_user, 'id', None)
+                session_user_id = getattr(session_user, 'id', None)
+                if (session is None or response_user is None or session_user is None
+                        or not _text(access) or not _text(refresh)):
+                    raise PasswordLoginError('invalid_result')
+                verified = client.auth.get_claims(access)
+                claims = verified.get('claims') if isinstance(verified, dict) else None
+                confirmed = getattr(client.auth.get_user(access), 'user', None)
+                user_id = getattr(confirmed, 'id', None)
+                user_email = getattr(confirmed, 'email', None)
+                if (not _text(user_id) or not _text(user_email)
+                        or not _normal_claims(claims, self.issuer)
+                        or user_id != response_id or user_id != session_user_id
+                        or user_id != claims['sub'] or not _number(expires)):
+                    raise PasswordLoginError('invalid_result')
+                if not getattr(confirmed, 'email_confirmed_at', None):
+                    raise PasswordLoginError('unconfirmed_email')
+                approved = VerifiedLoginCredentials(
+                    user_id, user_email, access, refresh, min(expires, claims['exp']),
+                    claims['session_id'])
+                stage = 'cleanup'
+            # Cleanup can take time: check immediately before returning approval.
+            if approved.access_expires_at <= self._clock():
+                raise PasswordLoginError('invalid_result')
+            return approved
+        except PasswordLoginError as error:
+            reason = error.reason
+        except AuthInvalidJwtError:
+            reason = 'invalid_result'
+        except AuthApiError as error:
+            if stage in ('sign_in', 'verification'):
+                if error.status == 429:
+                    reason = 'throttled'
+                elif stage == 'sign_in' and error.code == 'invalid_credentials':
+                    reason = 'invalid_credentials'
+                elif stage == 'sign_in' and error.code == 'email_not_confirmed':
+                    reason = 'unconfirmed_email'
+                elif stage == 'verification' and error.status in (400, 401, 403):
+                    reason = 'invalid_result'
+        except Exception:
+            pass
+        # Raising outside all handlers discards sensitive __context__/__cause__.
+        raise PasswordLoginError(reason) from None
 
     def refresh(self, refresh_token):
         try:
@@ -175,28 +290,16 @@ class NormalAuthCoordinator:
         if not isinstance(result, VerifiedRefresh):
             raise AuthenticationRequired()
         claims = result.claims
-        if (not isinstance(claims, dict)
+        if (not _normal_claims(claims, self._issuer)
                 or not all(_text(value) for value in (result.user_id, result.user_email,
                     result.access_token, result.refresh_token))
                 or result.user_id != record.user_id
                 or result.response_user_id != record.user_id
                 or result.session_user_id != record.user_id
                 or claims.get('sub') != record.user_id
-                or claims.get('iss') != self._issuer
-                or claims.get('aud') != 'authenticated'
-                or claims.get('role') != 'authenticated'
                 or claims.get('session_id') != record.session_id
                 or not _number(result.expires_at) or not _number(claims.get('exp'))
                 or min(result.expires_at, claims['exp']) <= self._clock()):
-            raise AuthenticationRequired()
-        # RosaGo implements password sign-in only. Require positive evidence;
-        # recovery and unsupported methods remain invalid even alongside password.
-        methods = claims.get('amr')
-        if (not isinstance(methods, list) or not methods
-                or any(not isinstance(method, dict)
-                       or method.get('method') != 'password'
-                       or type(method.get('timestamp')) is not int
-                       for method in methods)):
             raise AuthenticationRequired()
         return min(result.expires_at, claims['exp'])
 
@@ -247,7 +350,7 @@ class NormalAuthCoordinator:
     def authenticated(self, auth_session_id):
         """Yield a request-scoped immutable context; caller must use with.
 
-        Busy callers should receive a transient retry response in future Flask
+        Busy callers receive a transient retry response through the Flask
         integration, not an automatic logout. No polling, global network lock,
         automatic write retry, or concurrent duplicate refresh is performed.
         """

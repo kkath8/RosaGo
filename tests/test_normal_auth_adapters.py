@@ -73,7 +73,8 @@ class NormalAuthAdapterTests(unittest.TestCase):
         confirmed = NS(id=user.id, email='verified@example.invalid', email_confirmed_at='verified')
         claims = {'sub': user.id, 'iss': self.url + '/auth/v1', 'aud': 'authenticated',
                   'role': 'authenticated', 'session_id': 'adapter-session',
-                  'exp': session.expires_at, 'amr': [{'method': 'password'}]}
+                  'exp': session.expires_at,
+                  'amr': [{'method': 'password', 'timestamp': 2_000_000_000}]}
         auth = Mock(spec=['refresh_session', 'get_claims', 'get_user', 'get_session', 'set_session'])
         auth.refresh_session.return_value = NS(session=session, user=user)
         auth.get_claims.return_value = {'claims': claims}
@@ -135,15 +136,21 @@ class NormalAuthAdapterTests(unittest.TestCase):
         self.assertEqual(len(self.requests), 0)
 
     def test_malformed_or_unverified_refresh_results_are_rejected(self):
-        for case in ('missing_session', 'unconfirmed_user', 'missing_verified_claims'):
+        for case in ('missing_session', 'unconfirmed_user', 'missing_verified_claims',
+                     'missing_claims', 'empty_claims', 'non_dictionary_claims'):
             with self.subTest(case=case):
                 client, _, _, _ = self.fake_sdk()
                 if case == 'missing_session':
                     client.auth.refresh_session.return_value.session = None
                 elif case == 'unconfirmed_user':
                     client.auth.get_user.return_value.user.email_confirmed_at = None
-                else:
+                elif case == 'missing_verified_claims':
                     client.auth.get_claims.return_value = None
+                else:
+                    client.auth.get_claims.return_value = {
+                        'missing_claims': {}, 'empty_claims': {'claims': {}},
+                        'non_dictionary_claims': {'claims': []},
+                    }[case]
                 adapter = SupabaseAdapters(self.url, self.public_key,
                     sdk_factory=Mock(return_value=client), http_factory=self.http_factory)
                 with self.assertRaises(AuthenticationRequired):

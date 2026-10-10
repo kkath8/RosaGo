@@ -69,12 +69,10 @@ class ForgotPasswordTests(unittest.TestCase):
         self.assertEqual(self.client.get('/auth/status').json, {'authenticated': False})
 
     def test_existing_login_values_are_preserved(self):
-        with self.client.session_transaction() as current:
-            current.update(user_id='user-123', user_email='ana@example.com')
+        normal_handle = test_registration.seed_normal_session(self)
         self.submit()
         with self.client.session_transaction() as current:
-            self.assertEqual(current['user_id'], 'user-123')
-            self.assertEqual(current['user_email'], 'ana@example.com')
+            self.assertEqual(current['auth_session_id'], normal_handle)
 
     def test_invalid_email_does_not_send_or_replace_pending_flow(self):
         self.submit()
@@ -128,14 +126,13 @@ class ForgotPasswordTests(unittest.TestCase):
         self.assertEqual(len(self.store._records), 1)
 
     def test_pre_transport_failure_cleans_record_without_login_changes(self):
-        with self.client.session_transaction() as current:
-            current.update(user_id='existing', user_email='ana@example.com')
+        normal_handle = test_registration.seed_normal_session(self)
         with patch('httpx.Client', side_effect=RuntimeError('private-detail')):
             response = self.submit()
         self.assertEqual(response.status_code, 503)
         self.assertEqual(self.store._records, {})
         with self.client.session_transaction() as current:
-            self.assertEqual(dict(current), {'user_id': 'existing', 'user_email': 'ana@example.com'})
+            self.assertEqual(dict(current), {'auth_session_id': normal_handle})
         self.assertEqual(self.requests, [])
 
     def test_diagnostics_are_fixed_and_contain_no_credentials(self):

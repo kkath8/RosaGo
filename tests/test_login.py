@@ -9,6 +9,11 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from supabase_auth.errors import AuthApiError
+from normal_auth_coordinator import SessionBusy, ClientUnavailable, VerifiedRefresh
+from normal_auth_flask import NormalAuthEntryError
+from flask import g
+from flask.sessions import SecureCookieSession
+import httpx
 import test_registration
 
 
@@ -30,6 +35,220 @@ class LoginTests(unittest.TestCase):
             refresh_token="private-refresh-token", expires_at=time.time() + 3600,
         ))
         self.login_client.auth.sign_in_with_password.return_value = self.result
+        dependencies = self.app.extensions['rosago_normal_auth']
+        self.store = dependencies.store
+        dependencies.adapters._sdk_factory = self.create_client
+        dependencies.adapters._http_factory = lambda **kwargs: httpx.Client(
+            transport=httpx.MockTransport(lambda request: (_ for _ in ()).throw(AssertionError('Unexpected HTTP'))), **kwargs)
+        self.login_client.auth.get_user.return_value = SimpleNamespace(user=user)
+        self.login_client.auth.get_claims.return_value = {'claims': dict(
+            sub=user.id, session_id='verified-login-session', iss=dependencies.adapters.issuer,
+            aud='authenticated', role='authenticated', exp=self.result.session.expires_at,
+            amr=[{'method': 'password', 'timestamp': int(time.time())}])}
+
+    def test_legacy_and_recovery_cookies_do_not_grant_authority(self):
+        for data in ({'user_id': 'legacy', 'user_email': 'legacy@example.invalid'},
+                     {'pending_recovery_id': 'pending'}, {'password_recovery_id': 'grant'}):
+            for path, expected in (('/user', 302), ('/auth/status', 200), ('/login', 200), ('/register', 200)):
+                with self.subTest(data=data, path=path):
+                    with self.client.session_transaction() as current:
+                        current.clear()
+                        current.update(data)
+                    response = self.client.get(path)
+                    self.assertEqual(response.status_code, expected)
+                    if path == '/auth/status':
+                        self.assertEqual(response.json, {'authenticated': False})
+
+    def test_opaque_authority_access_and_logout_revocation(self):
+        response = self.client.post('/login', data=self.credentials)
+        self.assertEqual(response.status_code, 303)
+        with self.client.session_transaction() as current:
+            self.assertEqual(set(current), {'auth_session_id'})
+            handle = current['auth_session_id']
+        self.assertIsNotNone(self.store.resolve(handle))
+        self.assertEqual(self.client.get('/user').status_code, 200)
+        self.assertTrue(self.client.get('/auth/status').json['authenticated'])
+        self.client.post('/logout')
+        self.assertIsNone(self.store.resolve(handle))
+        self.assertEqual(self.client.get('/user').status_code, 302)
+        self.assertEqual(self.client.get('/auth/status').json, {'authenticated': False})
+
+    def test_seeded_opaque_session_accesses_user(self):
+        test_registration.seed_normal_session(self)
+        self.assertEqual(self.client.get('/user').status_code, 200)
+
+    def test_refresh_reservation_blocks_routes_without_duplicate_refresh(self):
+        handle = test_registration.seed_normal_session(self)
+        record = self.store.resolve(handle)
+        coordinator = self.app.extensions['rosago_normal_auth'].coordinator
+        lease, _ = self.store.reserve_refresh(handle)
+        try:
+            with patch.object(coordinator, '_clock', return_value=record.access_expires_at - 30), \
+                 patch.object(coordinator, '_refresh') as refresh:
+                for path in ('/user', '/auth/status', '/login', '/register'):
+                    with self.subTest(path=path):
+                        response = self.client.get(path)
+                        self.assertEqual(response.status_code, 503)
+                        self.assertEqual(response.headers['Retry-After'], '1')
+                        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+                        self.assertNotIn('Location', response.headers)
+                        with self.client.session_transaction() as current:
+                            self.assertEqual(current['auth_session_id'], handle)
+                refresh.assert_not_called()
+                self.assertEqual(self.normal_clients, [])
+                self.assertEqual(self.store.resolve(handle).last_activity_at, record.last_activity_at)
+        finally:
+            self.store.release_refresh(handle, lease)
+        self.assertEqual(self.client.get('/user').status_code, 200)
+
+    def test_routes_use_rotated_credentials_and_verified_email(self):
+        handle = test_registration.seed_normal_session(self)
+        record = self.store.resolve(handle)
+        dependencies = self.app.extensions['rosago_normal_auth']
+        coordinator = dependencies.coordinator
+        expires = record.access_expires_at + 3600
+        refreshed = VerifiedRefresh(
+            record.user_id, 'updated@example.invalid', record.user_id, record.user_id,
+            'rotated-access', 'rotated-refresh', expires,
+            dict(sub=record.user_id, session_id=record.session_id, iss=dependencies.adapters.issuer,
+                 aud='authenticated', role='authenticated', exp=expires,
+                 amr=[{'method': 'password', 'timestamp': int(time.time())}]))
+        with patch.object(coordinator, '_clock', return_value=record.access_expires_at - 30), \
+             patch.object(coordinator, '_refresh', return_value=refreshed) as refresh, \
+             patch.object(coordinator, '_clients', wraps=coordinator._clients) as clients:
+            self.assertEqual(self.client.get('/auth/status').json,
+                             {'authenticated': True, 'email': refreshed.user_email})
+            page = self.client.get('/user')
+            self.assertEqual(page.status_code, 200)
+            self.assertIn(refreshed.user_email.encode(), page.data)
+            for path in ('/login', '/register'):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 303)
+                self.assertEqual(response.headers['Location'], '/user')
+            refresh.assert_called_once_with(record.refresh_token)
+            self.assertEqual(clients.call_count, 4)
+            for call in clients.call_args_list:
+                self.assertEqual(call.args, ('rotated-access',))
+        updated = self.store.resolve(handle)
+        self.assertEqual(updated.generation, record.generation + 1)
+        self.assertEqual(updated.refresh_token, 'rotated-refresh')
+        with self.client.session_transaction() as current:
+            self.assertEqual(dict(current), {'auth_session_id': handle})
+        for client in self.normal_clients:
+            client.close.assert_called_once_with()
+
+    def test_failed_refresh_revokes_normal_authority_and_preserves_recovery(self):
+        handle = test_registration.seed_normal_session(self)
+        record = self.store.resolve(handle)
+        coordinator = self.app.extensions['rosago_normal_auth'].coordinator
+        with self.client.session_transaction() as current:
+            current.update(pending_recovery_id='pending', password_recovery_id='grant')
+        with patch.object(coordinator, '_clock', return_value=record.access_expires_at - 30), \
+             patch.object(coordinator, '_refresh', side_effect=RuntimeError('private-provider-error')):
+            response = self.client.get('/auth/status')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {'authenticated': False})
+        self.assertIsNone(self.store.resolve(handle))
+        self.assertEqual(self.normal_clients, [])
+        with self.client.session_transaction() as current:
+            self.assertEqual(dict(current),
+                             {'pending_recovery_id': 'pending', 'password_recovery_id': 'grant'})
+        self.assertEqual(self.client.get('/user').status_code, 302)
+
+    def test_temporary_failures_preserve_authority_on_all_consumers(self):
+        dependencies = self.app.extensions['rosago_normal_auth']
+        for error in (SessionBusy(), ClientUnavailable()):
+            for path in ('/user', '/auth/status', '/login', '/register'):
+                with self.subTest(error=type(error).__name__, path=path):
+                    with self.client.session_transaction() as current:
+                        current['auth_session_id'] = 'candidate'
+                    with patch.object(dependencies.coordinator, 'authenticated', side_effect=error):
+                        response = self.client.get(path)
+                    self.assertEqual(response.status_code, 503)
+                    self.assertNotIn('Location', response.headers)
+                    self.assertEqual(response.headers['Cache-Control'], 'no-store')
+                    if path == '/auth/status':
+                        self.assertNotIn('authenticated', response.json)
+                    with self.client.session_transaction() as current:
+                        self.assertEqual(current['auth_session_id'], 'candidate')
+
+    def test_missing_malformed_expired_and_revoked_handles_are_rejected(self):
+        revoked = test_registration.seed_normal_session(self)
+        self.store.revoke(revoked)
+        expired = test_registration.seed_normal_session(self)
+        record = self.store.resolve(expired)
+        self.store._records[expired] = __import__('dataclasses').replace(record, created_at=record.created_at - 28801)
+        for handle in (None, '', [], {}, 123, 'unknown', expired, revoked):
+            for path in ('/user', '/auth/status', '/login', '/register'):
+                with self.subTest(handle=handle, path=path):
+                    with self.client.session_transaction() as current:
+                        current['auth_session_id'] = handle
+                    response = self.client.get(path)
+                    self.assertEqual(response.status_code, 302 if path == '/user' else 200)
+                    if path == '/auth/status':
+                        self.assertEqual(response.json, {'authenticated': False})
+
+    def test_post_login_replaces_handle_and_failure_rolls_back(self):
+        old = test_registration.seed_normal_session(self)
+        other = self.app.test_client()
+        other.post('/login', data=self.credentials)
+        with other.session_transaction() as current:
+            unrelated = current['auth_session_id']
+        response = self.client.post('/login', data=self.credentials)
+        self.assertEqual(response.status_code, 303)
+        with self.client.session_transaction() as current:
+            new = current['auth_session_id']
+        self.assertNotEqual(old, new)
+        self.assertIsNone(self.store.resolve(old))
+        self.assertIsNotNone(self.store.resolve(unrelated))
+        before = set(self.store._records)
+        original_pop = SecureCookieSession.pop
+        failed = False
+        def fail_mutation(current, key, *args):
+            nonlocal failed
+            result = original_pop(current, key, *args)
+            if key == 'user_email' and not failed:
+                failed = True
+                raise RuntimeError('private-provider-error')
+            return result
+        with patch.object(SecureCookieSession, 'pop', fail_mutation):
+            response = self.client.post('/login', data=self.credentials)
+        self.assertEqual(response.status_code, 503)
+        self.assertNotIn(b'private-provider-error', response.data)
+        self.assertEqual(set(self.store._records), before)
+        with self.client.session_transaction() as current:
+            self.assertEqual(current['auth_session_id'], new)
+        self.assertIsNotNone(self.store.resolve(new))
+
+    def test_cookie_secrecy_and_logout_recovery_policy_without_provider(self):
+        self.client.post('/login', data=self.credentials)
+        with self.client.session_transaction() as current:
+            handle = current['auth_session_id']
+            current.update(pending_recovery_id='pending', password_recovery_id='grant')
+        record = self.store.resolve(handle)
+        decoded = self.app.session_interface.get_signing_serializer(self.app).loads(self.client.get_cookie('session').value)
+        self.assertEqual(set(decoded), {'auth_session_id', 'pending_recovery_id', 'password_recovery_id'})
+        for secret in (record.access_token, record.refresh_token, record.csrf, record.session_id, self.credentials['password']):
+            self.assertNotIn(secret, repr(decoded))
+        dependencies = self.app.extensions['rosago_normal_auth']
+        with patch.object(dependencies.coordinator, 'authenticated', side_effect=AssertionError('No coordinator')), \
+             patch.object(dependencies.adapters, '_client', side_effect=AssertionError('No provider')):
+            self.assertEqual(self.client.post('/logout').status_code, 303)
+        self.assertIsNone(self.store.resolve(handle))
+        with self.client.session_transaction() as current:
+            self.assertEqual(dict(current), {})
+
+    def test_protected_view_errors_are_not_auth_failures_and_context_closes(self):
+        test_registration.seed_normal_session(self)
+        sentinel = NormalAuthEntryError('busy')
+        with self.app.app_context():
+            with patch.dict(self.app.view_functions['user_index'].__wrapped__.__globals__,
+                            {'render_template': MagicMock(side_effect=sentinel)}):
+                with self.assertRaises(NormalAuthEntryError) as raised:
+                    self.client.get('/user')
+            self.assertIs(raised.exception, sentinel)
+            self.assertNotIn('auth', g)
+        self.normal_clients[-1].close.assert_called_once_with()
 
     def assert_safe_response(self, response, session_created=False):
         for secret in (b"private-password", b"private-access-token", b"private-refresh-token", b"private-provider-error"):
@@ -62,8 +281,8 @@ class LoginTests(unittest.TestCase):
 
     def test_success_creates_minimal_session_and_uses_isolated_client(self):
         with self.client.session_transaction() as previous:
-            previous["stale"] = "old-data"
-            previous.permanent = True
+            previous["user_id"] = "legacy"
+            previous["user_email"] = "legacy@example.invalid"
         response = self.client.post("/login", data=self.credentials | {
             "email": "  ana@example.com  ", "remember_me": "on", "role": "admin",
         })
@@ -74,10 +293,10 @@ class LoginTests(unittest.TestCase):
         options = self.create_client.call_args.kwargs["options"]
         self.assertFalse(options.persist_session)
         self.assertFalse(options.auto_refresh_token)
-        self.login_client.auth.__exit__.assert_called_once()
+        self.assertTrue(options.httpx_client.is_closed)
         self.assert_safe_response(response, session_created=True)
         with self.client.session_transaction() as current:
-            self.assertEqual(dict(current), {"user_id": "user-123", "user_email": "ana@example.com"})
+            self.assertEqual(set(current), {"auth_session_id"})
             self.assertFalse(current.permanent)
         cookie = SimpleCookie()
         cookie.load(response.headers["Set-Cookie"])
@@ -142,7 +361,7 @@ class LoginTests(unittest.TestCase):
         self.assertNotIn(b'href="/logout"', response.data)
         self.assertEqual(response.headers["Cache-Control"], "no-store")
         for path in ("/login", "/register"):
-            for method in ("GET", "POST"):
+            for method in (("GET",) if path == "/login" else ("GET", "POST")):
                 response = self.client.open(path, method=method)
                 self.assertEqual(response.status_code, 303)
                 self.assertEqual(response.headers["Location"], "/user")
@@ -150,9 +369,7 @@ class LoginTests(unittest.TestCase):
         self.assertEqual(self.supabase.mock_calls, [])
 
     def test_user_email_is_escaped(self):
-        with self.client.session_transaction() as current:
-            current["user_id"] = "user-123"
-            current["user_email"] = "<script>alert(1)</script>"
+        test_registration.seed_normal_session(self, "<script>alert(1)</script>")
         response = self.client.get("/user")
         self.assertIn(b"&lt;script&gt;", response.data)
         self.assertNotIn(b"<script>alert(1)</script>", response.data)
@@ -218,9 +435,6 @@ class LoginTests(unittest.TestCase):
             result = deepcopy(self.result)
             setattr(result.session, field, value)
             cases.append(result)
-        result = deepcopy(self.result)
-        result.user.email_confirmed_at = None
-        cases.append(result)
         for result in cases:
             self.login_client.auth.sign_in_with_password.return_value = result
             response = self.client.post("/login", data=self.credentials)

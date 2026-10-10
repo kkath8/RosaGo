@@ -6,11 +6,17 @@ import httpx
 import secrets
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, g, jsonify, redirect, render_template, request, session, url_for
 from supabase import Client, ClientOptions, create_client
 from supabase_auth.errors import AuthApiError, AuthError
 
 from auth_helpers import login_required
+from normal_auth_flask import (
+    init_normal_auth, get_normal_auth_dependencies, establish_normal_session,
+    SessionEstablishmentError, normal_auth_redirect_decision, AuthRedirectDecision,
+    normal_auth_state, logout_normal_session,
+)
+from normal_auth_coordinator import PasswordLoginError
 from recovery_helpers import RECOVERY_ERROR, RecoveryGrants, recovery_expiry, PendingRecoveries, pkce_s256_challenge
 from recovery_diagnostics import recovery_diagnostic
 from recovery_transport import send_pkce_recovery, RecoveryRequestRejected
@@ -36,6 +42,7 @@ supabase: Client = create_client(
 )
 
 app = Flask(__name__)
+init_normal_auth(app, SUPABASE_URL, SUPABASE_KEY)
 recovery_grants = RecoveryGrants()
 pending_recoveries = PendingRecoveries()
 app.config.update(
@@ -314,10 +321,26 @@ def forgot_password():
     return response
 
 
+def normal_auth_page_check(template):
+    decision = normal_auth_redirect_decision()
+    if decision is AuthRedirectDecision.REDIRECT_USER:
+        return redirect(url_for("user_index"), code=303)
+    if decision is not AuthRedirectDecision.SHOW_FORM:
+        response = app.make_response((render_template(
+            template, email="", form_data={}, state="error",
+            message="Authentication is temporarily unavailable. Please try again."), 503))
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Retry-After"] = "1"
+        return response
+    return None
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if session.get("user_id"):
-        return redirect(url_for("user_index"), code=303)
+    if request.method in ("GET", "HEAD"):
+        response = normal_auth_page_check("auth/login.html")
+        if response is not None:
+            return response
 
     email = ""
     message = ""
@@ -351,49 +374,18 @@ def login():
             status = 400
         else:
             try:
-                # The SDK keeps in-memory auth state, so isolate each login attempt.
-                supabase = create_client(
-                    SUPABASE_URL, SUPABASE_KEY,
-                    options=ClientOptions(persist_session=False, auto_refresh_token=False),
-                )
-                with supabase.auth:
-                    result = supabase.auth.sign_in_with_password({
-                        "email": email,
-                        "password": password,
-                    })
-                    user = result.user if result else None
-                    auth_session = result.session if result else None
-                    authenticated = bool(
-                        user and user.id and user.email and user.email_confirmed_at
-                        and auth_session and auth_session.access_token
-                        and auth_session.refresh_token and auth_session.user
-                        and auth_session.user.id == user.id
-                        and auth_session.expires_at
-                        and auth_session.expires_at > time.time()
-                    )
-                if authenticated:
-                    session.clear()
-                    session["user_id"] = user.id
-                    session["user_email"] = user.email
-                    return redirect(url_for("user_index"), code=303)
-                else:
-                    message = "We could not confirm your login. Please try again."
-                    status = 401
-            except AuthApiError as error:
-                if error.code == "invalid_credentials":
-                    message = "Invalid email or password."
-                    status = 401
-                elif error.code == "email_not_confirmed":
-                    message = "Please verify your email before logging in. Check your inbox for the verification link."
-                    status = 403
-                elif error.status == 429 or error.code == "over_request_rate_limit":
-                    message = "Too many login attempts. Please wait before trying again."
-                    status = 429
-                else:
-                    message = "We could not complete your login. Please try again later."
-                    status = 503
-            except Exception:
-                # Never expose or log raw provider errors, passwords, or tokens.
+                credentials = get_normal_auth_dependencies().adapters.password_login(email, password)
+                establish_normal_session(credentials)
+                return redirect(url_for("user_index"), code=303)
+            except PasswordLoginError as error:
+                status, message = {
+                    "invalid_credentials": (401, "Invalid email or password."),
+                    "unconfirmed_email": (403, "Please verify your email before logging in. Check your inbox for the verification link."),
+                    "throttled": (429, "Too many login attempts. Please wait before trying again."),
+                    "invalid_result": (401, "We could not confirm your login. Please try again."),
+                    "service_failure": (503, "We could not complete your login. Please try again later."),
+                }[error.reason]
+            except SessionEstablishmentError:
                 message = "We could not complete your login. Please try again later."
                 status = 503
 
@@ -407,14 +399,19 @@ def login():
 @app.route("/user")
 @login_required
 def user_index():
-    return render_template("user/index.html")
+    return render_template("user/index.html", user_email=g.auth.user_email)
 
 
 @app.route("/logout", methods=["POST"])
 def logout():
-    session.clear()
-    # Login uses an isolated Supabase client and retains no tokens. There is no
-    # user-bound Supabase client here to sign out; do not use the shared client.
+    try:
+        logout_normal_session()
+        # Preserve the existing whole-application browser logout, including recovery.
+        session.clear()
+    except Exception:
+        response = app.make_response(("Logout could not be completed. Please try again.", 503))
+        response.headers["Cache-Control"] = "no-store"
+        return response
     response = redirect(url_for("login", logged_out="1"), code=303)
     response.headers["Cache-Control"] = "no-store"
     return response
@@ -422,19 +419,24 @@ def logout():
 
 @app.route("/auth/status")
 def auth_status():
-    # Temporary development endpoint for checking RosaGO session persistence.
-    if session.get("user_id") and session.get("user_email"):
-        response = jsonify(authenticated=True, email=session["user_email"])
-    else:
+    decision = normal_auth_state()
+    if decision.state == "authenticated":
+        response = jsonify(authenticated=True, email=decision.user_email)
+    elif decision.state == "unauthenticated":
         response = jsonify(authenticated=False)
+    else:
+        response = jsonify(error="Authentication is temporarily unavailable. Please try again.")
+        response.status_code = 503
+        response.headers["Retry-After"] = "1"
     response.headers["Cache-Control"] = "no-store"
     return response
 
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    if session.get("user_id"):
-        return redirect(url_for("user_index"), code=303)
+    response = normal_auth_page_check("auth/register.html")
+    if response is not None:
+        return response
 
     form_data = {}
     message = ""

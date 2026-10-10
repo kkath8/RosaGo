@@ -192,13 +192,12 @@ class PasswordResetTests(unittest.TestCase):
         self.assertEqual(self.supabase.mock_calls, [])
 
     def test_cookie_has_only_opaque_reference_and_normal_login_preserved(self):
-        with self.client.session_transaction() as current:
-            current.update(user_id='normal', user_email='normal@example.com')
+        normal_handle = test_registration.seed_normal_session(self, 'normal@example.com')
         decoded = self.app.session_interface.get_signing_serializer(self.app).loads(self.client.get_cookie('session').value)
-        self.assertEqual(decoded, {'password_recovery_id':self.handle, 'user_id':'normal', 'user_email':'normal@example.com'})
+        self.assertEqual(decoded, {'password_recovery_id': self.handle, 'auth_session_id': normal_handle})
         self.submit()
         with self.client.session_transaction() as current:
-            self.assertEqual(dict(current), {'user_id':'normal', 'user_email':'normal@example.com'})
+            self.assertEqual(dict(current), {'auth_session_id': normal_handle})
 
     def test_wrong_recovered_user_is_rejected_before_update(self):
         self.isolated.auth.set_session.return_value.user = NS(id='other')

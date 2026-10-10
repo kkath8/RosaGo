@@ -4,18 +4,40 @@ import secrets
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
+from contextlib import contextmanager
+import time
+import socket
 
 from supabase_auth.errors import AuthApiError
 
 
+def seed_normal_session(test, email='ana@example.com'):
+    handle = test.app.extensions['rosago_normal_auth'].store.create(
+        user_id='user-123', user_email=email, access_token='fixture-access',
+        refresh_token='fixture-refresh', access_expires_at=time.time() + 3600,
+        session_id='fixture-session')
+    with test.client.session_transaction() as current:
+        current['auth_session_id'] = handle
+    return handle
+
+
 class RegistrationTests(unittest.TestCase):
     def setUp(self):
+        for target, names in (
+            (socket, ('create_connection', 'getaddrinfo', 'gethostbyname', 'gethostbyname_ex', 'gethostbyaddr')),
+            (socket.socket, ('connect', 'connect_ex', 'send', 'sendall', 'sendto')),
+        ):
+            for name in names:
+                guard = patch.object(target, name, side_effect=AssertionError('Live network forbidden.'))
+                mocked = guard.start()
+                self.addCleanup(guard.stop)
+                self.addCleanup(mocked.assert_not_called)
         self.supabase = Mock()
         with (
             patch("dotenv.load_dotenv"),
             patch.dict(os.environ, {
                 "SUPABASE_URL": "https://example.supabase.co",
-                "SUPABASE_KEY": "test-placeholder",
+                "SUPABASE_KEY": "sb_publishable_synthetic_test_fixture",
                 "FLASK_SECRET_KEY": secrets.token_hex(32),
             }),
             patch("supabase.create_client", return_value=self.supabase) as create,
@@ -26,6 +48,16 @@ class RegistrationTests(unittest.TestCase):
         self.assertFalse(options.auto_refresh_token)
         self.app = namespace["app"]
         self.app.testing = True
+        self.normal_clients = []
+        @contextmanager
+        def normal_client(token):
+            client = Mock()
+            self.normal_clients.append(client)
+            try:
+                yield client
+            finally:
+                client.close()
+        self.app.extensions['rosago_normal_auth'].coordinator._clients = normal_client
         self.client = self.app.test_client()
         self.valid = {
             "first_name": "Ana", "last_name": "Cruz",

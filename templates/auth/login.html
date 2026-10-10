@@ -52,11 +52,6 @@
                     <button class="submit-button" id="login-submit" type="submit">Log In <span aria-hidden="true">→</span></button>
                     <p class="form-status" id="login-status" data-state="{{ state }}" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">{{ message }}</p>
                 </form>
-                {% if session.get('user_id') and session.get('user_email') %}
-                <form class="logout-form" method="post" action="{{ url_for('logout') }}">
-                    <button class="submit-button" type="submit">Log Out</button>
-                </form>
-                {% endif %}
                 <p class="login-prompt">Don't have an account? <a href="{{ url_for('register') }}">Create account</a></p>
             </div>
             <p class="footer-note">Made for discovering Santa Rosa.</p>
