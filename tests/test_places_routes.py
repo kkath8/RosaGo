@@ -123,7 +123,24 @@ class PlacesRouteTests(unittest.TestCase):
         self.service.list_published.return_value = ()
         response = self.get('/places')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'No published places are available yet.', response.data)
+        self.assertIn(b'Places are on the way', response.data)
+        self.assertIn(b'Verified place information from the Santa Rosa City Tourism Office is '
+                      b'pending. Please check back later.', response.data)
+
+    def test_empty_categories_are_success_without_claiming_catalog_is_empty(self):
+        self.service.list_published.return_value = ()
+        for category, label in (('attraction', 'Attractions'), ('dining', 'Dining'),
+                                ('shopping', 'Shopping'), ('accommodation', 'Accommodation'),
+                                ('nature', 'Nature'), ('heritage', 'Heritage')):
+            with self.subTest(category=category):
+                self.service.reset_mock()
+                response = self.get('/places?category=' + category)
+                self.assertEqual(response.status_code, 200)
+                self.service.list_published.assert_called_once_with(category=category)
+                self.assertIn(('No places listed in ' + label + ' yet').encode(), response.data)
+                self.assertIn(b'Try another category or return to all places.', response.data)
+                self.assertNotIn(b'Places are on the way', response.data)
+                self.assertNotIn(b'City Tourism Office', response.data)
 
     def test_all_categories_pass_exactly_once(self):
         for category in CATEGORIES:

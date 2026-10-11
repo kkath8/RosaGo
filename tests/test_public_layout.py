@@ -284,12 +284,128 @@ class PublicLayoutTests(unittest.TestCase):
             self.assertEqual(len(page.find('a', href='/places/synthetic-place')), 1)
         self.service.list_published.return_value = ()
         for query, message in (
-            ('', 'No published places are available yet.'),
-            ('?category=nature', 'No published places are available in this category yet.'),
+            ('', 'Places are on the way'),
+            ('?category=nature', 'No places listed in Nature yet'),
         ):
             page = self.page('/places' + query)
             self.assertIn(message, page.find('main')[0].text)
             self.assertEqual(page.find('article'), [])
+            empty = page.find('section', **{'aria-labelledby': 'empty-title'})[0]
+            self.assertEqual([node.text for node in page.find('h2') if empty in node.ancestors],
+                             [message])
+            self.assertNotIn('aria-live', empty.attrs)
+            self.assertNotIn('role', empty.attrs)
+            links = [node for node in page.find('a') if empty in node.ancestors]
+            self.assertEqual([(node.text, node.attrs['href']) for node in links],
+                             [('Browse all places', '/places')] if query else [])
+
+    def test_places_filters_have_ordered_semantic_links_and_one_active_item(self):
+        filters = [('All', None), ('Attractions', 'attraction'), ('Dining', 'dining'),
+                   ('Shopping', 'shopping'), ('Accommodation', 'accommodation'),
+                   ('Nature', 'nature'), ('Heritage', 'heritage')]
+        for label, category in filters:
+            with self.subTest(category=category):
+                page = self.page('/places' + ('?category=' + category if category else ''))
+                nav = page.find('nav', **{'aria-label': 'Place categories'})[0]
+                lists = [node for node in page.find('ul') if nav in node.ancestors]
+                self.assertEqual(len(lists), 1)
+                links = [node for node in page.find('a') if nav in node.ancestors]
+                self.assertEqual([(node.text, node.attrs['href']) for node in links],
+                                 [(text, '/places' + ('?category=' + value if value else ''))
+                                  for text, value in filters])
+                active = [node for node in links if 'aria-current' in node.attrs]
+                self.assertEqual([(node.text, node.attrs['aria-current']) for node in active],
+                                 [(label, 'page')])
+                for link in links:
+                    self.assertEqual(link.ancestors[-1].tag, 'li')
+                    self.assertIs(link.ancestors[-2], lists[0])
+
+    def test_places_result_list_fields_and_single_detail_link(self):
+        self.place.category = 'attraction'
+        page = self.page('/places')
+        results = page.find('ul', **{'class': 'places-grid'})
+        self.assertEqual(len(results), 1)
+        articles = page.find('article')
+        self.assertEqual(len(articles), 1)
+        article = articles[0]
+        self.assertEqual(article.ancestors[-1].tag, 'li')
+        self.assertIs(article.ancestors[-2], results[0])
+        self.assertEqual([node.text for node in page.find('p') if article in node.ancestors],
+                         ['Attractions', self.place.address, self.place.description])
+        headings = [node for node in page.find('h2') if article in node.ancestors]
+        self.assertEqual([node.text for node in headings], [self.place.name])
+        links = [node for node in page.find('a') if article in node.ancestors]
+        self.assertEqual([(node.text, node.attrs['href']) for node in links],
+                         [(self.place.name, '/places/synthetic-place')])
+        self.assertIs(links[0].ancestors[-1], headings[0])
+
+    def test_places_excerpts_preserve_short_text_and_word_boundaries(self):
+        for description in ('Short description.', 'a ' * 109 + 'ab',
+                            'a ' * 109 + 'abc', 'Complete words for a long description. ' * 20):
+            with self.subTest(length=len(description)):
+                self.place.description = description
+                page = self.page('/places')
+                article = page.find('article')[0]
+                excerpt = [node.text for node in page.find('p') if article in node.ancestors][-1]
+                if len(description) <= 220:
+                    self.assertEqual(excerpt, description)
+                    self.assertFalse(excerpt.endswith('...'))
+                else:
+                    self.assertTrue(excerpt.endswith('...'))
+                    self.assertLessEqual(len(excerpt), 220)
+                    self.assertGreater(len(excerpt), 180)
+                    self.assertTrue(description.startswith(excerpt[:-3] + ' '))
+                detail = self.page('/places/synthetic-place')
+                about = detail.find('section', **{'aria-labelledby': 'place-about-title'})[0]
+                self.assertEqual([node.text for node in detail.find('p') if about in node.ancestors],
+                                 [description])
+
+    def test_places_excerpt_escapes_untrusted_text_and_detail_keeps_full_text(self):
+        unsafe = '<script>synthetic & text</script>'
+        self.place.description = unsafe + ' ordinary words' * 40 + '\n<script>tail</script>'
+        for path in ('/places', '/places/synthetic-place'):
+            html = self.client.get(path).get_data(as_text=True)
+            self.assertIn('&lt;script&gt;synthetic &amp; text&lt;/script&gt;', html)
+            page = Document(html)
+            self.assertEqual(page.find('script'), [])
+            if path == '/places':
+                self.assertNotIn('&lt;script&gt;tail&lt;/script&gt;', html)
+                self.assertIn('...', page.find('article')[0].text)
+            else:
+                self.assertIn('&lt;script&gt;tail&lt;/script&gt;', html)
+                about = page.find('section', **{'aria-labelledby': 'place-about-title'})[0]
+                self.assertEqual([node.text for node in page.find('p') if about in node.ancestors],
+                                 [self.place.description])
+
+    def test_detail_location_hierarchy_and_metadata_boundaries(self):
+        self.place.latitude, self.place.longitude = 14.123456, 121.654321
+        self.place.id = 'private-place-id'
+        self.place.created_at = self.place.updated_at = '2099-12-31T23:59:59Z'
+        self.place.description = 'First paragraph.\nSecond paragraph.'
+        self.place.category = 'attraction'
+        page = self.page('/places/synthetic-place')
+        article = page.find('article')[0]
+        self.assertEqual([node.text for node in page.find('h1')], [self.place.name])
+        self.assertEqual([node.text for node in page.find('h2')], ['About this place', 'Location'])
+        self.assertEqual([node.text for node in page.find('p') if article in node.ancestors],
+                         ['Attractions', self.place.description, self.place.address])
+        location = page.find('section', **{'aria-labelledby': 'place-location-title'})[0]
+        self.assertEqual([node.text for node in page.find('p') if location in node.ancestors],
+                         [self.place.address])
+        self.assertEqual(article.text.count(self.place.address), 1)
+        self.assertEqual(len(page.find('a', **{'class': 'back-link', 'href': '/places'})), 1)
+        for path in ('/places', '/places/synthetic-place'):
+            html = self.client.get(path).get_data(as_text=True)
+            rendered = Document(html)
+            for value in (str(self.place.latitude), str(self.place.longitude), self.place.id,
+                          self.place.created_at, self.place.image_url, '/auth/status'):
+                self.assertNotIn(value, html)
+            for tag in ('img', 'script', 'iframe', 'address', 'canvas'):
+                self.assertEqual(rendered.find(tag), [])
+            self.assertNotIn('leaflet', html.lower())
+            self.assertNotIn('map', rendered.find('main')[0].text.lower())
+            self.assertNotRegex(rendered.find('main')[0].text.lower(),
+                                r'ratings|opening hours|prices|reviews|amenities')
 
     def test_detail_content_back_link_and_escaping(self):
         unsafe = '<script>synthetic & text</script>'

@@ -3,12 +3,15 @@
 {% block content %}
 <a class="back-link" href="{{ url_for('places_list') }}"><span aria-hidden="true">&larr;</span> Back to Explore</a>
 <article class="place-detail">
-    <p class="eyebrow">{{ place.category | capitalize }}</p>
+    <p class="eyebrow">{{ 'Attractions' if place.category == 'attraction' else place.category | capitalize }}</p>
     <h1>{{ place.name }}</h1>
-    <p class="detail-address">{{ place.address }}</p>
-    <div class="place-description">
-        <h2>About this place</h2>
+    <section class="place-description" aria-labelledby="place-about-title">
+        <h2 id="place-about-title">About this place</h2>
         <p>{{ place.description }}</p>
-    </div>
+    </section>
+    <section class="place-location" aria-labelledby="place-location-title">
+        <h2 id="place-location-title">Location</h2>
+        <p class="detail-address">{{ place.address }}</p>
+    </section>
 </article>
 {% endblock %}
