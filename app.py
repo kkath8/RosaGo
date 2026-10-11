@@ -300,6 +300,18 @@ def places_list():
                            categories=tuple(sorted(CATEGORIES)), selected_category=category)
 
 
+@app.route('/map', methods=['GET'])
+def map_index():
+    try:
+        places = current_app.extensions['rosago_places'].list_published(
+            category=None, limit=50, offset=0)
+    except PlacesUnavailableError:
+        return places_error('Places are temporarily unavailable.', 503)
+    except PlacesConsistencyError:
+        return places_error('Unable to display places.', 500)
+    return render_template('map.html', has_places=bool(places))
+
+
 @app.route('/places/<slug>', methods=['GET'])
 def places_detail(slug):
     try:

@@ -77,6 +77,8 @@
 .public-site .home-capability-status { margin-top: 0.25rem; color: var(--site-muted); font-size: 0.9rem; }
 .public-site .home-capabilities p { min-width: 0; margin: 0; }
 .public-site .home-about { max-width: 68ch; padding-top: 2rem; border-top: 1px solid var(--site-border); }
+.public-site .map-page { max-width: 780px; min-width: 0; }
+.public-site .map-page-state { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--site-border); }
 .public-site .account-panel { width: 100%; max-width: 640px; min-width: 0; padding: clamp(1rem, 4vw, 2rem); border: 1px solid var(--site-border); border-radius: 8px; background: #fff; }
 .public-site .account-edit { max-width: 560px; }
 .public-site .account-identity, .public-site .account-help { color: var(--site-muted); }
