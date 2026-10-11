@@ -14,6 +14,7 @@ from normal_auth_flask import normal_authenticated
 from normal_auth_store import NormalAuthSession
 from profile_service import update_own_profile, ProfileConsistencyError, ProfileUnavailableError
 import test_user_profile
+from test_public_layout import Document
 
 
 class UserProfileEditTests(unittest.TestCase):
@@ -95,6 +96,89 @@ class UserProfileEditTests(unittest.TestCase):
         self.service.assert_called_once()
         self.update.assert_not_called()
         self.assertIn(b'href="/user/profile/edit"', self.client.get('/user').data)
+
+    def test_shared_edit_layout_referrer_and_exact_form_contract(self):
+        response = self.client.get(self.path)
+        page = test_user_profile.assert_account_layout(self, response, 'Edit Profile', 'true')
+        self.assert_protected(response)
+        self.assertEqual(len(page.find('meta', name='referrer', content='same-origin')), 1)
+        forms = page.find('form')
+        self.assertEqual(len(forms), 1)
+        self.assertEqual(forms[0].attrs, {'method': 'post', 'action': self.path})
+        inputs = page.find('input')
+        self.assertEqual([node.attrs['name'] for node in inputs],
+                         ['csrf_token', 'first_name', 'last_name'])
+        csrf = page.find('input', name='csrf_token')
+        self.assertEqual(len(csrf), 1)
+        self.assertEqual(csrf[0].attrs['type'], 'hidden')
+        self.assertEqual(csrf[0].attrs['value'], self.csrf)
+        guidance = page.find('p', id='name-guidance')
+        self.assertEqual([node.text for node in guidance],
+                         ['Names may be blank. Use up to 100 characters per name.'])
+        for field, field_id, autocomplete, value, label in (
+            ('first_name', 'first-name', 'given-name', 'Ana', 'First Name'),
+            ('last_name', 'last-name', 'family-name', 'Cruz', 'Last Name'),
+        ):
+            node = page.find('input', name=field)[0]
+            self.assertEqual(node.attrs['id'], field_id)
+            self.assertEqual(node.attrs['autocomplete'], autocomplete)
+            self.assertEqual(node.attrs['value'], value)
+            self.assertEqual(node.attrs['aria-describedby'], 'name-guidance')
+            self.assertEqual([n.text for n in page.find('label', **{'for': field_id})], [label])
+            for attr in ('required', 'maxlength', 'autofocus', 'aria-invalid'):
+                self.assertNotIn(attr, node.attrs)
+        for node in inputs:
+            self.assertIn(forms[0], node.ancestors)
+        buttons = page.find('button')
+        self.assertEqual(len(buttons), 1)
+        self.assertEqual(buttons[0].text, 'Save Changes')
+        self.assertEqual(buttons[0].attrs['type'], 'submit')
+        self.assertNotIn('name', buttons[0].attrs)
+        self.assertIn(forms[0], buttons[0].ancestors)
+        self.assertEqual([node.text for node in page.find('a', href='/user')
+                          if forms[0].ancestors[-1] in node.ancestors], ['Cancel / Back to profile'])
+        self.service.assert_called_once()
+        self.update.assert_not_called()
+
+    def test_shared_edit_templates_isolate_auth_on_get_and_validation_error(self):
+        observed = test_user_profile.install_shared_isolation_probe(self)
+        for method, expected_status in (('GET', 200), ('POST', 400)):
+            observed.clear()
+            self.service.reset_mock()
+            self.update.reset_mock()
+            before = len(self.requests)
+            with patch.object(self.dependencies.coordinator, 'authenticated',
+                              wraps=self.dependencies.coordinator.authenticated) as authenticated:
+                response = self.client.open(self.path, method=method,
+                                            data=self.form(first_name='x' * 101))
+            self.assertEqual(response.status_code, expected_status)
+            authenticated.assert_called_once()
+            self.assertEqual(observed, ['base.html', 'partials/navbar.html', 'partials/footer.html'])
+            if method == 'GET':
+                self.service.assert_called_once()
+                self.update.assert_not_called()
+                self.assertEqual(len(self.requests), before + 1)
+            else:
+                self.service.assert_not_called()
+                self.update.assert_called_once()
+                self.assertEqual(len(self.requests), before)
+
+    def test_edit_feedback_roles_and_blank_values(self):
+        self.data[0].update(first_name=None, last_name=None)
+        page = Document(self.client.get(self.path).get_data(as_text=True))
+        for field in ('first_name', 'last_name'):
+            self.assertEqual(page.find('input', name=field)[0].attrs['value'], '')
+        response = self.client.post(self.path, data=self.form(first_name='x' * 101))
+        self.assertEqual(response.status_code, 400)
+        page = Document(response.get_data(as_text=True))
+        self.assertEqual([node.text for node in page.find('p', role='alert')],
+                         ['Use names of at most 100 characters without control characters. Names may be blank.'])
+        self.assertEqual(page.find('input', name='first_name')[0].attrs['value'], 'x' * 101)
+        response = self.client.post(self.path, data=self.form())
+        self.assertEqual(response.status_code, 303)
+        page = Document(self.client.get(self.path).get_data(as_text=True))
+        self.assertEqual([node.text for node in page.find('p', role='status')], ['Profile updated.'])
+        self.assertEqual(page.find('p', role='alert'), [])
 
     def test_success_redirect_flash_and_exactly_one_update(self):
         for headers in ({}, {'Origin': 'http://localhost'}):

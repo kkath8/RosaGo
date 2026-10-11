@@ -1,4 +1,4 @@
-/* Public tourism only. Standalone auth/profile pages keep their own styles. */
+/* Shared tourism and Account/Profile styles. Standalone auth/recovery pages retain auth.css. */
 .public-site {
     --site-red: #96281b;
     --site-ink: #302822;
@@ -77,6 +77,23 @@
 .public-site .home-capability-status { margin-top: 0.25rem; color: var(--site-muted); font-size: 0.9rem; }
 .public-site .home-capabilities p { min-width: 0; margin: 0; }
 .public-site .home-about { max-width: 68ch; padding-top: 2rem; border-top: 1px solid var(--site-border); }
+.public-site .account-panel { width: 100%; max-width: 640px; min-width: 0; padding: clamp(1rem, 4vw, 2rem); border: 1px solid var(--site-border); border-radius: 8px; background: #fff; }
+.public-site .account-edit { max-width: 560px; }
+.public-site .account-identity, .public-site .account-help { color: var(--site-muted); }
+.public-site .account-help { font-size: 0.95rem; }
+.public-site .account-panel input, .public-site .account-panel button { font: inherit; min-width: 0; max-width: 100%; }
+.public-site .account-panel button { cursor: pointer; white-space: normal; overflow-wrap: anywhere; }
+.public-site .account-panel .site-button { border: 1px solid var(--site-red); font-weight: 600; }
+.public-site .account-field { margin-block: 1.25rem; }
+.public-site .account-field label { display: block; margin-bottom: 0.4rem; font-weight: 600; }
+.public-site .account-field input { width: 100%; min-height: 46px; padding: 0.65rem 0.75rem; border: 1px solid var(--site-border); border-radius: 5px; background: #fff; color: var(--site-ink); }
+.public-site .account-field input:hover { border-color: var(--site-muted); }
+.public-site .account-status { padding: 0.75rem; border: 1px solid var(--site-border); border-radius: 5px; background: #faf7f2; }
+.public-site .account-status[role="alert"] { border-left: 3px solid var(--site-red); }
+.public-site .account-back { margin: 1.25rem 0 0; }
+.public-site .account-logout { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--site-border); }
+.public-site .account-logout-button { min-height: 44px; padding: 0.5rem 1rem; border: 1px solid var(--site-red); border-radius: 5px; background: #fff; color: var(--site-red); }
+.public-site .account-logout-button:hover { background: #faf0e8; }
 @media (max-width: 900px) {
     .public-site .home-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

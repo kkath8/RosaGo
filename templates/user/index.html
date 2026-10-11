@@ -1,25 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome | RosaGO</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
-</head>
-<body>
-    <main class="form-panel">
-        <section class="registration-card" aria-labelledby="welcome-title">
-            <p class="eyebrow">RosaGO</p>
-            <h1 id="welcome-title">{% if profile and (profile.first_name or profile.last_name) %}Welcome, {{ [profile.first_name, profile.last_name] | select | join(' ') }}{% else %}Welcome to RosaGO{% endif %}</h1>
-            <p class="form-intro">Signed in as {{ user_email }}</p>
-            {% if profile is none %}
-            <p class="form-intro">Your profile information is currently unavailable.</p>
-            {% endif %}
-            <p class="login-prompt"><a href="{{ url_for('user_profile_edit') }}">Edit Profile</a></p>
-            <form class="logout-form" method="post" action="{{ url_for('logout') }}">
-                <button class="submit-button" type="submit">Logout</button>
-            </form>
-        </section>
-    </main>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Account | RosaGo{% endblock %}
+{% block content %}
+<section class="account-panel" aria-labelledby="account-title">
+    <h1 id="account-title">Account</h1>
+    <p>{% if profile and (profile.first_name or profile.last_name) %}Welcome, {{ [profile.first_name, profile.last_name] | select | join(' ') }}{% else %}Welcome to RosaGO{% endif %}</p>
+    <p class="account-identity">Signed in as {{ user_email }}</p>
+    {% if profile is none %}
+    <p>Your profile information is currently unavailable.</p>
+    {% endif %}
+    <a class="text-link" href="{{ url_for('user_profile_edit') }}">Edit Profile</a>
+    <form class="account-logout" method="post" action="{{ url_for('logout') }}">
+        <button class="account-logout-button" type="submit">Logout</button>
+    </form>
+</section>
+{% endblock %}

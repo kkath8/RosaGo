@@ -5,12 +5,70 @@ from unittest.mock import Mock, patch
 
 from flask import before_render_template, g, session
 import httpx
-from jinja2 import ChoiceLoader, DictLoader
+from jinja2 import ChoiceLoader, DictLoader, pass_context
+from test_public_layout import Document
 
 from normal_auth_coordinator import AuthenticatedContext, SessionBusy, ClientUnavailable
 from normal_auth_flask import normal_authenticated
 from profile_service import get_own_profile, ProfileConsistencyError, ProfileUnavailableError, UserProfile
 import test_registration
+
+
+def assert_account_layout(test, response, heading, active):
+    test.assertEqual(response.status_code, 200)
+    html = response.get_data(as_text=True)
+    page = Document(html)
+    test.assertEqual([node.text for node in page.find('h1')], [heading])
+    test.assertEqual(len(page.find('main', id='main-content', tabindex='-1')), 1)
+    test.assertEqual(len(page.find('main')), 1)
+    test.assertEqual(page.find('a')[0].attrs['href'], '#main-content')
+    test.assertEqual(len(page.find('footer')), 1)
+    test.assertEqual([node.attrs['href'] for node in page.find('link', rel='stylesheet')],
+                     ['/static/css/site.css'])
+    nav = page.find('nav', **{'aria-label': 'Main navigation'})[0]
+    links = [node for node in page.find('a') if nav in node.ancestors]
+    test.assertEqual([(node.text.strip(), node.attrs['href']) for node in links],
+                     [('Home', '/'), ('Explore', '/places'), ('Account', '/user')])
+    test.assertEqual([(node.text.strip(), node.attrs['aria-current']) for node in links
+                      if 'aria-current' in node.attrs], [('Account', active)])
+    for tag in ('script', 'img', 'iframe'):
+        test.assertEqual(page.find(tag), [])
+    for value in ('/auth/status', 'fixture-access', 'fixture-refresh', 'fixture-session',
+                  'user-123', 'sb_publishable_', 'supabase.co'):
+        test.assertNotIn(value, html)
+    test.assertEqual(page.stack, [])
+    return page
+
+
+def install_shared_isolation_probe(test):
+    original = test.app.jinja_loader
+    sources = {}
+    observed = []
+    for name in ('base.html', 'partials/navbar.html', 'partials/footer.html'):
+        source = original.get_source(test.app.jinja_env, name)[0]
+        sources[name] = '{{ shared_probe(' + repr(name) + ') }}' + source
+
+    @pass_context
+    def probe(context, name):
+        test.assertNotIn('auth', g)
+        test.assertFalse(test.owned[-1].is_closed)
+        auth = (getattr(test, 'update', None) and test.update.call_args) or test.service.call_args
+        authority = auth.args[0]
+        for values in (context.get_all(), vars(g._get_current_object()), dict(session)):
+            for key, value in values.items():
+                test.assertNotIn(key, ('auth', 'client', 'access_token', 'refresh_token',
+                                       'provider_session', 'claims'))
+                test.assertNotIsInstance(value, AuthenticatedContext)
+                test.assertIsNot(value, authority.client)
+                if isinstance(value, str):
+                    test.assertNotIn(value, ('fixture-access', 'fixture-refresh', 'fixture-session'))
+        observed.append(name)
+        return ''
+
+    test.app.jinja_env.loader = ChoiceLoader([DictLoader(sources), original])
+    test.app.jinja_env.globals['shared_probe'] = probe
+    test.app.jinja_env.cache.clear()
+    return observed
 
 
 class UserProfileTests(unittest.TestCase):
@@ -104,6 +162,38 @@ class UserProfileTests(unittest.TestCase):
                 self.assertIn(b'action="/logout"', response.data)
                 self.assertEqual(response.headers['Cache-Control'], 'no-store')
         self.assertEqual(len(self.requests), 4)
+
+    def test_account_layout_edit_link_and_unchanged_post_logout(self):
+        self.seed()
+        page = assert_account_layout(self, self.client.get('/user'), 'Account', 'page')
+        self.assertEqual([node.text for node in page.find('a', href='/user/profile/edit')],
+                         ['Edit Profile'])
+        forms = page.find('form')
+        self.assertEqual(len(forms), 1)
+        self.assertEqual(forms[0].attrs['method'], 'post')
+        self.assertEqual(forms[0].attrs['action'], '/logout')
+        self.assertEqual(page.find('a', href='/logout'), [])
+        buttons = page.find('button')
+        self.assertEqual(len(buttons), 1)
+        self.assertEqual(buttons[0].text, 'Logout')
+        self.assertEqual(buttons[0].attrs['type'], 'submit')
+        self.assertNotIn('name', buttons[0].attrs)
+        self.assertIn(forms[0], buttons[0].ancestors)
+        self.assertEqual(page.find('input'), [])
+        self.service.assert_called_once()
+        self.assertEqual(len(self.requests), 1)
+
+    def test_shared_templates_have_no_auth_authority_or_extra_operations(self):
+        self.seed()
+        observed = install_shared_isolation_probe(self)
+        with patch.object(self.dependencies.coordinator, 'authenticated',
+                          wraps=self.dependencies.coordinator.authenticated) as authenticated:
+            response = self.client.get('/user')
+        self.assertEqual(response.status_code, 200)
+        authenticated.assert_called_once()
+        self.service.assert_called_once()
+        self.assertEqual(observed, ['base.html', 'partials/navbar.html', 'partials/footer.html'])
+        self.assertEqual(self.events, ['enter', 'service', 'query', 'close'])
 
     def test_missing_profile_is_200_without_logout_or_creation(self):
         handle = self.seed()
