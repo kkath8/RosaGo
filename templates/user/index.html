@@ -15,6 +15,7 @@
             {% if profile is none %}
             <p class="form-intro">Your profile information is currently unavailable.</p>
             {% endif %}
+            <p class="login-prompt"><a href="{{ url_for('user_profile_edit') }}">Edit Profile</a></p>
             <form class="logout-form" method="post" action="{{ url_for('logout') }}">
                 <button class="submit-button" type="submit">Logout</button>
             </form>

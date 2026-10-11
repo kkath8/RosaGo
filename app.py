@@ -6,7 +6,7 @@ import httpx
 import secrets
 
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, flash, g, jsonify, redirect, render_template, request, session, url_for
 from supabase import Client, ClientOptions, create_client
 from supabase_auth.errors import AuthApiError, AuthError
 
@@ -17,7 +17,10 @@ from normal_auth_flask import (
     normal_auth_state, logout_normal_session,
 )
 from normal_auth_coordinator import PasswordLoginError
-from profile_service import get_own_profile, ProfileUnavailableError, ProfileConsistencyError
+from profile_service import (
+    get_own_profile, update_own_profile, ProfileUnavailableError,
+    ProfileConsistencyError, ProfileValidationError, ProfileNotFoundError,
+)
 from recovery_helpers import RECOVERY_ERROR, RecoveryGrants, recovery_expiry, PendingRecoveries, pkce_s256_challenge
 from recovery_diagnostics import recovery_diagnostic
 from recovery_transport import send_pkce_recovery, RecoveryRequestRejected
@@ -76,11 +79,11 @@ def auth_callback():
 
 @app.after_request
 def protect_auth_response(response):
-    if request.path in ("/auth/callback", "/auth/reset-callback", "/reset-password", "/login", "/register", "/user"):
+    if request.path in ("/auth/callback", "/auth/reset-callback", "/reset-password", "/login", "/register", "/user", "/user/profile/edit"):
         response.headers["Cache-Control"] = "no-store"
     if request.path in ("/auth/callback", "/auth/reset-callback"):
         response.headers["Referrer-Policy"] = "no-referrer"
-    if request.path == "/reset-password":
+    if request.path in ("/reset-password", "/user/profile/edit"):
         # Native POSTs under no-referrer send Origin: null. Preserve a
         # verifiable same-origin POST without sharing cross-origin referrers.
         response.headers["Referrer-Policy"] = "same-origin"
@@ -412,6 +415,66 @@ def user_index():
     auth = g.pop('auth')
     try:
         return render_template("user/index.html", profile=profile, user_email=user_email)
+    finally:
+        g.auth = auth
+
+
+@app.route("/user/profile/edit", methods=["GET", "POST"])
+@login_required
+def user_profile_edit():
+    dependencies = get_normal_auth_dependencies()
+    message = ""
+    status = 200
+    if request.method == "POST":
+        tokens = request.form.getlist("csrf_token")
+        if (len(tokens) != 1 or not tokens[0].strip()
+                or not dependencies.coordinator.validate_csrf(g.auth.auth_session_id, tokens[0])):
+            return "Please reload this page and try again.", 403
+        if request.headers.get("Origin") not in (None, request.host_url.rstrip("/")):
+            return "Please reload this page and try again.", 403
+        fields = {"csrf_token", "first_name", "last_name"}
+        if (request.files or set(request.form) != fields
+                or any(len(request.form.getlist(field)) != 1 for field in fields)):
+            return "Invalid profile form. Please reload this page and try again.", 400
+        first_name = request.form["first_name"]
+        last_name = request.form["last_name"]
+        try:
+            update_own_profile(g.auth, first_name=first_name, last_name=last_name)
+        except ProfileValidationError:
+            message = "Use names of at most 100 characters without control characters. Names may be blank."
+            status = 400
+        except ProfileNotFoundError:
+            return "Your profile is currently unavailable for editing.", 404
+        except ProfileUnavailableError:
+            return "Your save could not be confirmed. Please check your profile before trying again.", 503
+        except ProfileConsistencyError:
+            return "We could not display this page. Please try again later.", 500
+        else:
+            flash("Profile updated.", "profile_success")
+            return redirect(url_for("user_profile_edit"), code=303)
+    else:
+        try:
+            profile = get_own_profile(g.auth)
+        except ProfileUnavailableError:
+            return "Your profile could not be loaded. Please try again later.", 503
+        except ProfileConsistencyError:
+            return "We could not display this page. Please try again later.", 500
+        if profile is None:
+            return "Your profile is currently unavailable for editing.", 404
+        first_name, last_name = profile.first_name or "", profile.last_name or ""
+
+    record = dependencies.store.resolve(g.auth.auth_session_id)
+    if record is None:
+        return "Please reload this page and try again.", 403
+    csrf = record.csrf
+    del record
+    user_email = g.auth.user_email
+    # Match /user isolation for both GET and validation-error rendering.
+    auth = g.pop('auth')
+    try:
+        return render_template("user/profile_edit.html", first_name=first_name,
+                               last_name=last_name, user_email=user_email,
+                               csrf=csrf, message=message), status
     finally:
         g.auth = auth
 
