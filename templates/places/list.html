@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Places | RosaGO</title>
+</head>
+<body>
+    <main>
+        <h1>Explore Santa Rosa</h1>
+        <nav aria-label="Place categories">
+            <a href="{{ url_for('places_list') }}"{% if selected_category is none %} aria-current="page"{% endif %}>All</a>
+            {% for category in categories %}
+            <a href="{{ url_for('places_list', category=category) }}"{% if selected_category == category %} aria-current="page"{% endif %}>{{ category | capitalize }}</a>
+            {% endfor %}
+        </nav>
+        {% for place in places %}
+        <article>
+            <h2><a href="{{ url_for('places_detail', slug=place.slug) }}">{{ place.name }}</a></h2>
+            <p>{{ place.category | capitalize }}</p>
+            <p>{{ place.address }}</p>
+            <p>{{ place.description }}</p>
+        </article>
+        {% else %}
+        <p>No published places are available{% if selected_category %} in this category{% endif %} yet.</p>
+        {% endfor %}
+    </main>
+</body>
+</html>

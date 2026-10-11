@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ place.name }} | RosaGO</title>
+</head>
+<body>
+    <main>
+        <p><a href="{{ url_for('places_list') }}">Back to places</a></p>
+        <h1>{{ place.name }}</h1>
+        <p>{{ place.category | capitalize }}</p>
+        <p>{{ place.address }}</p>
+        <p>{{ place.description }}</p>
+    </main>
+</body>
+</html>

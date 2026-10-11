@@ -6,7 +6,7 @@ import httpx
 import secrets
 
 from dotenv import load_dotenv
-from flask import Flask, flash, g, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, current_app, flash, g, jsonify, redirect, render_template, request, session, url_for
 from supabase import Client, ClientOptions, create_client
 from supabase_auth.errors import AuthApiError, AuthError
 
@@ -17,6 +17,11 @@ from normal_auth_flask import (
     normal_auth_state, logout_normal_session,
 )
 from normal_auth_coordinator import PasswordLoginError
+from places_client import PublicPlacesClient
+from places_service import (
+    CATEGORIES, PlacesService, PlacesValidationError,
+    PlacesUnavailableError, PlacesConsistencyError,
+)
 from profile_service import (
     get_own_profile, update_own_profile, ProfileUnavailableError,
     ProfileConsistencyError, ProfileValidationError, ProfileNotFoundError,
@@ -46,6 +51,9 @@ supabase: Client = create_client(
 )
 
 app = Flask(__name__)
+app.extensions['rosago_places'] = PlacesService(
+    PublicPlacesClient(SUPABASE_URL, SUPABASE_KEY).database_client
+)
 init_normal_auth(app, SUPABASE_URL, SUPABASE_KEY)
 recovery_grants = RecoveryGrants()
 pending_recoveries = PendingRecoveries()
@@ -266,6 +274,45 @@ def reset_password():
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+def places_error(message, status):
+    response = current_app.make_response((message, status))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@app.route('/places', methods=['GET'])
+def places_list():
+    categories = request.args.getlist('category')
+    if len(categories) > 1 or (categories and categories[0] not in CATEGORIES):
+        return places_error('Invalid place category.', 400)
+    category = categories[0] if categories else None
+    try:
+        places = current_app.extensions['rosago_places'].list_published(category=category)
+    except PlacesValidationError:
+        return places_error('Invalid place category.', 400)
+    except PlacesUnavailableError:
+        return places_error('Places are temporarily unavailable.', 503)
+    except PlacesConsistencyError:
+        return places_error('Unable to display places.', 500)
+    return render_template('places/list.html', places=places,
+                           categories=tuple(sorted(CATEGORIES)), selected_category=category)
+
+
+@app.route('/places/<slug>', methods=['GET'])
+def places_detail(slug):
+    try:
+        place = current_app.extensions['rosago_places'].get_published_by_slug(slug)
+    except PlacesValidationError:
+        return places_error('Place not found.', 404)
+    except PlacesUnavailableError:
+        return places_error('Places are temporarily unavailable.', 503)
+    except PlacesConsistencyError:
+        return places_error('Unable to display places.', 500)
+    if place is None:
+        return places_error('Place not found.', 404)
+    return render_template('places/detail.html', place=place)
 
 
 @app.route("/forgot-password", methods=["GET", "POST"])
