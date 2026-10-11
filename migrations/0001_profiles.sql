@@ -1,4 +1,6 @@
--- DRAFT ONLY: not applied. Review migrations/README.md before execution.
+-- Applied manually during Phase 2B to the development Supabase project.
+-- Canonical profiles schema migration record; not an application startup script.
+-- This records development application, not production deployment. See migrations/README.md.
 -- Intended executor/owner: the trusted Supabase postgres migration role.
 -- One-time migration: an existing profiles table is an error requiring review.
 BEGIN;

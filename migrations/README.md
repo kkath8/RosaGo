@@ -1,14 +1,16 @@
-# RosaGO profile migration draft
+# RosaGO profile migration
 
-Status: offline draft only. No SQL has been executed. No migration framework
-is introduced. Do not apply this automatically on application startup.
+Status: `0001_profiles.sql` was applied manually during Phase 2B to the development
+Supabase project and remains the canonical migration record for the profiles
+schema. This does not record a production deployment. No migration framework is
+introduced. Do not rerun this migration as part of normal application startup.
 
 ## Files and execution assumptions
 
 - `0001_profiles.sql`: forward migration, one transaction.
 - `rollback/0001_profiles.sql`: separate destructive development rollback.
 
-Before any future execution, review the target schema, existing Auth triggers,
+Before applying to another environment, review the target schema, existing Auth triggers,
 default privileges, and ownership with an authorized operator. Use the trusted
 Supabase `postgres` migration role, which must be able to manage `auth.users`
 triggers and own the security-definer function. These are deployment privileges,
@@ -101,16 +103,17 @@ separate development rollback in the disposable environment. After rollback,
 Auth users remain and all four kinds of migration objects are gone. Rollback
 must stop atomically if unexpected dependencies exist; do not add CASCADE.
 
-## Rollback and integration dependency
+## Rollback and current authentication integration
 
 Rollback deletes all profile rows permanently, removes the Auth trigger/function,
 both policies, and the table, without deleting Auth users or their metadata.
 It is for one successfully applied migration and is not idempotent. Later objects
 depending on profiles must be reviewed separately. Preserve data before use.
 
-Current Flask login stores only user_id/user_email and does not retain the
-Supabase Auth credentials needed for authenticated RLS-backed requests. Resolve
-server-side per-user credential/session handling in a separate integration step
-before adding profile queries or UI. A signed Flask user_id alone does not set
-auth.uid(). Do not use a service-role key to bypass this dependency. Registration,
-login, recovery, .env, and Admin behavior are unchanged by this draft.
+Normal authenticated browser sessions use an opaque `auth_session_id` reference;
+Supabase credentials remain server-side in the normal auth session architecture.
+Authenticated requests resolve a verified `AuthenticatedContext`, with a
+request-owned Supabase client using the verified user's bearer token. Phase 2C-3
+reads the user's own profile under this context, with RLS still protecting access.
+Legacy `user_id`/`user_email` cookie values are not authentication authority.
+Password recovery remains a separate flow.
