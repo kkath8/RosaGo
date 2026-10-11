@@ -17,6 +17,7 @@ from normal_auth_flask import (
     normal_auth_state, logout_normal_session,
 )
 from normal_auth_coordinator import PasswordLoginError
+from profile_service import get_own_profile, ProfileUnavailableError, ProfileConsistencyError
 from recovery_helpers import RECOVERY_ERROR, RecoveryGrants, recovery_expiry, PendingRecoveries, pkce_s256_challenge
 from recovery_diagnostics import recovery_diagnostic
 from recovery_transport import send_pkce_recovery, RecoveryRequestRejected
@@ -399,7 +400,20 @@ def login():
 @app.route("/user")
 @login_required
 def user_index():
-    return render_template("user/index.html", user_email=g.auth.user_email)
+    try:
+        profile = get_own_profile(g.auth)
+    except ProfileUnavailableError:
+        return "Profile information is temporarily unavailable. Please try again.", 503
+    except ProfileConsistencyError:
+        return "We could not display this page. Please try again later.", 500
+    user_email = g.auth.user_email
+    # Flask exposes g to Jinja implicitly. Hide authority during eager rendering;
+    # restore it for the surrounding auth scope's cleanup and nesting contract.
+    auth = g.pop('auth')
+    try:
+        return render_template("user/index.html", profile=profile, user_email=user_email)
+    finally:
+        g.auth = auth
 
 
 @app.route("/logout", methods=["POST"])

@@ -4,6 +4,7 @@ import secrets
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
+from types import SimpleNamespace
 from contextlib import contextmanager
 import time
 import socket
@@ -51,7 +52,14 @@ class RegistrationTests(unittest.TestCase):
         self.normal_clients = []
         @contextmanager
         def normal_client(token):
-            client = Mock()
+            client = Mock(spec=['table', 'close'])
+            # Default to a missing profile for auth-only fixtures. The real
+            # profile service still builds and executes its read query.
+            query = Mock(spec=['select', 'eq', 'limit', 'retry', 'execute'])
+            client.table.return_value = query
+            for method in ('select', 'eq', 'limit', 'retry'):
+                getattr(query, method).return_value = query
+            query.execute.return_value = SimpleNamespace(data=[])
             self.normal_clients.append(client)
             try:
                 yield client
