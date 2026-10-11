@@ -1,4 +1,4 @@
-# RosaGO profile migration
+# RosaGO migrations
 
 Status: `0001_profiles.sql` was applied manually during Phase 2B to the development
 Supabase project and remains the canonical migration record for the profiles
@@ -117,3 +117,71 @@ request-owned Supabase client using the verified user's bearer token. Phase 2C-3
 reads the user's own profile under this context, with RLS still protecting access.
 Legacy `user_id`/`user_email` cookie values are not authentication authority.
 Password recovery remains a separate flow.
+
+## 0002: places catalog — offline draft, not executed
+
+`0002_places.sql` prepares the public tourism catalog foundation. It has NOT been
+executed against Supabase; no deployment or live RLS verification is claimed.
+`rollback/0002_places.sql` is its separate, destructive development rollback.
+Execution requires separate authorization and review of target objects, default
+grants, PostgreSQL UUID-function availability, and trusted migration-role access.
+Neither file runs on application startup; neither is intended to be rerun.
+
+The table contains only public tourism/business information, never user PII.
+It has exactly: UUID `id`, `name`, globally unique `slug`, `description`,
+`category`, `address`, nullable `latitude`/`longitude`, nullable `image_url`,
+`status`, and timezone-aware `created_at`/`updated_at` timestamps.
+
+- Names, descriptions, and addresses must be nonblank and already trimmed,
+  with PostgreSQL character-length limits of 150, 3000, and 500 respectively.
+  Checks use PostgreSQL POSIX whitespace classification; they reject rather
+  than silently normalize. Slugs are 1–120 lowercase ASCII letters/digits with
+  single separating hyphens; uniqueness includes draft and archived rows.
+- Category is constrained text: `attraction`, `dining`, `shopping`,
+  `accommodation`, `nature`, or `heritage`.
+- Coordinates are either both NULL or both present. Values must be finite and
+  within latitude -90..90 and longitude -180..180. Published records require
+  both. Geographic membership in Santa Rosa still requires curation review.
+- Status is `draft` (default), `published`, or `archived`. Only published rows
+  are readable by `anon` and ordinary `authenticated` users, even by known ID
+  or slug. RLS and SELECT-only grants enforce separate layers of this rule.
+- All default table grants are revoked from PUBLIC, anon, authenticated, and
+  service_role before granting only SELECT to anon/authenticated. There are no
+  application write grants, write policies, or Admin policies. Existing schema
+  USAGE for those reader roles is assumed; unrelated schema privileges are not
+  changed. Trusted database owners remain privileged; no service-role client
+  or RLS bypass is introduced into the application.
+- A places-specific BEFORE UPDATE trigger overrides supplied `updated_at`
+  using `pg_catalog.now()`. It is SECURITY INVOKER with an empty search_path;
+  direct function privileges are revoked from application roles and PUBLIC.
+  `created_at` defaults to creation time; future authorized writer contracts
+  must preserve it. `updated_at` is not a source-verification timestamp.
+- An optional image URL must be trimmed, have an HTTPS prefix plus content,
+  and be at most 2048 characters. These SQL checks are only a baseline.
+  Future curation/application code must parse URLs, approve hosts, reject
+  embedded credentials, and review image rights/attribution. No uploads or
+  storage are introduced.
+- Only the primary-key and global slug-unique indexes are created implicitly.
+  No PostGIS, extra indexes, seed records, real places, or sample data are added.
+
+Real content and provenance come later: record source URL/name, actual date
+verified, supported facts, coordinate checks, and image rights in versioned
+content documentation. Do not invent records or publish without verification.
+Admin authorization and content-writing paths require a separate reviewed phase.
+
+Rollback removes only the places trigger, function, policy, and table, in one
+transaction. It deletes all catalog rows if later populated. It does not touch
+profiles/Auth objects, use CASCADE, or suppress missing-object errors. Unexpected
+future dependencies must stop rollback for review rather than be destroyed.
+
+### Offline checks and deferred database verification
+
+`tests/test_places_migration.py` statically checks the exact schema/security
+contract and rollback scope without database connections. These checks cannot
+prove SQL execution, PostgreSQL constraint semantics, actual ACLs, or RLS
+enforcement. Separately authorized database verification must cover text and
+Unicode boundaries, malformed slugs, NaN/infinities, coordinate NULL combinations,
+published-coordinate requirements, URL baseline checks, and timestamp override.
+It must also verify published-only reads by both reader roles (including direct
+draft/archived lookups), denial of every application write, function privileges,
+and atomic rollback failure when unexpected dependencies exist.
