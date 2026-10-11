@@ -1,17 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ place.name }} | RosaGO</title>
-</head>
-<body>
-    <main>
-        <p><a href="{{ url_for('places_list') }}">Back to places</a></p>
-        <h1>{{ place.name }}</h1>
-        <p>{{ place.category | capitalize }}</p>
-        <p>{{ place.address }}</p>
+{% extends 'base.html' %}
+{% block title %}{{ place.name }} | RosaGo{% endblock %}
+{% block content %}
+<a class="back-link" href="{{ url_for('places_list') }}"><span aria-hidden="true">&larr;</span> Back to Explore</a>
+<article class="place-detail">
+    <p class="eyebrow">{{ place.category | capitalize }}</p>
+    <h1>{{ place.name }}</h1>
+    <p class="detail-address">{{ place.address }}</p>
+    <div class="place-description">
+        <h2>About this place</h2>
         <p>{{ place.description }}</p>
-    </main>
-</body>
-</html>
+    </div>
+</article>
+{% endblock %}

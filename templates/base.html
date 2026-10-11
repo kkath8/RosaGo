@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RosaGo | Santa Rosa, Laguna{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="public-site">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    {% include 'partials/navbar.html' %}
+    <main id="main-content" class="site-main" tabindex="-1">
+        {% block content %}{% endblock %}
+    </main>
+    {% include 'partials/footer.html' %}
+</body>
+</html>

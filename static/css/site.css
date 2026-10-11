@@ -1,0 +1,70 @@
+/* Public tourism only. Standalone auth/profile pages keep their own styles. */
+.public-site {
+    --site-red: #96281b;
+    --site-ink: #302822;
+    --site-muted: #6c6058;
+    --site-border: #ded4ca;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #faf7f2;
+    color: var(--site-ink);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+.public-site *, .public-site *::before, .public-site *::after { box-sizing: border-box; }
+.public-site a { color: var(--site-red); text-underline-offset: 0.2em; }
+.public-site :focus-visible { outline: 3px solid var(--site-red); outline-offset: 4px; }
+.public-site .skip-link { align-self: flex-start; margin: 0.5rem max(1rem, calc((100% - 1120px) / 2)); padding: 0.5rem; min-height: 44px; }
+.public-site .site-header { border-bottom: 1px solid var(--site-border); background: #fff; }
+.public-site .header-inner, .public-site .site-main, .public-site .footer-inner { width: min(100% - 3rem, 1120px); margin-inline: auto; }
+.public-site .header-inner { display: flex; justify-content: space-between; align-items: center; gap: 1rem 2rem; padding-block: 1rem; flex-wrap: wrap; }
+.public-site .site-brand { display: inline-flex; align-items: center; min-height: 44px; font-size: 1.85rem; font-weight: 750; letter-spacing: -0.07em; text-decoration: none; }
+.public-site .site-brand span { color: var(--site-ink); }
+.public-site .site-brand .brand-dot { color: #a34a12; }
+.public-site .site-nav { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.public-site .site-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0.6rem 1rem; color: var(--site-ink); text-decoration: none; border-bottom: 3px solid transparent; }
+.public-site .site-nav a[aria-current] { color: var(--site-red); border-bottom-color: var(--site-red); font-weight: 650; }
+.public-site .site-nav a:hover { background: #faf0e8; text-decoration: underline; }
+.public-site .site-main { flex: 1; padding-block: clamp(2rem, 5vw, 4.5rem); overflow-wrap: anywhere; }
+.public-site h1 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 5vw, 3.8rem); font-weight: 400; line-height: 1.12; letter-spacing: -0.035em; margin: 0 0 1.5rem; max-width: 22ch; }
+.public-site h2 { font-size: 1.4rem; line-height: 1.3; margin: 0 0 1rem; }
+.public-site p { margin: 0 0 1rem; max-width: 68ch; }
+.public-site .eyebrow { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--site-red); }
+.public-site .intro-text { color: var(--site-muted); max-width: 58ch; font-size: 1.1rem; }
+.public-site .home-intro { border-left: 4px solid #e6b85c; padding: clamp(1rem, 4vw, 3rem); margin-block: 1rem 3rem; }
+.public-site .page-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; margin-top: 2rem; }
+.public-site .site-button { display: inline-flex; align-items: center; gap: 1rem; min-height: 48px; padding: 0.75rem 1.25rem; border-radius: 6px; background: var(--site-red); color: #fff; font-weight: 600; text-decoration: none; }
+.public-site .site-button:hover { background: #762015; text-decoration: underline; }
+.public-site .text-link, .public-site .back-link { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px; }
+.public-site .category-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-block: 2rem; }
+.public-site .category-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0.5rem 1rem; border: 1px solid var(--site-border); border-radius: 5px; background: #fff; text-decoration: none; }
+.public-site .category-nav a[aria-current] { background: var(--site-red); color: #fff; border-color: var(--site-red); }
+.public-site .category-nav a:hover { text-decoration: underline; }
+.public-site .places-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.public-site .place-card { min-width: 0; padding: 1.5rem; background: #fff; border: 1px solid var(--site-border); border-radius: 8px; }
+.public-site .place-card h2 a { display: inline-block; padding-block: 0.4rem; min-height: 44px; }
+.public-site .place-category { font-size: 0.85rem; color: var(--site-red); font-weight: 600; }
+.public-site .place-address, .public-site .detail-address { color: var(--site-muted); }
+.public-site .empty-state { grid-column: 1 / -1; padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid var(--site-border); border-radius: 8px; background: #fff; }
+.public-site .empty-state p { color: var(--site-muted); }
+.public-site .back-link { margin-bottom: 2rem; }
+.public-site .place-detail { max-width: 780px; }
+.public-site .detail-address { font-size: 1.1rem; }
+.public-site .place-description { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--site-border); }
+.public-site .place-description p { white-space: pre-line; }
+.public-site .site-footer { border-top: 1px solid var(--site-border); }
+.public-site .footer-inner { padding-block: 2rem; }
+.public-site .footer-inner strong { color: var(--site-red); }
+.public-site .footer-inner p { margin: 0.25rem 0 0; color: var(--site-muted); font-size: 0.9rem; }
+.public-site .footer-inner .project-note { font-size: 0.8rem; }
+@media (max-width: 700px) {
+    .public-site .header-inner, .public-site .site-main, .public-site .footer-inner { width: calc(100% - 2rem); }
+    .public-site .header-inner { gap: 0.5rem; }
+    .public-site .site-nav { width: 100%; }
+    .public-site .site-nav a { flex: 1; justify-content: center; padding-inline: 0.75rem; }
+    .public-site .places-grid { grid-template-columns: minmax(0, 1fr); }
+    .public-site .home-intro { margin-block: 0 1rem; }
+}

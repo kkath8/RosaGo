@@ -1,0 +1,10 @@
+<header class="site-header">
+    <div class="header-inner">
+        <a class="site-brand" href="{{ url_for('index') }}" aria-label="RosaGo home">Rosa<span>Go</span><span class="brand-dot" aria-hidden="true">.</span></a>
+        <nav class="site-nav" aria-label="Main navigation">
+            <a href="{{ url_for('index') }}"{% if request.endpoint == 'index' %} aria-current="page"{% endif %}>Home</a>
+            <a href="{{ url_for('places_list') }}"{% if request.endpoint == 'places_list' %} aria-current="page"{% elif request.endpoint == 'places_detail' %} aria-current="true"{% endif %}>Explore</a>
+            <a href="{{ url_for('user_index') }}">Account</a>
+        </nav>
+    </div>
+</header>
