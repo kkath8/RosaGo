@@ -3,11 +3,56 @@
 {% block content %}
 <section class="home-intro" aria-labelledby="home-title">
     <p class="eyebrow">Santa Rosa, Laguna</p>
-    <h1 id="home-title">A place to start<br>your local discovery.</h1>
-    <p class="intro-text">Welcome to RosaGo, the Smart Tourism System for Santa Rosa, Laguna. Explore the public catalog or visit your account.</p>
+    <h1 id="home-title">Discover Santa Rosa with RosaGo</h1>
+    <p class="intro-text">RosaGo is a Smart Tourism System for Santa Rosa, Laguna. Start with Explore to browse the city's place catalog by category.</p>
     <div class="page-actions">
-        <a class="site-button" href="{{ url_for('places_list') }}">Explore places <span aria-hidden="true">&rarr;</span></a>
-        <a class="text-link" href="{{ url_for('user_index') }}">Go to account</a>
+        <a class="site-button" href="{{ url_for('places_list') }}">Explore Places</a>
     </div>
+</section>
+<section class="home-section" aria-labelledby="home-categories-title">
+    <h2 id="home-categories-title">Explore by category</h2>
+    <p>Choose a category to open Explore.</p>
+    <nav aria-labelledby="home-categories-title">
+        <ul class="home-categories">
+            {% for label, category in [
+                ('Attractions', 'attraction'), ('Dining', 'dining'),
+                ('Shopping', 'shopping'), ('Accommodation', 'accommodation'),
+                ('Nature', 'nature'), ('Heritage', 'heritage')
+            ] %}
+            <li><a href="{{ url_for('places_list', category=category) }}">{{ label }}</a></li>
+            {% endfor %}
+        </ul>
+    </nav>
+    <p class="home-availability">Verified place information from the Santa Rosa City Tourism Office is pending. Some categories may not have listings yet.</p>
+</section>
+<section class="home-section" aria-labelledby="home-capabilities-title">
+    <h2 id="home-capabilities-title">What RosaGo offers</h2>
+    <ul class="home-capabilities">
+        <li>
+            <div class="home-capability-label">
+                <strong>Explore places</strong>
+                <span class="home-capability-status">Available &mdash; catalog pending</span>
+            </div>
+            <p>Browse by category and open place details when listings are available.</p>
+        </li>
+        {% for name, description in [
+            ('Interactive map', 'See where places are located across the city.'),
+            ('Trip planning', 'Organize places into a visit itinerary.'),
+            ('Personalized recommendations', 'Find suggestions based on your interests.'),
+            ('Tourism AI assistant', 'Ask questions to help prepare for a visit.')
+        ] %}
+        <li>
+            <div class="home-capability-label">
+                <strong>{{ name }}</strong>
+                <span class="home-capability-status">Planned</span>
+            </div>
+            <p>{{ description }}</p>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+<section class="home-section home-about" aria-labelledby="home-about-title">
+    <h2 id="home-about-title">About RosaGo</h2>
+    <p>RosaGo is a student capstone project developing a Smart Tourism System focused on Santa Rosa, Laguna. It brings place discovery and planned visitor tools into one platform.</p>
 </section>
 {% endblock %}

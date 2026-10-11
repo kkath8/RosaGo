@@ -60,6 +60,23 @@
 .public-site .footer-inner strong { color: var(--site-red); }
 .public-site .footer-inner p { margin: 0.25rem 0 0; color: var(--site-muted); font-size: 0.9rem; }
 .public-site .footer-inner .project-note { font-size: 0.8rem; }
+.public-site .home-section { margin-top: clamp(2.5rem, 6vw, 4rem); }
+.public-site .home-section h2 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 400; }
+.public-site .home-categories { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; list-style: none; padding: 0; margin: 1.5rem 0; }
+.public-site .home-categories li { min-width: 0; }
+.public-site .home-categories a { display: flex; align-items: center; min-height: 44px; height: 100%; padding: 0.75rem 1rem; border: 1px solid var(--site-border); border-radius: 5px; background: #fff; text-decoration: none; }
+.public-site .home-categories a:hover { border-color: var(--site-red); text-decoration: underline; }
+.public-site .home-availability { color: var(--site-muted); font-size: 0.95rem; }
+.public-site .home-capabilities { list-style: none; padding: 0; margin: 1.5rem 0 0; }
+.public-site .home-capabilities li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 0.75rem 2rem; padding-block: 1.25rem; border-top: 1px solid var(--site-border); }
+.public-site .home-capability-label { min-width: 0; }
+.public-site .home-capability-label strong, .public-site .home-capability-status { display: block; }
+.public-site .home-capability-status { margin-top: 0.25rem; color: var(--site-muted); font-size: 0.9rem; }
+.public-site .home-capabilities p { min-width: 0; margin: 0; }
+.public-site .home-about { max-width: 68ch; padding-top: 2rem; border-top: 1px solid var(--site-border); }
+@media (max-width: 900px) {
+    .public-site .home-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 700px) {
     .public-site .header-inner, .public-site .site-main, .public-site .footer-inner { width: calc(100% - 2rem); }
     .public-site .header-inner { gap: 0.5rem; }
@@ -67,4 +84,8 @@
     .public-site .site-nav a { flex: 1; justify-content: center; padding-inline: 0.75rem; }
     .public-site .places-grid { grid-template-columns: minmax(0, 1fr); }
     .public-site .home-intro { margin-block: 0 1rem; }
+    .public-site .home-capabilities li { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+    .public-site .home-categories { grid-template-columns: minmax(0, 1fr); }
 }
