@@ -118,12 +118,16 @@ reads the user's own profile under this context, with RLS still protecting acces
 Legacy `user_id`/`user_email` cookie values are not authentication authority.
 Password recovery remains a separate flow.
 
-## 0002: places catalog — offline draft, not executed
+## 0002: places catalog — applied in current development database
 
-`0002_places.sql` prepares the public tourism catalog foundation. It has NOT been
-executed against Supabase; no deployment or live RLS verification is claimed.
+0002 has been applied and post-execution verified in the current development database.
+This status is supplied by the project owner for Phase 5A-2; no new database
+inspection was performed in that offline phase. No execution date, production
+deployment, or verification of other environments is claimed. Do not rerun 0002.
+`0002_places.sql` records the public tourism catalog foundation. Its original
+draft header is preserved unchanged as requested; this README records its current status.
 `rollback/0002_places.sql` is its separate, destructive development rollback.
-Execution requires separate authorization and review of target objects, default
+Execution in another environment requires separate authorization and review of target objects, default
 grants, PostgreSQL UUID-function availability, and trusted migration-role access.
 Neither file runs on application startup; neither is intended to be rerun.
 
@@ -174,14 +178,162 @@ transaction. It deletes all catalog rows if later populated. It does not touch
 profiles/Auth objects, use CASCADE, or suppress missing-object errors. Unexpected
 future dependencies must stop rollback for review rather than be destroyed.
 
-### Offline checks and deferred database verification
+### Offline checks and verification in other environments
 
 `tests/test_places_migration.py` statically checks the exact schema/security
 contract and rollback scope without database connections. These checks cannot
 prove SQL execution, PostgreSQL constraint semantics, actual ACLs, or RLS
-enforcement. Separately authorized database verification must cover text and
+enforcement. Separately authorized verification in another environment must cover text and
 Unicode boundaries, malformed slugs, NaN/infinities, coordinate NULL combinations,
 published-coordinate requirements, URL baseline checks, and timestamp override.
 It must also verify published-only reads by both reader roles (including direct
 draft/archived lookups), denial of every application write, function privileges,
 and atomic rollback failure when unexpected dependencies exist.
+
+## 0003: private trips — offline draft, not executed
+
+`0003_trips.sql` is unexecuted. Phase 5A-2 only prepares SQL and static tests;
+neither the migration nor its rollback has been run against any database.
+Execution order is `0001_profiles.sql` -> `0002_places.sql` -> `0003_trips.sql`.
+The first two are already applied in the current development database; verify
+their actual target objects rather than rerunning them. There are no application
+routes, TripService, UI, seeds, Admin changes, or integrations in this migration.
+
+### Tables, ownership and lifecycle
+
+- `trips`: generated UUID `id`; `user_id` defaults to `auth.uid()` and references
+  `auth.users(id) ON DELETE CASCADE`; required `name`; optional `visit_date`;
+  required `created_at` and `updated_at` default to `now()`.
+- Name CHECKs require 1–100 characters and already-trimmed/nonblank text, using
+  the existing POSIX-whitespace convention. They reject rather than normalize.
+  Future Flask normalization must account for Python/SQL Unicode differences.
+  Duplicate trip names are allowed. Dates allow NULL and past dates, but only
+  0001-01-01 through 9999-12-31 (excluding infinities and BC/out-of-range dates).
+- `trip_places`: only `trip_id`, `place_id`, positive integer `position`, and
+  database-generated `created_at`. Composite PK `(trip_id, place_id)` disallows
+  duplicate destinations. `(trip_id, position)` is unique, deferrable, initially
+  immediate. Gaps are valid; sort by position. No copied catalog content.
+- User deletion cascades through trips to memberships. Trip deletion cascades
+  to memberships. The Places FK uses `ON DELETE RESTRICT`: archive referenced
+  places rather than deleting them. A hard deletion requires separately reviewed
+  removal of referencing memberships; this migration does not automate that.
+- Archived/draft destinations retain membership and can be removed/reordered.
+  Existing Places RLS still hides their details. Future reads must preserve
+  memberships using a left join or separate merge, showing “Place unavailable”.
+  Published destinations show current information, not historical snapshots.
+- Indexes support `(user_id, created_at, id)` listing and `place_id` FK checks.
+  The membership PK and position uniqueness supply the other required indexes.
+- An invoker BEFORE UPDATE trigger sets `trips.updated_at` to transaction time
+  on metadata updates, including no-op updates. Membership changes do not touch
+  it. It is not a version counter or a catalog-verification timestamp.
+
+### RLS and explicit privileges
+
+Both tables enable RLS. Only authenticated users have policies. Trips SELECT,
+INSERT, UPDATE (old and new row), and DELETE enforce the authenticated UUID.
+Membership policies use EXISTS against the caller-owned parent. INSERT also
+requires an existing published Places row; UPDATE/DELETE do not check publication.
+The same protections apply to direct table API calls, not just the RPCs.
+
+All table privileges are first revoked from PUBLIC, anon, authenticated, and
+service_role. Authenticated users get SELECT/DELETE on both tables; trip INSERT
+and UPDATE only on `(name, visit_date)`; membership INSERT only on
+`(trip_id, place_id, position)` and UPDATE only on `position`. Generated UUID,
+ownership, timestamps, and existing membership keys cannot be client-written.
+Do not add broad grants that override these column restrictions. No anonymous
+access, service-role application access, or changes to existing Places policies.
+Existing authenticated schema USAGE and `auth.uid()` availability are prerequisites.
+Trusted owners remain privileged; these policies do not constrain postgres.
+
+All five new functions are SECURITY INVOKER with an empty search_path and
+qualified relation references. No elevated function is introduced. Trigger-only
+functions have all direct EXECUTE privileges revoked from the four roles.
+Only the three named RPC signatures grant EXECUTE to authenticated, after
+revoking default PUBLIC and other role grants in the same transaction.
+
+### Atomic membership operations and direct writes
+
+| RPC (all return void) | Contract |
+| --- | --- |
+| `rosago_trip_add_place(uuid, uuid)` | Lock own trip; reject unavailable/duplicate place; append at max(position)+1; reject integer exhaustion. |
+| `rosago_trip_remove_place(uuid, uuid)` | Lock own trip; reject NULL place ID; delete membership if present; preserve gaps and allow unavailable destinations. |
+| `rosago_trip_reorder_places(uuid, uuid[])` | Lock own trip; require exact duplicate-free membership permutation; assign positions 1..N in supplied order. |
+
+Each call runs in the caller's transaction (one PostgREST RPC request), without
+internal commit or multi-request pseudo-transactions. Each locks the parent trip
+FOR UPDATE with an explicit `auth.uid()` ownership predicate before reading any
+membership. RPCs require READ COMMITTED isolation and reject other isolation
+levels before accessing rows: each subsequent statement must see membership
+committed while waiting for the parent lock, rather than a fixed older snapshot.
+Verify the target API's effective isolation before use. Missing/other-user trips
+use the same fixed failure. Null, duplicate,
+multidimensional, omitted and foreign reorder entries fail before mutation;
+an empty array is accepted only for an empty trip. Array lower bounds do not
+affect order because WITH ORDINALITY is used. Reorder defers only the named
+position constraint, then restores it to IMMEDIATE to validate before returning.
+The intended caller issues one operation per request; the function does not
+preserve an outer caller's earlier deferral of that constraint.
+
+Direct table privileges remain as approved. An invoker BEFORE ROW trigger on
+every membership INSERT/UPDATE/DELETE acquires the same parent FOR UPDATE lock
+before changing the row; it also rejects membership identity changes. It relies
+on parent and membership RLS, and uses no published-place check, preserving
+archived membership edits. During parent/user cascade deletion the parent row
+has already been deleted and its lock is held by that transaction, so DELETE
+allows the missing parent. INSERT/UPDATE require a visible, lockable parent.
+Normal direct DELETE still needs own-parent membership RLS; this cascade case
+does not grant access to other users' rows. Verify both cascades under real roles.
+
+The trigger serializes actual membership changes, but cannot make a client's
+earlier SELECT or precomputed position part of a transaction. RPCs are the
+supported read/modify/write interface. Direct writes retain positive/unique
+position constraints and may fail on stale choices. PostgreSQL can acquire a
+child row lock before the row trigger runs, so direct UPDATE/DELETE or multi-trip
+batches can deadlock with parent-first RPCs. A deadlock aborts a transaction,
+never a partial reorder; do not catch and continue database errors. No guarantee
+of deadlock-free direct batches is made. Application code must not automatically
+retry uncertain mutations. After failure, reload and let the user choose again.
+
+Concurrent complete reorders are serialized, with last successful order winning;
+no optimistic version field is introduced. Addition checks current publication
+under normal database visibility, not a promise that the place stays published
+through commit or afterward. Concurrent archival can yield an unavailable entry.
+The foreign key still prevents dangling references.
+
+Explicit exceptions contain fixed messages and no row IDs/provider data. Native
+constraint/deadlock errors may still contain database diagnostics; the future
+TripService must translate them to fixed public errors without returning raw
+SDK exceptions, auth objects, or tokens. SQL cannot replace that service boundary.
+
+### Application, rollback and verification plan
+
+Apply manually once, in one transaction, only after separate authorization and
+pre-execution verification of the target, prerequisite FKs/policies/ACLs, UUID
+function, roles/schema privileges and absence of all new object names. No
+IF NOT EXISTS/CREATE OR REPLACE or startup runner is provided. Unexpected objects
+must stop deployment for review. Perform post-execution verification before
+claiming 0003 applied; static tests do not establish SQL runtime validity.
+
+`rollback/0003_trips.sql` removes the three RPCs, two triggers/helper functions,
+eight policies and both trip tables (and their owned constraints/indexes), in
+one transaction. It permanently deletes trip data. It does not remove Places,
+Profiles or Auth objects, use blanket CASCADE, or ignore unexpected dependencies.
+Export/review before separately authorized use. Roll back dependent trips before
+attempting an older Places rollback; never remove dependencies silently.
+
+`tests/test_trips_migration.py` checks SQL text, exact schemas, policy and ACL
+contracts, RPC locking/permutation structure, rollback scope, and this status
+documentation. Also run existing Places static migration checks. No SQL is
+executed, no network is used, and no application regression is needed here.
+
+Before live application, separately authorized disposable PostgreSQL/Supabase
+verification must cover real roles/JWT subjects (two users, anon, missing subject),
+all generated-column write denials, direct table and RPC ownership/publication,
+date/name boundaries, duplicate/position constraints, metadata timestamps,
+archived removal/reorder, both cascades and restricted place deletion. Include
+simultaneous append/remove/reorder/direct updates, deadlock/serialization aborts,
+parent deletion races, empty/NULL/multidimensional arrays, permutation rollback,
+READ COMMITTED wait visibility, rejection of other isolation levels, and
+immediate/deferred constraint checks. Inspect actual function ACLs and
+search_path; verify trigger-only functions cannot be invoked as RPCs. Test
+unexpected dependency failures and rollback atomicity in a disposable environment.
