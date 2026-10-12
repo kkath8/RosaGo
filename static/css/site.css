@@ -79,6 +79,23 @@
 .public-site .home-about { max-width: 68ch; padding-top: 2rem; border-top: 1px solid var(--site-border); }
 .public-site .map-page { max-width: 780px; min-width: 0; }
 .public-site .map-page-state { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--site-border); }
+.public-site .places-map { width: 100%; height: clamp(20rem, 60vh, 36rem); min-width: 0; border: 1px solid var(--site-border); border-radius: 6px; isolation: isolate; }
+.public-site .map-page [hidden] { display: none !important; }
+.public-site .map-privacy, .public-site .map-attribution { font-size: 0.9rem; color: var(--site-muted); }
+.public-site .map-attribution { margin-top: 0.5rem; }
+.public-site .map-notice { padding: 0.75rem; border-left: 3px solid var(--site-red); }
+.public-site .map-place-list { list-style: none; margin: 0; padding: 0; }
+.public-site .map-place-list li { padding-block: 1rem; border-top: 1px solid var(--site-border); }
+.public-site .map-place-list h3 { margin: 0 0 0.25rem; font-size: 1.15rem; }
+.public-site .map-place-list h3 a { display: inline-block; min-height: 44px; padding-block: 0.5rem; }
+.public-site .map-place-list p { margin: 0.25rem 0; }
+.public-site .places-map .leaflet-control-attribution { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.public-site .places-map .leaflet-bottom { max-width: 100%; }
+.public-site .places-map .leaflet-control-zoom a { width: 44px; height: 44px; line-height: 44px; }
+.public-site .places-map .leaflet-popup-close-button { width: 44px; height: 44px; line-height: 44px; }
+.public-site .map-popup { overflow-wrap: anywhere; padding-right: 0.5rem; }
+.public-site .map-popup p { margin: 0.5rem 0; }
+.public-site .map-popup a { display: inline-block; min-height: 44px; padding-block: 0.5rem; }
 .public-site .account-panel { width: 100%; max-width: 640px; min-width: 0; padding: clamp(1rem, 4vw, 2rem); border: 1px solid var(--site-border); border-radius: 8px; background: #fff; }
 .public-site .account-edit { max-width: 560px; }
 .public-site .account-identity, .public-site .account-help { color: var(--site-muted); }

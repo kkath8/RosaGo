@@ -28,7 +28,7 @@ def assert_account_layout(test, response, heading, active):
     nav = page.find('nav', **{'aria-label': 'Main navigation'})[0]
     links = [node for node in page.find('a') if nav in node.ancestors]
     test.assertEqual([(node.text.strip(), node.attrs['href']) for node in links],
-                     [('Home', '/'), ('Explore', '/places'), ('Account', '/user')])
+                     [('Home', '/'), ('Explore', '/places'), ('Map', '/map'), ('Account', '/user')])
     test.assertEqual([(node.text.strip(), node.attrs['aria-current']) for node in links
                       if 'aria-current' in node.attrs], [('Account', active)])
     for tag in ('script', 'img', 'iframe'):

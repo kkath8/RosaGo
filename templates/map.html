@@ -1,18 +1,49 @@
 {% extends 'base.html' %}
 {% block title %}Map | RosaGo{% endblock %}
+{% block extra_head %}
+{% if markers %}
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/map.js') }}" defer></script>
+{% endif %}
+{% endblock %}
 {% block content %}
+{% set category_labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage'} %}
 <div class="map-page">
     <h1>Explore Santa Rosa on the map</h1>
-    <p class="intro-text">A map view of Santa Rosa's places is being prepared.</p>
+    {% if markers %}
+    <p class="intro-text">See available places on the map, or open their details from the list below. This view shows up to 50 places.</p>
+    <a class="text-link" href="{{ url_for('places_list') }}">Browse places</a>
+    <section class="map-page-state" aria-labelledby="map-view-title">
+        <h2 id="map-view-title">Places on the map</h2>
+        <p class="map-privacy">The map background uses OpenStreetMap tiles and sends requests to an external map service.</p>
+        <div id="places-map" class="places-map" role="region" aria-label="Map of available places in Santa Rosa" hidden></div>
+        <p class="map-attribution">&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></p>
+        <p id="map-failure" class="map-notice" role="status" hidden>The interactive map could not be loaded. You can still browse the place details below.</p>
+        <p id="map-tile-failure" class="map-notice" role="status" hidden>The map background could not be loaded. You can still browse place details.</p>
+        <noscript><p>The interactive map needs JavaScript. You can still browse the place details below.</p></noscript>
+    </section>
+    <section class="map-page-state" aria-labelledby="map-list-title">
+        <h2 id="map-list-title">Place details</h2>
+        <ul class="map-place-list">
+            {% for marker in markers %}
+            <li>
+                <h3><a href="{{ marker.detail_url }}">{{ marker.name }}</a></h3>
+                <p>{{ category_labels[marker.category] }}</p>
+                <p>{{ marker.address }}</p>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    <script id="map-data" type="application/json">{{ markers | tojson }}</script>
+    {% else %}
+    <p class="intro-text">Browse Santa Rosa's places as information becomes available.</p>
     <section class="map-page-state" aria-labelledby="map-state-title">
-        {% if has_places %}
-        <h2 id="map-state-title">The map view is being prepared</h2>
-        <p>The interactive map is not available yet. You can continue browsing the available places in Explore.</p>
-        {% else %}
         <h2 id="map-state-title">Places are on the way</h2>
         <p>Verified place information from the Santa Rosa City Tourism Office is pending. Please check back later.</p>
-        {% endif %}
         <a class="text-link" href="{{ url_for('places_list') }}">Browse places</a>
     </section>
+    {% endif %}
 </div>
 {% endblock %}

@@ -1,4 +1,7 @@
-"""Offline map foundation: reuse the guarded public-route fixture, not its tests."""
+"""Offline interactive map contracts using the guarded public-route fixture."""
+from dataclasses import replace
+import json
+from pathlib import Path
 import unittest
 from flask import url_for
 
@@ -20,7 +23,7 @@ class MapRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.service.list_published.assert_called_once_with(category=None, limit=50, offset=0)
         self.service.get_published_by_slug.assert_not_called()
-        self.render.assert_called_once_with('map.html', has_places=False)
+        self.render.assert_called_once_with('map.html', markers=[])
         page = Document(response.get_data(as_text=True))
         self.assertEqual([node.text for node in page.find('h1')], ['Explore Santa Rosa on the map'])
         self.assertEqual([node.text for node in page.find('h2')], ['Places are on the way'])
@@ -29,27 +32,39 @@ class MapRouteTests(unittest.TestCase):
         self.assertEqual([node.text for node in page.find('a', href='/places')
                           if page.find('main')[0] in node.ancestors], ['Browse places'])
 
-    def test_populated_catalog_exposes_only_boolean_state(self):
+    def test_populated_catalog_exposes_exact_minimal_payload_and_text_list(self):
         response = self.get('/map')
         self.assertEqual(response.status_code, 200)
         self.service.list_published.assert_called_once_with(category=None, limit=50, offset=0)
-        self.render.assert_called_once_with('map.html', has_places=True)
+        expected = dict(name=self.place.name, detail_url='/places/synthetic-place',
+                        category=self.place.category, address=self.place.address,
+                        latitude=self.place.latitude, longitude=self.place.longitude)
+        self.render.assert_called_once_with('map.html', markers=[expected])
         html = response.get_data(as_text=True)
-        self.assertIn('The interactive map is not available yet. You can continue browsing '
-                      'the available places in Explore.', html)
+        page = Document(html)
+        payload = json.loads(page.find('script', id='map-data')[0].text)
+        self.assertEqual(payload, [expected])
+        self.assertEqual(set(payload[0]), {'name', 'detail_url', 'category', 'address', 'latitude', 'longitude'})
+        listing = page.find('ul', **{'class': 'map-place-list'})[0]
+        self.assertEqual([node.text for node in page.find('a') if listing in node.ancestors], [self.place.name])
+        self.assertIn(self.place.address, listing.text)
+        self.assertIn('Nature', listing.text)
+        self.assertEqual(len(page.find('div', id='places-map', role='region')), 1)
+        self.assertEqual(len(page.find('noscript')), 1)
+        self.assertEqual(len(page.find('a', href='https://www.openstreetmap.org/copyright')), 1)
+        self.assertIn('external map service', html)
         self.assertNotIn('Places are on the way', html)
         self.assertNotIn('City Tourism Office', html)
-        for value in (self.place.id, self.place.name, self.place.slug, self.place.address,
-                      self.place.description, str(self.place.latitude), str(self.place.longitude),
+        for value in (self.place.id, self.place.description,
                       self.place.image_url, self.place.created_at.isoformat(),
                       self.place.updated_at.isoformat(), '2026-10-11'):
             self.assertNotIn(value, html)
         context = self.contexts[0]
-        self.assertIs(context['has_places'], True)
+        self.assertEqual(context['markers'], [expected])
         for key in ('places', 'place', 'client', 'service', 'provider_response', 'token', 'auth'):
             self.assertNotIn(key, context)
 
-    def test_shared_layout_no_map_assets_or_unsupported_controls(self):
+    def test_shared_layout_conditional_local_assets_and_active_map(self):
         for places in ((), (self.place,)):
             self.service.list_published.return_value = places
             response = self.get('/map')
@@ -61,25 +76,45 @@ class MapRouteTests(unittest.TestCase):
             self.assertEqual(page.find('a')[0].attrs['href'], '#main-content')
             self.assertEqual(len(page.find('h1')), 1)
             self.assertEqual(len(page.find('footer')), 1)
-            self.assertEqual([node.attrs['href'] for node in page.find('link', rel='stylesheet')],
-                             ['/static/css/site.css'])
+            styles = ['/static/css/site.css']
+            if places:
+                styles.append('/static/vendor/leaflet/leaflet.css')
+            self.assertEqual([node.attrs['href'] for node in page.find('link', rel='stylesheet')], styles)
+            scripts = page.find('script')
+            if places:
+                self.assertEqual(len(scripts), 3)
+                self.assertEqual([node.attrs.get('src') for node in scripts[:2]],
+                                 ['/static/vendor/leaflet/leaflet.js', '/static/js/map.js'])
+                for script in scripts[:2]:
+                    self.assertIn('defer', script.attrs)
+                self.assertEqual(scripts[2].attrs, {'id': 'map-data', 'type': 'application/json'})
+                self.assertEqual(len(page.find('meta', name='referrer', content='strict-origin-when-cross-origin')), 1)
+                self.assertIn('hidden', page.find('p', id='map-failure')[0].attrs)
+                self.assertIn('hidden', page.find('p', id='map-tile-failure')[0].attrs)
+                self.assertNotIn(response.headers.get('Referrer-Policy'), ('no-referrer', 'same-origin'))
+            else:
+                self.assertEqual(scripts, [])
+                self.assertEqual(page.find('div', id='places-map'), [])
+                for forbidden in ('leaflet', 'map.js', 'map-data', 'tile.openstreetmap', 'map-place-list'):
+                    self.assertNotIn(forbidden, html)
             nav = page.find('nav', **{'aria-label': 'Main navigation'})[0]
             links = [node for node in page.find('a') if nav in node.ancestors]
             self.assertEqual([(node.text.strip(), node.attrs['href']) for node in links],
-                             [('Home', '/'), ('Explore', '/places'), ('Account', '/user')])
-            self.assertEqual(page.find('a', href='/map'), [])
-            for tag in ('script', 'img', 'iframe', 'canvas', 'object', 'embed', 'button', 'input', 'form'):
+                             [('Home', '/'), ('Explore', '/places'), ('Map', '/map'), ('Account', '/user')])
+            self.assertEqual([(node.text, node.attrs['aria-current']) for node in links if 'aria-current' in node.attrs],
+                             [('Map', 'page')])
+            for tag in ('img', 'iframe', 'canvas', 'object', 'embed', 'button', 'input', 'form'):
                 self.assertEqual(page.find(tag), [])
             for node in page.elements:
-                self.assertNotIn(node.attrs.get('role'), ('application', 'region', 'alert'))
-                self.assertNotIn(node.attrs.get('id'), ('map', 'map-container', 'map-data'))
+                self.assertNotIn(node.attrs.get('role'), ('application', 'alert'))
                 self.assertNotIn('style', node.attrs)
                 self.assertFalse(any(attr.lower().startswith('on') for attr in node.attrs))
                 for attr in ('href', 'src'):
                     if attr in node.attrs:
-                        self.assertTrue(node.attrs[attr].startswith(('/', '#')))
+                        self.assertTrue(node.attrs[attr].startswith(('/', '#')) or
+                                        node.attrs[attr] == 'https://www.openstreetmap.org/copyright')
                         self.assertFalse(node.attrs[attr].startswith('//'))
-            for forbidden in ('leaflet', 'tile.openstreetmap', 'geolocation', 'application/json',
+            for forbidden in ('tile.openstreetmap', 'geolocation',
                               '/auth/status', 'sb_publishable_', 'private-access-token',
                               'private-refresh-token', 'fixture.invalid'):
                 self.assertNotIn(forbidden, html)
@@ -135,7 +170,7 @@ class MapRouteTests(unittest.TestCase):
                 self.get('/map')
             self.assertIs(raised.exception, error)
 
-    def test_post_rejected_endpoint_stable_and_home_still_planned(self):
+    def test_post_rejected_endpoint_stable_and_home_map_available(self):
         response = self.client.post('/map')
         self.assertEqual(response.status_code, 405)
         self.assertEqual(response.headers.getlist('Set-Cookie'), [])
@@ -145,20 +180,47 @@ class MapRouteTests(unittest.TestCase):
         rows = [node for node in page.find('li') if 'Interactive map' in node.text]
         self.assertEqual(len(rows), 1)
         self.assertEqual([node.text for node in page.find('span') if rows[0] in node.ancestors],
-                         ['Planned'])
-        self.assertEqual(page.find('a', href='/map'), [])
+                         ['Available \u2014 depends on listed places'])
+        self.assertEqual(len(page.find('a', href='/map')), 1)
         self.assertEqual(self.service.mock_calls, [])
 
     def test_shared_template_autoescaping_remains_enabled(self):
         self.assertTrue(self.app.jinja_env.autoescape('map.html'))
-        # Exercise the inherited title block with hostile text, without changing
-        # the route's boolean-only template contract or any template on disk.
+        # Exercise the inherited title block without changing templates on disk.
         with self.app.test_request_context('/map'):
             template = self.app.jinja_env.from_string(
                 "{% extends 'map.html' %}{% block title %}{{ text }}{% endblock %}")
-            html = template.render(has_places=False, text='<script>unsafe & text</script>')
+            html = template.render(markers=[], text='<script>unsafe & text</script>')
         self.assertIn('&lt;script&gt;unsafe &amp; text&lt;/script&gt;', html)
         self.assertEqual(Document(html).find('script'), [])
+
+    def test_hostile_marker_text_cannot_break_json_or_create_markup(self):
+        hostile = '"quoted" <img src=x onerror=alert(1)> </script><script>alert(1)</script> & \u00f1 \u2028'
+        place = replace(self.place, name=hostile, address=hostile)
+        self.service.list_published.return_value = (place,)
+        response = self.get('/map')
+        html = response.get_data(as_text=True)
+        page = Document(html)
+        self.assertEqual(len(page.find('script')), 3)
+        self.assertEqual(page.find('img'), [])
+        data = page.find('script', id='map-data')[0].text
+        self.assertNotIn('<', data)
+        self.assertEqual(json.loads(data)[0]['name'], hostile)
+        self.assertEqual(json.loads(data)[0]['address'], hostile)
+        self.assertIn('&lt;img', html)
+        listing = page.find('ul', **{'class': 'map-place-list'})[0]
+        self.assertIn(hostile, listing.text)
+
+    def test_vendored_assets_are_local_pinned_and_integrity_recorded(self):
+        import hashlib
+        root = Path(__file__).resolve().parents[1] / 'static/vendor/leaflet'
+        manifest = json.loads((root / 'SHA256SUMS.json').read_text())
+        for name, digest in manifest.items():
+            self.assertEqual(hashlib.sha256((root / name).read_bytes()).hexdigest(), digest, name)
+            with self.client.get('/static/vendor/leaflet/' + name) as response:
+                self.assertEqual(response.status_code, 200)
+        self.assertIn(b'1.9.4', (root / 'leaflet.js').read_bytes())
+        self.assertIn('Redistribution and use', (root / 'LICENSE').read_text())
 
 
 if __name__ == '__main__':

@@ -309,7 +309,12 @@ def map_index():
         return places_error('Places are temporarily unavailable.', 503)
     except PlacesConsistencyError:
         return places_error('Unable to display places.', 500)
-    return render_template('map.html', has_places=bool(places))
+    markers = [dict(name=place.name,
+                    detail_url=url_for('places_detail', slug=place.slug),
+                    category=place.category, address=place.address,
+                    latitude=place.latitude, longitude=place.longitude)
+               for place in places]
+    return render_template('map.html', markers=markers)
 
 
 @app.route('/places/<slug>', methods=['GET'])

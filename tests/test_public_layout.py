@@ -135,7 +135,7 @@ class PublicLayoutTests(unittest.TestCase):
                 self.assertEqual(len(navs), 1)
                 links = [node for node in page.find('a') if navs[0] in node.ancestors]
                 self.assertEqual([(node.text.strip(), node.attrs['href']) for node in links],
-                                 [('Home', '/'), ('Explore', '/places'), ('Account', '/user')])
+                                 [('Home', '/'), ('Explore', '/places'), ('Map', '/map'), ('Account', '/user')])
                 active = [node for node in links if 'aria-current' in node.attrs]
                 self.assertEqual([(node.text.strip(), node.attrs['aria-current']) for node in active],
                                  [(current_label, current_value)])
@@ -233,7 +233,8 @@ class PublicLayoutTests(unittest.TestCase):
         expected = [
             ('Explore places', 'Available \u2014 catalog pending',
              'Browse by category and open place details when listings are available.'),
-            ('Interactive map', 'Planned', 'See where places are located across the city.'),
+            ('Interactive map', 'Available \u2014 depends on listed places',
+             'See available places on the map when the catalog has listings.'),
             ('Trip planning', 'Planned', 'Organize places into a visit itinerary.'),
             ('Personalized recommendations', 'Planned', 'Find suggestions based on your interests.'),
             ('Tourism AI assistant', 'Planned', 'Ask questions to help prepare for a visit.'),
