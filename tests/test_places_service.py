@@ -16,7 +16,7 @@ from postgrest.exceptions import APIError
 from places_client import PublicPlacesClient
 from places_service import (
     Place, PlacesService, PlacesValidationError, PlacesConsistencyError,
-    PlacesUnavailableError, PROJECTION, CATEGORIES,
+    PlacesUnavailableError, PROJECTION, CATEGORIES, parse_place_row,
 )
 
 
@@ -84,6 +84,18 @@ class PlacesServiceTests(unittest.TestCase):
         self.assertIsNotNone(place.updated_at.utcoffset())
         with self.assertRaises(FrozenInstanceError):
             place.name = 'changed'
+
+    def test_public_parser_is_pure_and_uses_existing_validation(self):
+        place = parse_place_row(self.row(status='private-extra'))
+        self.assertIsInstance(place, Place)
+        self.assertFalse(hasattr(place, 'status'))
+        self.assertEqual(self.opened, 0)
+        self.client.table.assert_not_called()
+        for row in (None, {}, self.row(latitude=True), self.row(slug='Bad Slug'),
+                    self.row(created_at='private-invalid-timestamp')):
+            with self.subTest(row=row), self.assertRaises(PlacesConsistencyError) as raised:
+                parse_place_row(row)
+            self.assertIsNone(raised.exception.__context__)
 
     def test_exact_list_query_and_pagination(self):
         expected = 'id,name,slug,description,category,address,latitude,longitude,image_url,created_at,updated_at'

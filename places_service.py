@@ -95,7 +95,12 @@ def _coordinate(value, maximum):
     return float(value)
 
 
-def _place(row):
+def parse_place_row(row) -> Place:
+    """Validate a projected public Place row without I/O or publication checks.
+
+    Callers must enforce published visibility in their query and through RLS.
+    Raises PlacesConsistencyError for malformed data; ignores extra fields.
+    """
     if not isinstance(row, Mapping) or not _FIELDS <= row.keys():
         raise PlacesConsistencyError()
     slug = _text(row['slug'], 120)
@@ -170,7 +175,7 @@ class PlacesService:
                     query = query.eq('category', category)
                 response = (query.order('slug', desc=False)
                             .range(offset, offset + limit - 1).retry(False).execute())
-                places = tuple(_place(row) for row in _rows(response, limit))
+                places = tuple(parse_place_row(row) for row in _rows(response, limit))
                 if (len({p.id for p in places}) != len(places)
                         or len({p.slug for p in places}) != len(places)
                         or (category is not None and any(p.category != category for p in places))):
@@ -195,7 +200,7 @@ class PlacesService:
                             .eq('status', 'published').eq('slug', slug)
                             .limit(2).retry(False).execute())
                 rows = _rows(response, 1)
-                place = _place(rows[0]) if rows else None
+                place = parse_place_row(rows[0]) if rows else None
                 if place is not None and place.slug != slug:
                     raise PlacesConsistencyError()
             return place
