@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Edit Trip | RosaGo{% endblock %}
+{% block content %}
+<section class="account-panel" aria-labelledby="trip-title">
+    <h1 id="trip-title">Edit Trip</h1>
+    <form method="post" action="{{ url_for('trips_update', trip_id=trip_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+        <div class="account-field"><label for="trip-name">Trip name</label><input id="trip-name" name="name" type="text" required value="{{ name }}"></div>
+        <div class="account-field"><label for="visit-date">Visit date (optional)</label><input id="visit-date" name="visit_date" type="date" value="{{ visit_date }}"></div>
+        {% if message %}<p class="account-status" role="alert">{{ message }}</p>{% endif %}
+        <button class="site-button" type="submit">Save Changes</button>
+    </form>
+    <p><a class="text-link" href="{{ url_for('trips_detail', trip_id=trip_id) }}">Cancel</a></p>
+</section>
+{% endblock %}

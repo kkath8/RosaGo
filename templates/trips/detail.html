@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Trip | RosaGo{% endblock %}
+{% block content %}
+<section class="account-panel" aria-labelledby="trip-title">
+    <h1 id="trip-title">{{ detail.trip.name }}</h1>
+    {% if detail.trip.visit_date %}<p>Visit date: <time datetime="{{ detail.trip.visit_date.isoformat() }}">{{ detail.trip.visit_date.isoformat() }}</time></p>{% endif %}
+    <p><a class="text-link" href="{{ url_for('trips_edit', trip_id=detail.trip.id) }}">Edit Trip</a></p>
+    <h2>Places</h2>
+    {% if detail.memberships %}
+    <ol>
+        {% for member in detail.memberships %}<li value="{{ member.position }}">{% if member.place is not none %}{{ member.place.name }}{% else %}Place unavailable{% endif %}</li>{% endfor %}
+    </ol>
+    {% elif after_position %}<p>No more places on this page.</p>{% else %}<p>No places in this trip.</p>{% endif %}
+    {% if detail.next_after_position is not none %}<p><a class="text-link" href="{{ url_for('trips_detail', trip_id=detail.trip.id, after_position=detail.next_after_position) }}">Continue places</a></p>{% endif %}
+    {% if after_position %}<p><a class="text-link" href="{{ url_for('trips_detail', trip_id=detail.trip.id) }}">First places page</a></p>{% endif %}
+    <form method="post" action="{{ url_for('trips_delete', trip_id=detail.trip.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+        <p class="account-help">Deleting this trip also removes its saved memberships.</p>
+        <button class="site-button" type="submit">Delete Trip</button>
+    </form>
+    <p><a class="text-link" href="{{ url_for('trips_list') }}">Back to trips</a></p>
+</section>
+{% endblock %}

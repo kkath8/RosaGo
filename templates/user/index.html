@@ -9,6 +9,7 @@
     <p>Your profile information is currently unavailable.</p>
     {% endif %}
     <a class="text-link" href="{{ url_for('user_profile_edit') }}">Edit Profile</a>
+    <a class="text-link" href="{{ url_for('trips_list') }}">My Trips</a>
     <form class="account-logout" method="post" action="{{ url_for('logout') }}">
         <button class="account-logout-button" type="submit">Logout</button>
     </form>

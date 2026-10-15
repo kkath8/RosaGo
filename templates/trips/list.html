@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}My Trips | RosaGo{% endblock %}
+{% block content %}
+<section class="account-panel" aria-labelledby="trips-title">
+    <h1 id="trips-title">My Trips</h1>
+    <a class="site-button" href="{{ url_for('trips_new') }}">New Trip</a>
+    {% if trips %}
+    <ul>
+        {% for trip in trips %}
+        <li><a class="text-link" href="{{ url_for('trips_detail', trip_id=trip.id) }}">{{ trip.name }}</a>{% if trip.visit_date %} — <time datetime="{{ trip.visit_date.isoformat() }}">{{ trip.visit_date.isoformat() }}</time>{% endif %}</li>
+        {% endfor %}
+    </ul>
+    {% elif offset %}<p>No trips on this page.</p>
+    {% else %}<p>You have no trips yet.</p>{% endif %}
+    {% if offset %}<p><a class="text-link" href="{{ url_for('trips_list', offset=[0, offset - 50] | max) }}">Previous page</a></p>{% endif %}
+    {% if next_offset is not none %}<p><a class="text-link" href="{{ url_for('trips_list', offset=next_offset) }}">Next page</a></p>{% endif %}
+    <p><a class="text-link" href="{{ url_for('user_index') }}">Back to Account</a></p>
+</section>
+{% endblock %}

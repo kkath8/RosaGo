@@ -4,6 +4,7 @@ import logging
 import time
 import httpx
 import secrets
+from datetime import date
 
 from dotenv import load_dotenv
 from flask import Flask, current_app, flash, g, jsonify, redirect, render_template, request, session, url_for
@@ -11,6 +12,11 @@ from supabase import Client, ClientOptions, create_client
 from supabase_auth.errors import AuthApiError, AuthError
 
 from auth_helpers import login_required
+from trip_service import (
+    list_user_trips, get_user_trip, create_trip, update_trip, delete_trip,
+    TripServiceError, TripValidationError, TripNotFoundError,
+    TripOperationRejectedError, TripUnavailableError, TripConsistencyError,
+)
 from normal_auth_flask import (
     init_normal_auth, get_normal_auth_dependencies, establish_normal_session,
     SessionEstablishmentError, normal_auth_redirect_decision, AuthRedirectDecision,
@@ -87,6 +93,9 @@ def auth_callback():
 
 @app.after_request
 def protect_auth_response(response):
+    if request.path == '/user/trips' or request.path.startswith('/user/trips/'):
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['Referrer-Policy'] = 'same-origin'
     if request.path in ("/auth/callback", "/auth/reset-callback", "/reset-password", "/login", "/register", "/user", "/user/profile/edit"):
         response.headers["Cache-Control"] = "no-store"
     if request.path in ("/auth/callback", "/auth/reset-callback"):
@@ -541,6 +550,177 @@ def user_profile_edit():
                                csrf=csrf, message=message), status
     finally:
         g.auth = auth
+
+
+def _render_trip_page(template, **values):
+    """Keep request authority out of Jinja, including inherited templates."""
+    auth = g.pop('auth')
+    try:
+        return render_template(template, **values)
+    finally:
+        g.auth = auth
+
+
+def _trip_csrf():
+    record = get_normal_auth_dependencies().store.resolve(g.auth.auth_session_id)
+    return record.csrf if record is not None else None
+
+
+def _trip_post_check(fields):
+    tokens = request.form.getlist('csrf_token')
+    if (len(tokens) != 1 or not tokens[0].strip()
+            or not get_normal_auth_dependencies().coordinator.validate_csrf(
+                g.auth.auth_session_id, tokens[0])):
+        return 'Please reload this page and try again.', 403
+    if request.headers.get('Origin') not in (None, request.host_url.rstrip('/')):
+        return 'Please reload this page and try again.', 403
+    if (request.files or set(request.form) != fields
+            or any(len(request.form.getlist(field)) != 1 for field in fields)):
+        return 'Invalid trip form. Please reload this page and try again.', 400
+    return None
+
+
+def _trip_date(value):
+    if value == '':
+        return None
+    if re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', value):
+        try:
+            parsed = date.fromisoformat(value)
+        except ValueError:
+            pass
+        else:
+            if parsed.isoformat() == value:
+                return parsed
+    raise TripValidationError() from None
+
+
+def _trip_page_number(key, maximum):
+    values = request.args.getlist(key)
+    if not values:
+        return 0
+    if (len(values) != 1 or not re.fullmatch(r'[0-9]{1,10}', values[0])
+            or int(values[0]) > maximum):
+        raise TripValidationError()
+    return int(values[0])
+
+
+def _trip_failure(error, *, mutation=False):
+    if isinstance(error, TripNotFoundError):
+        return 'Trip not found.', 404
+    if isinstance(error, TripValidationError):
+        return 'Invalid trip input.', 400
+    if isinstance(error, TripOperationRejectedError):
+        return 'Trip operation was rejected.', 400
+    if isinstance(error, TripUnavailableError):
+        return (('Your change could not be confirmed. Check your trips before trying again.'
+                 if mutation else 'Trips are temporarily unavailable. Please try again later.'), 503)
+    if isinstance(error, TripConsistencyError):
+        return 'We could not display this page. Please try again later.', 500
+    raise error
+
+
+def _trip_form(template, *, trip_id=None, name='', visit_date='', message='', status=200):
+    csrf = _trip_csrf()
+    if csrf is None:
+        return 'Please reload this page and try again.', 403
+    return _render_trip_page(template, trip_id=trip_id, name=name, visit_date=visit_date,
+                             csrf=csrf, message=message), status
+
+
+@app.route('/user/trips', methods=['GET'])
+@login_required
+def trips_list():
+    try:
+        offset = _trip_page_number('offset', 2147483647 - 49)
+        trips = list_user_trips(g.auth, limit=50, offset=offset)
+    except TripServiceError as error:
+        return _trip_failure(error)
+    next_offset = offset + len(trips) if len(trips) == 50 and offset + 50 <= 2147483647 - 49 else None
+    return _render_trip_page('trips/list.html', trips=trips, offset=offset, next_offset=next_offset)
+
+
+@app.route('/user/trips/new', methods=['GET'])
+@login_required
+def trips_new():
+    return _trip_form('trips/new.html')
+
+
+@app.route('/user/trips', methods=['POST'])
+@login_required
+def trips_create():
+    failure = _trip_post_check({'csrf_token', 'name', 'visit_date'})
+    if failure is not None:
+        return failure
+    try:
+        visit_date = _trip_date(request.form['visit_date'])
+        trip = create_trip(g.auth, name=request.form['name'], visit_date=visit_date)
+    except TripValidationError:
+        return _trip_form('trips/new.html', name=request.form['name'], visit_date=request.form['visit_date'],
+                          message='Use a name of 1–100 characters without control characters and an optional date in YYYY-MM-DD format.', status=400)
+    except TripServiceError as error:
+        return _trip_failure(error, mutation=True)
+    return redirect(url_for('trips_detail', trip_id=trip.id), code=303)
+
+
+@app.route('/user/trips/<uuid:trip_id>', methods=['GET'])
+@login_required
+def trips_detail(trip_id):
+    try:
+        after = _trip_page_number('after_position', 2147483647)
+        detail = get_user_trip(g.auth, str(trip_id), membership_limit=50, after_position=after)
+    except TripServiceError as error:
+        return _trip_failure(error)
+    if detail is None:
+        return 'Trip not found.', 404
+    csrf = _trip_csrf()
+    if csrf is None:
+        return 'Please reload this page and try again.', 403
+    return _render_trip_page('trips/detail.html', detail=detail, csrf=csrf, after_position=after)
+
+
+@app.route('/user/trips/<uuid:trip_id>/edit', methods=['GET'])
+@login_required
+def trips_edit(trip_id):
+    try:
+        detail = get_user_trip(g.auth, str(trip_id))
+    except TripServiceError as error:
+        return _trip_failure(error)
+    if detail is None:
+        return 'Trip not found.', 404
+    trip = detail.trip
+    return _trip_form('trips/edit.html', trip_id=trip.id, name=trip.name,
+                      visit_date=trip.visit_date.isoformat() if trip.visit_date else '')
+
+
+@app.route('/user/trips/<uuid:trip_id>/edit', methods=['POST'])
+@login_required
+def trips_update(trip_id):
+    failure = _trip_post_check({'csrf_token', 'name', 'visit_date'})
+    if failure is not None:
+        return failure
+    try:
+        visit_date = _trip_date(request.form['visit_date'])
+        update_trip(g.auth, str(trip_id), name=request.form['name'], visit_date=visit_date)
+    except TripValidationError:
+        return _trip_form('trips/edit.html', trip_id=str(trip_id), name=request.form['name'],
+                          visit_date=request.form['visit_date'],
+                          message='Use a name of 1–100 characters without control characters and an optional date in YYYY-MM-DD format.', status=400)
+    except TripServiceError as error:
+        return _trip_failure(error, mutation=True)
+    return redirect(url_for('trips_detail', trip_id=str(trip_id)), code=303)
+
+
+@app.route('/user/trips/<uuid:trip_id>/delete', methods=['POST'])
+@login_required
+def trips_delete(trip_id):
+    failure = _trip_post_check({'csrf_token'})
+    if failure is not None:
+        return failure
+    try:
+        delete_trip(g.auth, str(trip_id))
+    except TripServiceError as error:
+        return _trip_failure(error, mutation=True)
+    return redirect(url_for('trips_list'), code=303)
 
 
 @app.route("/logout", methods=["POST"])

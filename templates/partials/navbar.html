@@ -5,7 +5,7 @@
             <a href="{{ url_for('index') }}"{% if request.endpoint == 'index' %} aria-current="page"{% endif %}>Home</a>
             <a href="{{ url_for('places_list') }}"{% if request.endpoint == 'places_list' %} aria-current="page"{% elif request.endpoint == 'places_detail' %} aria-current="true"{% endif %}>Explore</a>
             <a href="{{ url_for('map_index') }}"{% if request.endpoint == 'map_index' %} aria-current="page"{% endif %}>Map</a>
-            <a href="{{ url_for('user_index') }}"{% if request.endpoint == 'user_index' %} aria-current="page"{% elif request.endpoint == 'user_profile_edit' %} aria-current="true"{% endif %}>Account</a>
+            <a href="{{ url_for('user_index') }}"{% if request.endpoint == 'user_index' %} aria-current="page"{% elif request.endpoint in ('user_profile_edit', 'trips_list', 'trips_new', 'trips_create', 'trips_detail', 'trips_edit', 'trips_update', 'trips_delete') %} aria-current="true"{% endif %}>Account</a>
         </nav>
     </div>
 </header>
