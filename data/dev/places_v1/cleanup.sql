@@ -1,4 +1,7 @@
 -- DEVELOPMENT ONLY / NEVER PRODUCTION. Data script, NOT a migration.
+-- Production means real production users/data, not the Supabase branch label.
+-- A main/PRODUCTION label grants no authorization. Verify and designate the
+-- entire project as RosaGO capstone development/testing only; see README.md.
 -- Prepared offline; NOT executed. Verify the development project manually.
 -- In an editor copy only, replace the empty acknowledgement below.
 BEGIN;
@@ -157,8 +160,8 @@ DECLARE
 ]
 $manifest$::jsonb;
 BEGIN
-    IF operator_acknowledgement IS DISTINCT FROM 'I VERIFIED THE DEVELOPMENT PROJECT' THEN
-        RAISE EXCEPTION 'Development project acknowledgement required.';
+    IF operator_acknowledgement IS DISTINCT FROM 'I verified the connected Supabase project. I designated this entire project for RosaGO capstone development/testing only; it is not serving real production users/data. I understand these are synthetic test records and the Supabase main/PRODUCTION branch label does not make this safe automatically. I intentionally authorize this development-only operation.' THEN
+    RAISE EXCEPTION 'Development project acknowledgement required.';
     END IF;
     -- This acknowledgement is not proof of the connected project.
     -- Fail rather than read a stale snapshot after waiting for the table lock.

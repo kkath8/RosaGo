@@ -7,6 +7,33 @@ synthetic, not production data, and not real businesses or attractions. They are
 not verified or endorsed by the Santa Rosa City Tourism Office. Official POI
 data will be handled separately later.
 
+## Environment designation, including Supabase Free
+
+Supabase Free may expose only the main database branch, labeled "PRODUCTION"
+by Supabase. For this RosaGO capstone, the entire project is currently used only
+for development/testing. A branch label alone neither determines the project's
+actual use nor authorizes these scripts.
+
+Execution is allowed only after the operator explicitly designates the entire
+project as a non-production RosaGO capstone development/testing environment.
+Manually verify the connected project identity and its current use before each
+operation. Never use either script in a project serving real production users/data.
+If the project later becomes a real production deployment, these scripts must
+no longer be executed there, including cleanup.sql.
+
+Synthetic records must be removed before replacing them with verified/final
+tourism data where appropriate, while the project is still designated for
+development/testing. Resolve test membership references through separately
+authorized actions first; do not bypass cleanup guards. If transition already
+occurred, removal needs a separately reviewed production data-change procedure.
+
+The required acknowledgement for either script is exactly the following single
+line. It records operator intent, not automated environment verification:
+
+```text
+I verified the connected Supabase project. I designated this entire project for RosaGO capstone development/testing only; it is not serving real production users/data. I understand these are synthetic test records and the Supabase main/PRODUCTION branch label does not make this safe automatically. I intentionally authorize this development-only operation.
+```
+
 The scripts were prepared and tested statically offline; they have NOT been
 executed or runtime-validated against PostgreSQL/Supabase by this checkpoint.
 They are data scripts, not migrations. Never rerun `0002_places.sql` or
@@ -48,15 +75,17 @@ still use the existing external OpenStreetMap service.
 ## Manual application procedure
 
 1. Obtain authorization for execution separately from preparing these files.
-2. Manually verify the Supabase **development project** name, project reference,
-   and connection/editor target. Never execute against production. A database
-   name or the acknowledgement below cannot prove the target project.
+2. Manually verify the Supabase project name, project reference, and
+   connection/editor target. Confirm the entire project is explicitly designated
+   for RosaGO capstone development/testing and serves no real production users/data.
+   A database name, main/PRODUCTION branch label, or acknowledgement cannot prove
+   the target project's identity or current use.
 3. Use the trusted development `postgres` operator in the SQL Editor. Do not
    supply elevated credentials to Flask or a browser. Do not alter table grants,
    RLS, or application keys to enable this script.
 4. Review all 12 records and the whole `seed.sql` transaction. Use READ COMMITTED.
    In an editor copy, replace only the empty `operator_acknowledgement` string
-   with `I VERIFIED THE DEVELOPMENT PROJECT`. Keep repository defaults empty.
+   with the exact acknowledgement line above. Keep repository defaults empty.
 5. Execute the complete script as one transaction only after the above checks.
    Do not execute selected fragments. Lock timeout is 5 seconds; statement
    timeout is 30 seconds. Schedule a quiet development window because the

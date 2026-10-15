@@ -121,7 +121,7 @@ class DevelopmentPlacesSeedTests(unittest.TestCase):
             self.assertEqual(len(re.findall(r'\bCOMMIT\b', code)), 1)
             self.assertIn("SET LOCAL lock_timeout = '5s';", code)
             self.assertIn("SET LOCAL statement_timeout = '30s';", code)
-            self.assertIn("IF operator_acknowledgement IS DISTINCT FROM 'I VERIFIED THE DEVELOPMENT PROJECT' THEN", code)
+            self.assertIn("IF operator_acknowledgement IS DISTINCT FROM 'I verified the connected Supabase project. I designated this entire project for RosaGO capstone development/testing only; it is not serving real production users/data. I understand these are synthetic test records and the Supabase main/PRODUCTION branch label does not make this safe automatically. I intentionally authorize this development-only operation.' THEN", code)
             self.assertIn("IF current_setting('transaction_isolation') <> 'read committed' THEN", code)
             self.assertIn('LOCK TABLE public.places IN SHARE ROW EXCLUSIVE MODE;', code)
             self.assertLess(code.index('IF operator_acknowledgement'), code.index('LOCK TABLE'))
@@ -175,8 +175,11 @@ class DevelopmentPlacesSeedTests(unittest.TestCase):
                        'not verified or endorsed', '10 publicly visible', '1 draft and 1 archived',
                        'manually', 'trip_places', '0002_places.sql', '0003_trips.sql',
                        'no automatic startup/test/deployment execution', 'Official POI',
-                       'Static checks do not establish SQL', 'NOT been'):
-            self.assertIn(phrase.lower(), text.lower())
+                       'Static checks do not establish SQL', 'NOT been',
+                       'Supabase Free', 'main', 'PRODUCTION', 'entire project',
+                       'real production users/data', 'must no longer be executed',
+                       'removed before replacing'):
+            self.assertIn(phrase.lower(), ' '.join(text.split()).lower())
 
 
 if __name__ == '__main__':
