@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
-    <title>Email verification | RosaGO</title>
+    <title>Email verification | RosaGo</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
     <script src="{{ url_for('static', filename='js/verified.js') }}" defer></script>
 </head>
 <body>
     <main class="registration-layout">
         <section class="welcome" aria-labelledby="welcome-title">
-            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGO home">Rosa<span>GO</span><span class="brand-dot" aria-hidden="true">.</span></a>
+            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGo home">Rosa<span>Go</span><span class="brand-dot" aria-hidden="true">.</span></a>
             <p class="brand-description">Smart Tourism System for Santa Rosa, Laguna</p>
             <div class="welcome-copy">
                 <p class="eyebrow">A little closer to local</p>
@@ -28,7 +28,7 @@
                 <p class="eyebrow">Email verification</p>
                 <div role="status" aria-live="polite" aria-atomic="true">
                     <h2 id="verification-title">Email verified successfully</h2>
-                    <p class="form-intro" id="verification-message">Your RosaGO account has been verified. You can now continue to login.</p>
+                    <p class="form-intro" id="verification-message">Your RosaGo account has been verified. You can now continue to login.</p>
                 </div>
                 <a class="submit-button" href="{{ url_for('login') }}">Continue to Login</a>
                 <p class="form-intro"><a href="{{ url_for('register') }}">Back to registration</a></p>

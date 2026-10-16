@@ -100,10 +100,10 @@ class MapRouteTests(unittest.TestCase):
             nav = page.find('nav', **{'aria-label': 'Main navigation'})[0]
             links = [node for node in page.find('a') if nav in node.ancestors]
             self.assertEqual([(node.text.strip(), node.attrs['href']) for node in links],
-                             [('Home', '/'), ('Explore', '/places'), ('Map', '/map'), ('Account', '/user')])
+                             [('Dashboard', '/'), ('Explore', '/places'), ('Planner', '/user/trips/new'), ('My Trips', '/user/trips'), ('Map', '/map'), ('Profile', '/user')])
             self.assertEqual([(node.text, node.attrs['aria-current']) for node in links if 'aria-current' in node.attrs],
                              [('Map', 'page')])
-            for tag in ('img', 'iframe', 'canvas', 'object', 'embed', 'button', 'input', 'form'):
+            for tag in ('img', 'iframe', 'canvas', 'object', 'embed', 'button', 'form'):
                 self.assertEqual(page.find(tag), [])
             for node in page.elements:
                 self.assertNotIn(node.attrs.get('role'), ('application', 'alert'))

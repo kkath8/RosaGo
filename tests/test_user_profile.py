@@ -28,9 +28,9 @@ def assert_account_layout(test, response, heading, active):
     nav = page.find('nav', **{'aria-label': 'Main navigation'})[0]
     links = [node for node in page.find('a') if nav in node.ancestors]
     test.assertEqual([(node.text.strip(), node.attrs['href']) for node in links],
-                     [('Home', '/'), ('Explore', '/places'), ('Map', '/map'), ('Account', '/user')])
+                     [('Dashboard', '/'), ('Explore', '/places'), ('Planner', '/user/trips/new'), ('My Trips', '/user/trips'), ('Map', '/map'), ('Profile', '/user')])
     test.assertEqual([(node.text.strip(), node.attrs['aria-current']) for node in links
-                      if 'aria-current' in node.attrs], [('Account', active)])
+                      if 'aria-current' in node.attrs], [('Profile', active)])
     for tag in ('script', 'img', 'iframe'):
         test.assertEqual(page.find(tag), [])
     for value in ('/auth/status', 'fixture-access', 'fixture-refresh', 'fixture-session',
@@ -148,7 +148,7 @@ class UserProfileTests(unittest.TestCase):
         self.seed()
         for first, last, greeting in (
             (' Ana ', ' Cruz ', 'Welcome, Ana Cruz'), ('Ana', None, 'Welcome, Ana'),
-            (None, 'Cruz', 'Welcome, Cruz'), (None, None, 'Welcome to RosaGO'),
+            (None, 'Cruz', 'Welcome, Cruz'), (None, None, 'Welcome to RosaGo'),
         ):
             with self.subTest(first=first, last=last):
                 self.data[0].update(first_name=first, last_name=last, email='untrusted@example.invalid')
@@ -168,18 +168,20 @@ class UserProfileTests(unittest.TestCase):
         page = assert_account_layout(self, self.client.get('/user'), 'Account', 'page')
         self.assertEqual([node.text for node in page.find('a', href='/user/profile/edit')],
                          ['Edit Profile'])
-        forms = page.find('form')
+        forms = page.find('form', **{'class': 'account-logout'})
         self.assertEqual(len(forms), 1)
         self.assertEqual(forms[0].attrs['method'], 'post')
         self.assertEqual(forms[0].attrs['action'], '/logout')
         self.assertEqual(page.find('a', href='/logout'), [])
-        buttons = page.find('button')
+        buttons = [node for node in page.find('button') if forms[0] in node.ancestors]
         self.assertEqual(len(buttons), 1)
         self.assertEqual(buttons[0].text, 'Logout')
         self.assertEqual(buttons[0].attrs['type'], 'submit')
         self.assertNotIn('name', buttons[0].attrs)
         self.assertIn(forms[0], buttons[0].ancestors)
-        self.assertEqual(page.find('input'), [])
+        self.assertEqual([node for node in page.find('input') if forms[0] in node.ancestors], [])
+        sidebar_logout = page.find('form', action='/logout')[0]
+        self.assertEqual(sidebar_logout.attrs['method'], 'post')
         self.service.assert_called_once()
         self.assertEqual(len(self.requests), 1)
 
@@ -200,7 +202,7 @@ class UserProfileTests(unittest.TestCase):
         self.data = []
         response = self.client.get('/user')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Welcome to RosaGO', response.data)
+        self.assertIn(b'Welcome to RosaGo', response.data)
         self.assertIn(b'Your profile information is currently unavailable.', response.data)
         self.assertIn(b'verified@example.invalid', response.data)
         self.assert_authority_preserved(handle)

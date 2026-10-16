@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log in | RosaGO</title>
+    <title>Log in | RosaGo</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
     <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
 </head>
 <body>
     <main class="registration-layout">
         <section class="welcome" aria-labelledby="welcome-title">
-            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGO home">Rosa<span>GO</span><span class="brand-dot" aria-hidden="true">.</span></a>
+            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGo home">Rosa<span>Go</span><span class="brand-dot" aria-hidden="true">.</span></a>
             <p class="brand-description">Smart Tourism System for Santa Rosa, Laguna</p>
             <div class="welcome-copy">
                 <p class="eyebrow">A little closer to local</p>
@@ -25,7 +25,7 @@
         <section class="form-panel" aria-labelledby="login-title">
             <div class="registration-card">
                 <p class="eyebrow">Welcome back</p>
-                <h2 id="login-title">Log in to RosaGO</h2>
+                <h2 id="login-title">Log in to RosaGo</h2>
                 <p class="form-intro">Your next Santa Rosa discovery is waiting.</p>
                 <form id="login-form" method="post" action="{{ url_for('login') }}" novalidate>
                     <div class="field">

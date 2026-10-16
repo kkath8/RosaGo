@@ -36,7 +36,7 @@ class ForgotPasswordTests(unittest.TestCase):
     def test_page_and_links_without_authentication_calls(self):
         response = self.client.get('/forgot-password')
         self.assertEqual(response.status_code, 200)
-        for text in (b'Forgot your password?', b'Send Reset Link', b'Enter the email address associated with your RosaGO account.', b'/static/css/auth.css', b'/static/js/forgot-password.js', b'href="/login">Back to Login</a>'):
+        for text in (b'Forgot your password?', b'Send Reset Link', b'Enter the email address associated with your RosaGo account.', b'/static/css/auth.css', b'/static/js/forgot-password.js', b'href="/login">Back to Login</a>'):
             self.assertIn(text, response.data)
         self.assertIn(b'href="/forgot-password"', self.client.get('/login').data)
         self.assertFalse(response.headers.getlist('Set-Cookie'))

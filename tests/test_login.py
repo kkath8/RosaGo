@@ -288,7 +288,7 @@ class LoginTests(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 303)
         self.assertEqual(response.headers["Location"], "/user")
-        self.assertIn(b"Welcome to RosaGO", self.client.get("/user").data)
+        self.assertIn(b"Welcome to RosaGo", self.client.get("/user").data)
         self.login_client.auth.sign_in_with_password.assert_called_once_with(self.credentials)
         options = self.create_client.call_args.kwargs["options"]
         self.assertFalse(options.persist_session)
@@ -355,7 +355,7 @@ class LoginTests(unittest.TestCase):
         self.create_client.reset_mock()
         response = self.client.get("/user")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Welcome to RosaGO", response.data)
+        self.assertIn(b"Welcome to RosaGo", response.data)
         self.assertIn(b"ana@example.com", response.data)
         self.assertIn(b'method="post" action="/logout"', response.data)
         self.assertNotIn(b'href="/logout"', response.data)

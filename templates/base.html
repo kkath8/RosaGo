@@ -10,9 +10,22 @@
 <body class="public-site">
     <a class="skip-link" href="#main-content">Skip to content</a>
     {% include 'partials/navbar.html' %}
+    <div class="app-content">
+    <header class="site-topbar" aria-label="Application toolbar">
+        <div class="topbar-search">
+            <label class="visually-hidden" for="shell-search">Search places (coming soon)</label>
+            <input id="shell-search" type="search" placeholder="Search places, categories, or keywords..." disabled aria-describedby="search-availability">
+            <span id="search-availability" class="coming-soon">Coming Soon</span>
+        </div>
+        <a class="topbar-profile" href="{{ url_for('user_index') }}" aria-label="Your profile">
+            <span class="user-avatar" aria-hidden="true">{% if user_email is defined and user_email %}{{ user_email[0] | upper }}{% else %}RG{% endif %}</span>
+            <span>Profile</span>
+        </a>
+    </header>
     <main id="main-content" class="site-main" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
     {% include 'partials/footer.html' %}
+    </div>
 </body>
 </html>

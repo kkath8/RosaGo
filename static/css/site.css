@@ -1,6 +1,8 @@
 /* Shared tourism and Account/Profile styles. Standalone auth/recovery pages retain auth.css. */
 .public-site {
-    --site-red: #96281b;
+    --site-red: #c0392b;
+    --site-deep-red: #96281b;
+    --site-gold: #f1c40f;
     --site-ink: #302822;
     --site-muted: #6c6058;
     --site-border: #ded4ca;
@@ -18,16 +20,6 @@
 .public-site a { color: var(--site-red); text-underline-offset: 0.2em; }
 .public-site :focus-visible { outline: 3px solid var(--site-red); outline-offset: 4px; }
 .public-site .skip-link { align-self: flex-start; margin: 0.5rem max(1rem, calc((100% - 1120px) / 2)); padding: 0.5rem; min-height: 44px; }
-.public-site .site-header { border-bottom: 1px solid var(--site-border); background: #fff; }
-.public-site .header-inner, .public-site .site-main, .public-site .footer-inner { width: min(100% - 3rem, 1120px); margin-inline: auto; }
-.public-site .header-inner { display: flex; justify-content: space-between; align-items: center; gap: 1rem 2rem; padding-block: 1rem; flex-wrap: wrap; }
-.public-site .site-brand { display: inline-flex; align-items: center; min-height: 44px; font-size: 1.85rem; font-weight: 750; letter-spacing: -0.07em; text-decoration: none; }
-.public-site .site-brand span { color: var(--site-ink); }
-.public-site .site-brand .brand-dot { color: #a34a12; }
-.public-site .site-nav { display: flex; gap: 0.25rem; flex-wrap: wrap; }
-.public-site .site-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0.6rem 1rem; color: var(--site-ink); text-decoration: none; border-bottom: 3px solid transparent; }
-.public-site .site-nav a[aria-current] { color: var(--site-red); border-bottom-color: var(--site-red); font-weight: 650; }
-.public-site .site-nav a:hover { background: #faf0e8; text-decoration: underline; }
 .public-site .site-main { flex: 1; padding-block: clamp(2rem, 5vw, 4.5rem); overflow-wrap: anywhere; }
 .public-site h1 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 5vw, 3.8rem); font-weight: 400; line-height: 1.12; letter-spacing: -0.035em; margin: 0 0 1.5rem; max-width: 22ch; }
 .public-site h2 { font-size: 1.4rem; line-height: 1.3; margin: 0 0 1rem; }
@@ -37,7 +29,7 @@
 .public-site .home-intro { border-left: 4px solid #e6b85c; padding: clamp(1rem, 4vw, 3rem); margin-block: 1rem 3rem; }
 .public-site .page-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; margin-top: 2rem; }
 .public-site .site-button { display: inline-flex; align-items: center; gap: 1rem; min-height: 48px; padding: 0.75rem 1.25rem; border-radius: 6px; background: var(--site-red); color: #fff; font-weight: 600; text-decoration: none; }
-.public-site .site-button:hover { background: #762015; text-decoration: underline; }
+.public-site .site-button:hover { background: var(--site-deep-red); text-decoration: underline; }
 .public-site .text-link, .public-site .back-link { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px; }
 .public-site .category-nav { margin-block: 2rem; }
 .public-site .category-nav ul { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0; margin: 0; }
@@ -117,10 +109,7 @@
     .public-site .home-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 700px) {
-    .public-site .header-inner, .public-site .site-main, .public-site .footer-inner { width: calc(100% - 2rem); }
-    .public-site .header-inner { gap: 0.5rem; }
-    .public-site .site-nav { width: 100%; }
-    .public-site .site-nav a { flex: 1; justify-content: center; padding-inline: 0.75rem; }
+    .public-site .site-main, .public-site .footer-inner { width: calc(100% - 2rem); }
     .public-site .places-grid { grid-template-columns: minmax(0, 1fr); }
     .public-site .place-card { padding: 1rem; }
     .public-site .home-intro { margin-block: 0 1rem; }
@@ -128,4 +117,59 @@
 }
 @media (max-width: 480px) {
     .public-site .home-categories { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* UI-1 shared application shell. Auth/recovery retain their standalone layouts. */
+.public-site .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.public-site .skip-link { position: fixed; top: -6rem; left: 1rem; z-index: 1200; background: white; margin: 0; }
+.public-site .skip-link:focus { top: 0.5rem; }
+.public-site .site-sidebar { position: fixed; inset: 0 auto 0 0; width: 244px; display: flex; flex-direction: column; padding: 1.5rem 1rem; background: #fff; border-right: 1px solid var(--site-border); overflow-y: visible; }
+.public-site .site-brand { display: inline-flex; align-items: center; align-self: flex-start; min-height: 44px; padding-inline: 0.75rem; color: var(--site-red); font-size: 2rem; font-weight: 750; letter-spacing: -0.06em; text-decoration: none; }
+.public-site .site-brand span { color: var(--site-gold); }
+.public-site .sidebar-caption { padding-inline: 0.75rem; font-size: 0.8rem; color: var(--site-muted); margin-bottom: 1.5rem; }
+.public-site .site-nav { display: flex; flex-direction: column; gap: 0.25rem; }
+.public-site .site-nav a, .public-site .nav-unavailable { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 44px; padding: 0.65rem 0.75rem; border-radius: 6px; font-size: 0.9rem; text-decoration: none; color: var(--site-ink); }
+.public-site .site-nav a:hover { background: #faf0ed; }
+.public-site .site-nav a[aria-current] { background: var(--site-red); color: white; font-weight: 650; }
+.public-site .site-nav hr { width: 100%; margin: 0.65rem 0; border: 0; border-top: 1px solid var(--site-border); }
+.public-site .nav-unavailable { color: var(--site-muted); }
+.public-site .badge, .public-site .coming-soon { display: inline-block; padding: 0.15rem 0.45rem; border: 1px solid #e7d8af; border-radius: 4px; background: #fff8e6; color: #745027; font-size: 0.65rem; font-weight: 600; white-space: nowrap; }
+.public-site .sidebar-account { margin-top: auto; padding: 1.5rem 0.75rem 0; }
+.public-site .user-summary { font-size: 0.85rem; overflow-wrap: anywhere; }
+.public-site .app-content { margin-left: 244px; min-width: 0; min-height: 100vh; display: flex; flex-direction: column; }
+.public-site .site-topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem clamp(1rem, 3vw, 2.5rem); background: #fff; border-bottom: 1px solid var(--site-border); }
+.public-site .topbar-search { display: flex; align-items: center; gap: 0.75rem; width: min(100%, 620px); min-width: 0; }
+.public-site .topbar-search input { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--site-border); border-radius: 6px; padding: 0.65rem 0.85rem; font: inherit; font-size: 0.85rem; background: #faf7f2; color: var(--site-muted); opacity: 1; }
+.public-site .topbar-search input::placeholder { color: var(--site-muted); opacity: 1; }
+.public-site .topbar-profile { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; font-size: 0.85rem; }
+.public-site .user-avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #faf0ed; color: var(--site-deep-red); font-weight: 700; }
+.public-site .site-main, .public-site .footer-inner, .public-site .page-container { width: min(100% - 3rem, 1120px); margin-inline: auto; }
+.public-site .site-main { padding-block: 2.5rem; }
+.public-site .page-heading { font: 600 clamp(1.75rem, 4vw, 2.5rem)/1.2 "Segoe UI", Arial, sans-serif; }
+.public-site .page-subheading { color: var(--site-muted); }
+.public-site .card { min-width: 0; padding: 1.5rem; border: 1px solid var(--site-border); border-radius: 8px; background: #fff; box-shadow: 0 2px 8px #30282206; }
+.public-site .site-button { border: 1px solid var(--site-red); font: inherit; font-weight: 600; cursor: pointer; }
+.public-site .site-button-secondary { background: #fff; color: var(--site-deep-red); }
+.public-site .site-button-secondary:hover { background: #faf0ed; }
+.public-site .form-field { display: block; width: 100%; min-width: 0; min-height: 46px; padding: 0.65rem 0.75rem; border: 1px solid var(--site-border); border-radius: 5px; background: #fff; color: var(--site-ink); font: inherit; }
+.public-site .section-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.public-site .responsive-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 1.5rem; }
+.public-site .table-scroll { max-width: 100%; overflow-x: auto; }
+.public-site .site-main img { max-width: 100%; height: auto; }
+@media (max-width: 1000px) {
+    .public-site .site-sidebar { position: static; width: 100%; border-right: 0; border-bottom: 1px solid var(--site-border); padding: 0.75rem 1rem; }
+    .public-site .sidebar-caption { margin-bottom: 0.5rem; }
+    .public-site .site-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+    .public-site .site-nav a { justify-content: flex-start; }
+    .public-site .site-nav hr { grid-column: 1 / -1; margin: 0.25rem 0; }
+    .public-site .nav-unavailable { flex-wrap: wrap; }
+    .public-site .sidebar-account { padding: 0.5rem 0.75rem 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 1rem; }
+    .public-site .user-summary { margin: 0; }
+    .public-site .app-content { margin-left: 0; min-height: auto; flex: 1; }
+}
+@media (max-width: 600px) {
+    .public-site .site-main, .public-site .footer-inner, .public-site .page-container { width: calc(100% - 2rem); }
+    .public-site .site-topbar { flex-wrap: wrap; }
+    .public-site .topbar-search { flex: 1 1 100%; flex-wrap: wrap; gap: 0.25rem; }
+    .public-site .site-nav a, .public-site .nav-unavailable { font-size: 0.8rem; padding: 0.5rem; }
 }

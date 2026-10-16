@@ -3,7 +3,7 @@
 {% block content %}
 <section class="account-panel" aria-labelledby="account-title">
     <h1 id="account-title">Account</h1>
-    <p>{% if profile and (profile.first_name or profile.last_name) %}Welcome, {{ [profile.first_name, profile.last_name] | select | join(' ') }}{% else %}Welcome to RosaGO{% endif %}</p>
+    <p>{% if profile and (profile.first_name or profile.last_name) %}Welcome, {{ [profile.first_name, profile.last_name] | select | join(' ') }}{% else %}Welcome to RosaGo{% endif %}</p>
     <p class="account-identity">Signed in as {{ user_email }}</p>
     {% if profile is none %}
     <p>Your profile information is currently unavailable.</p>

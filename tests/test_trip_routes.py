@@ -117,7 +117,9 @@ class TripRouteTests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.protected(response)
             self.assertIn(b'/static/css/site.css', response.data)
-            self.assertIn(b'aria-current="true">Account', response.data)
+            label = 'Planner' if path == ROOT + '/new' else 'My Trips'
+            state = 'page' if path in (ROOT, ROOT + '/new') else 'true'
+            self.assertIn(f'aria-current="{state}">{label}'.encode(), response.data)
         self.assertEqual(self.services['list_user_trips'].call_args.kwargs, {'limit': 50, 'offset': 0})
         detail = self.client.get(DETAIL)
         self.assertIn(b'Place unavailable', detail.data)

@@ -102,10 +102,10 @@ class UserProfileEditTests(unittest.TestCase):
         page = test_user_profile.assert_account_layout(self, response, 'Edit Profile', 'true')
         self.assert_protected(response)
         self.assertEqual(len(page.find('meta', name='referrer', content='same-origin')), 1)
-        forms = page.find('form')
+        forms = page.find('form', action=self.path)
         self.assertEqual(len(forms), 1)
         self.assertEqual(forms[0].attrs, {'method': 'post', 'action': self.path})
-        inputs = page.find('input')
+        inputs = [node for node in page.find('input') if forms[0] in node.ancestors]
         self.assertEqual([node.attrs['name'] for node in inputs],
                          ['csrf_token', 'first_name', 'last_name'])
         csrf = page.find('input', name='csrf_token')
@@ -129,7 +129,7 @@ class UserProfileEditTests(unittest.TestCase):
                 self.assertNotIn(attr, node.attrs)
         for node in inputs:
             self.assertIn(forms[0], node.ancestors)
-        buttons = page.find('button')
+        buttons = [node for node in page.find('button') if forms[0] in node.ancestors]
         self.assertEqual(len(buttons), 1)
         self.assertEqual(buttons[0].text, 'Save Changes')
         self.assertEqual(buttons[0].attrs['type'], 'submit')

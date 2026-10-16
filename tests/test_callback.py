@@ -12,7 +12,7 @@ class CallbackTests(unittest.TestCase):
             response = self.client.get("/auth/callback" + suffix)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b"Email verified successfully", response.data)
-            self.assertIn(b"Your RosaGO account has been verified. You can now continue to login.", response.data)
+            self.assertIn(b"Your RosaGo account has been verified. You can now continue to login.", response.data)
             self.assertIn(b"Continue to Login", response.data)
             self.assertIn(b'href="/login">Continue to Login</a>', response.data)
             self.assertNotIn(b"private-", response.data)

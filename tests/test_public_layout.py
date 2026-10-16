@@ -126,7 +126,7 @@ class PublicLayoutTests(unittest.TestCase):
 
     def test_navigation_destinations_and_active_section(self):
         for path, current_label, current_value in (
-            ('/', 'Home', 'page'), ('/places', 'Explore', 'page'),
+            ('/', 'Dashboard', 'page'), ('/places', 'Explore', 'page'),
             ('/places/synthetic-place', 'Explore', 'true'),
         ):
             with self.subTest(path=path):
@@ -135,7 +135,7 @@ class PublicLayoutTests(unittest.TestCase):
                 self.assertEqual(len(navs), 1)
                 links = [node for node in page.find('a') if navs[0] in node.ancestors]
                 self.assertEqual([(node.text.strip(), node.attrs['href']) for node in links],
-                                 [('Home', '/'), ('Explore', '/places'), ('Map', '/map'), ('Account', '/user')])
+                                 [('Dashboard', '/'), ('Explore', '/places'), ('Planner', '/user/trips/new'), ('My Trips', '/user/trips'), ('Map', '/map'), ('Profile', '/user')])
                 active = [node for node in links if 'aria-current' in node.attrs]
                 self.assertEqual([(node.text.strip(), node.attrs['aria-current']) for node in active],
                                  [(current_label, current_value)])
@@ -145,6 +145,21 @@ class PublicLayoutTests(unittest.TestCase):
                         self.assertNotIn('hidden', ancestor.attrs)
                         self.assertNotEqual(ancestor.attrs.get('aria-hidden'), 'true')
                         self.assertNotIn('tabindex', ancestor.attrs)
+
+    def test_shell_unavailable_features_are_inert(self):
+        for path in self.paths:
+            page = self.page(path)
+            search = page.find('input', id='shell-search')[0]
+            self.assertIn('disabled', search.attrs)
+            self.assertNotIn('name', search.attrs)
+            self.assertFalse(any(node.tag == 'form' for node in search.ancestors))
+            unavailable = page.find('span', **{'class': 'nav-unavailable'})
+            self.assertEqual([node.text.split(' Coming Soon')[0] for node in unavailable],
+                             ['Transport', 'Alerts', 'Settings'])
+            for node in unavailable:
+                self.assertEqual(node.attrs['aria-disabled'], 'true')
+                self.assertNotIn('href', node.attrs)
+            self.assertEqual(page.find('a', href='/logout'), [])
 
     def test_home_actions_do_not_load_catalog(self):
         self.service.list_published.side_effect = AssertionError('Home must not load places.')
