@@ -1,5 +1,7 @@
 """Protected Trip CRUD through real auth scopes and offline service doubles."""
 from contextlib import contextmanager
+from dataclasses import replace
+from types import SimpleNamespace
 from datetime import date, datetime, timezone
 import io
 import time
@@ -15,6 +17,7 @@ from normal_auth_flask import normal_authenticated
 from normal_auth_store import NormalAuthSession
 from trip_service import (Trip, TripDetail, TripPlace, TripValidationError, TripNotFoundError,
                           TripOperationRejectedError, TripUnavailableError, TripConsistencyError)
+from test_public_layout import Document
 import test_registration
 
 
@@ -282,6 +285,74 @@ class TripRouteTests(unittest.TestCase):
                 self.assertIs(g.auth, outer)
                 outer.client.close.assert_not_called()
             self.assertNotIn('auth', g)
+
+    def test_trip_presentation_forms_keep_exact_fields_and_actions(self):
+        for path, action, heading, submit in (
+            (ROOT + '/new', ROOT, 'Plan a Trip', 'Create Trip'),
+            (DETAIL + '/edit', DETAIL + '/edit', 'Edit Trip', 'Save Changes'),
+        ):
+            page = Document(self.client.get(path).get_data(as_text=True))
+            self.assertEqual([node.text for node in page.find('h1')], [heading])
+            form = page.find('form', action=action)[0]
+            self.assertEqual(form.attrs['method'], 'post')
+            inputs = [node for node in page.find('input') if form in node.ancestors]
+            self.assertEqual([node.attrs['name'] for node in inputs], ['csrf_token', 'name', 'visit_date'])
+            self.assertEqual(inputs[0].attrs['value'], self.csrf)
+            self.assertIn('required', inputs[1].attrs)
+            self.assertNotIn('required', inputs[2].attrs)
+            self.assertEqual([node.text for node in page.find('button') if form in node.ancestors], [submit])
+            self.assertEqual(page.find('script'), [])
+            self.assertEqual(page.find('select'), [])
+            self.assertEqual(page.stack, [])
+        response = self.client.post(ROOT, data=self.form(ROOT, visit_date='invalid'))
+        page = Document(response.get_data(as_text=True))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(len(page.find('p', id='trip-form-error', role='alert')), 1)
+
+    def test_trip_cards_empty_states_dates_and_pagination(self):
+        service = self.services['list_user_trips']
+        service.side_effect = None
+        service.return_value = (replace(self.trip, visit_date=None),)
+        page = Document(self.client.get(ROOT).get_data(as_text=True))
+        self.assertIn('Date not set', page.find('main')[0].text)
+        self.assertEqual(page.find('a', href=DETAIL)[0].text, 'View Trip')
+        self.assertEqual(page.find('a', href=DETAIL + '/edit')[0].text, 'Edit')
+        self.assertEqual(page.find('h2')[0].text, self.trip.name)
+        service.return_value = ()
+        self.assertIn(b'Plan Your First Trip', self.client.get(ROOT).data)
+        later = self.client.get(ROOT + '?offset=50').get_data(as_text=True)
+        self.assertIn('No trips on this page.', later)
+        self.assertNotIn('Plan Your First Trip', later)
+        self.assertIn('offset=0', later)
+        service.return_value = (self.trip,) * 50
+        self.assertIn(b'offset=50', self.client.get(ROOT).data)
+
+    def test_memberships_empty_pagination_and_post_delete_presentation(self):
+        page = Document(self.client.get(DETAIL).get_data(as_text=True))
+        membership_list = page.find('ol', **{'class': 'trip-memberships'})[0]
+        members = [node for node in page.find('li') if membership_list in node.ancestors]
+        self.assertEqual([(node.attrs['value'], node.text) for node in members], [('3', 'Place unavailable')])
+        self.assertEqual(len(page.find('a', href=DETAIL + '?after_position=3')), 1)
+        delete = page.find('form', action=DETAIL + '/delete')[0]
+        self.assertEqual(delete.attrs['method'], 'post')
+        self.assertEqual(page.find('a', href=DETAIL + '/delete'), [])
+        fields = [node for node in page.find('input') if delete in node.ancestors]
+        self.assertEqual([(node.attrs['name'], node.attrs['value']) for node in fields], [('csrf_token', self.csrf)])
+        section = page.find('section', **{'aria-labelledby': 'trip-destinations-title'})[0]
+        for tag in ('button', 'form', 'input', 'select'):
+            self.assertFalse(any(section in node.ancestors for node in page.find(tag)))
+        service = self.services['get_user_trip']
+        service.side_effect = None
+        service.return_value = replace(self.detail, memberships=(), next_after_position=None)
+        self.assertIn(b'No destinations added yet.', self.client.get(DETAIL).data)
+        later = self.client.get(DETAIL + '?after_position=3').get_data(as_text=True)
+        self.assertIn('No more places on this page.', later)
+        self.assertNotIn('No destinations added yet.', later)
+        member = replace(self.detail.memberships[0], place=SimpleNamespace(name='<script>Place</script>'))
+        service.return_value = replace(self.detail, memberships=(member,))
+        html = self.client.get(DETAIL).get_data(as_text=True)
+        self.assertIn('&lt;script&gt;Place&lt;/script&gt;', html)
+        self.assertNotIn('<script>', html)
 
     def test_trip_templates_compile(self):
         for name in ('trips/list.html', 'trips/new.html', 'trips/detail.html', 'trips/edit.html',

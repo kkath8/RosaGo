@@ -1,19 +1,36 @@
 {% extends 'base.html' %}
 {% block title %}My Trips | RosaGo{% endblock %}
 {% block content %}
-<section class="account-panel" aria-labelledby="trips-title">
-    <h1 id="trips-title">My Trips</h1>
-    <a class="site-button" href="{{ url_for('trips_new') }}">New Trip</a>
+<section class="trip-page" aria-labelledby="trips-title">
+    <header class="trip-heading trip-heading-actions">
+        <div><p class="eyebrow">Your plans</p><h1 id="trips-title" class="page-heading">My Trips</h1><p class="page-subheading">Keep your Santa Rosa visits together, ready for your next adventure.</p></div>
+        <a class="site-button" href="{{ url_for('trips_new') }}">Plan a Trip</a>
+    </header>
     {% if trips %}
-    <ul>
+    <ul class="trip-grid">
         {% for trip in trips %}
-        <li><a class="text-link" href="{{ url_for('trips_detail', trip_id=trip.id) }}">{{ trip.name }}</a>{% if trip.visit_date %} — <time datetime="{{ trip.visit_date.isoformat() }}">{{ trip.visit_date.isoformat() }}</time>{% endif %}</li>
+        <li><article class="card trip-card">
+            <h2>{{ trip.name }}</h2>
+            <p class="trip-date">{% if trip.visit_date %}Visit date: <time datetime="{{ trip.visit_date.isoformat() }}">{{ trip.visit_date.strftime('%b %d, %Y') }}</time>{% else %}Date not set{% endif %}</p>
+            <div class="trip-actions">
+                <a class="site-button site-button-secondary" href="{{ url_for('trips_detail', trip_id=trip.id) }}" aria-label="View trip: {{ trip.name }}">View Trip</a>
+                <a class="text-link" href="{{ url_for('trips_edit', trip_id=trip.id) }}" aria-label="Edit trip: {{ trip.name }}">Edit</a>
+            </div>
+        </article></li>
         {% endfor %}
     </ul>
-    {% elif offset %}<p>No trips on this page.</p>
-    {% else %}<p>You have no trips yet.</p>{% endif %}
-    {% if offset %}<p><a class="text-link" href="{{ url_for('trips_list', offset=[0, offset - 50] | max) }}">Previous page</a></p>{% endif %}
-    {% if next_offset is not none %}<p><a class="text-link" href="{{ url_for('trips_list', offset=next_offset) }}">Next page</a></p>{% endif %}
-    <p><a class="text-link" href="{{ url_for('user_index') }}">Back to Account</a></p>
+    {% else %}
+    <div class="empty-state trip-empty">
+        {% if offset %}<h2>No trips on this page.</h2><p>Return to the previous page to see your plans.</p>
+        {% else %}<h2>Your next visit starts here</h2><p>You have no trips yet. Give your first Santa Rosa trip a name and choose a date when you are ready.</p><a class="site-button" href="{{ url_for('trips_new') }}">Plan Your First Trip</a>{% endif %}
+    </div>
+    {% endif %}
+    {% if offset or next_offset is not none %}
+    <nav class="trip-pagination" aria-label="Trip pages">
+        {% if offset %}<a class="text-link" href="{{ url_for('trips_list', offset=[0, offset - 50] | max) }}">Previous page</a>{% endif %}
+        {% if next_offset is not none %}<a class="text-link" href="{{ url_for('trips_list', offset=next_offset) }}">Next page</a>{% endif %}
+    </nav>
+    {% endif %}
+    <a class="text-link trip-back" href="{{ url_for('user_index') }}">Back to Account</a>
 </section>
 {% endblock %}

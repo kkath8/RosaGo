@@ -522,3 +522,199 @@
         transform: none;
     }
 }
+
+/* UI-4: trip planning, list, detail, and edit presentation only. */
+.public-site .trip-page {
+    min-width: 0;
+}
+.public-site .trip-heading {
+    margin-bottom: 1.75rem;
+}
+.public-site .trip-heading h1 {
+    max-width: none;
+    margin-bottom: 0.75rem;
+    overflow-wrap: anywhere;
+}
+.public-site .trip-heading .eyebrow {
+    margin-bottom: 0.6rem;
+}
+.public-site .trip-heading .page-subheading,
+.public-site .trip-heading .trip-date {
+    margin-bottom: 0;
+}
+.public-site .trip-heading-actions,
+.public-site .trip-actions,
+.public-site .trip-pagination {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+}
+.public-site .trip-heading-actions {
+    justify-content: space-between;
+}
+.public-site .trip-heading-actions > div {
+    min-width: 0;
+    flex: 1 1 20rem;
+}
+.public-site .trip-form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 600px) minmax(0, 320px);
+    gap: 1.5rem;
+    align-items: start;
+}
+.public-site .trip-page .card {
+    border-radius: 10px;
+    padding: 1.5rem;
+}
+.public-site .trip-page h2 {
+    font-size: 1.2rem;
+    line-height: 1.4;
+}
+.public-site .trip-help,
+.public-site .trip-date,
+.public-site .trip-unavailable {
+    color: var(--site-muted);
+    font-size: 0.9rem;
+}
+.public-site .trip-form .trip-help {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+}
+.public-site .trip-required,
+.public-site .trip-optional {
+    color: var(--site-muted);
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+.public-site .trip-form .trip-actions {
+    padding-top: 1rem;
+    border-top: 1px solid var(--site-border);
+}
+.public-site .trip-form input {
+    font: inherit;
+    min-width: 0;
+    max-width: 100%;
+}
+.public-site .trip-guidance {
+    border-top: 3px solid var(--site-gold);
+}
+.public-site .trip-guidance h2 {
+    margin-top: 1rem;
+}
+.public-site .trip-guidance p:last-child {
+    margin-bottom: 0;
+}
+.public-site .trip-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.public-site .trip-grid > li {
+    min-width: 0;
+}
+.public-site .trip-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-top: 3px solid var(--site-deep-red);
+}
+.public-site .trip-card h2 {
+    overflow-wrap: anywhere;
+}
+.public-site .trip-card .trip-actions {
+    margin-top: auto;
+}
+.public-site .trip-card .site-button {
+    min-height: 44px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+}
+.public-site .trip-empty {
+    padding-block: 1.5rem;
+}
+.public-site .trip-empty h3 {
+    margin: 0 0 0.65rem;
+    font-size: 1.1rem;
+}
+.public-site .trip-empty p {
+    color: var(--site-muted);
+}
+.public-site .trip-back,
+.public-site .trip-pagination {
+    margin-block: 1rem;
+}
+.public-site .trip-destinations .section-header h2 {
+    margin: 0;
+}
+.public-site .trip-destinations .coming-soon {
+    white-space: normal;
+}
+.public-site .trip-memberships {
+    margin: 1rem 0;
+    padding-left: 2.75rem;
+}
+.public-site .trip-memberships li {
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid var(--site-border);
+    overflow-wrap: anywhere;
+}
+.public-site .trip-memberships li::marker {
+    color: var(--site-deep-red);
+    font-weight: 600;
+}
+.public-site .trip-delete {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+.public-site .trip-delete h2 {
+    color: var(--site-deep-red);
+    margin-bottom: 0.5rem;
+}
+.public-site .trip-delete p {
+    margin-bottom: 0;
+}
+.public-site .trip-delete-button {
+    min-height: 44px;
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--site-deep-red);
+    border-radius: 6px;
+    color: var(--site-deep-red);
+    background: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+.public-site .trip-delete-button:hover {
+    background: #faf0ed;
+}
+@media (max-width: 1200px) {
+    .public-site .trip-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 800px) {
+    .public-site .trip-form-layout,
+    .public-site .trip-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .public-site .trip-form-layout {
+        max-width: 600px;
+    }
+}
+@media (max-width: 480px) {
+    .public-site .trip-page .card {
+        padding: 1.1rem;
+    }
+    .public-site .trip-form .trip-actions > * {
+        width: 100%;
+        justify-content: center;
+    }
+}
