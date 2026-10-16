@@ -124,8 +124,7 @@ class PlacesRouteTests(unittest.TestCase):
         response = self.get('/places')
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Places are on the way', response.data)
-        self.assertIn(b'Verified place information from the Santa Rosa City Tourism Office is '
-                      b'pending. Please check back later.', response.data)
+        self.assertIn(b'No published places are available yet. Please check back later.', response.data)
 
     def test_empty_categories_are_success_without_claiming_catalog_is_empty(self):
         self.service.list_published.return_value = ()
@@ -156,10 +155,10 @@ class PlacesRouteTests(unittest.TestCase):
                       'category=nature&category=dining'):
             response = self.get('/places?' + query)
             self.assertEqual(response.status_code, 400)
-            self.assertEqual(response.data, b'Invalid place category.')
+            self.assertIn(b'Invalid place category.', response.data)
             self.assertEqual(response.headers['Cache-Control'], 'no-store')
         self.service.list_published.assert_not_called()
-        self.render.assert_not_called()
+        self.assertTrue(all(call.args[0] == 'places/error.html' for call in self.render.call_args_list))
 
     def test_unrelated_query_controls_are_ignored(self):
         response = self.get('/places?limit=999&offset=5&order=name&select=*&status=draft')
@@ -177,9 +176,9 @@ class PlacesRouteTests(unittest.TestCase):
         self.service.get_published_by_slug.return_value = None
         response = self.get('/places/missing')
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data, b'Place not found.')
+        self.assertIn(b'Place not found.', response.data)
         self.assertEqual(response.headers['Cache-Control'], 'no-store')
-        self.render.assert_not_called()
+        self.assertTrue(all(call.args[0] == 'places/error.html' for call in self.render.call_args_list))
 
     def test_all_error_mappings_ignore_exception_messages_and_notes(self):
         for path, method, validation_status, validation_message in (
@@ -197,10 +196,11 @@ class PlacesRouteTests(unittest.TestCase):
                 method.side_effect = error
                 response = self.get(path)
                 self.assertEqual(response.status_code, status)
-                self.assertEqual(response.data, message)
+                self.assertIn(message, response.data)
+                self.assertNotIn(b'private-provider', response.data)
                 self.assertEqual(response.headers['Cache-Control'], 'no-store')
             method.side_effect = None
-        self.render.assert_not_called()
+        self.assertTrue(all(call.args[0] == 'places/error.html' for call in self.render.call_args_list))
 
     def test_post_rejected_and_endpoint_names_stable(self):
         for path in ('/places', '/places/synthetic-place'):

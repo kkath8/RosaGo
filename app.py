@@ -321,7 +321,10 @@ def index():
 
 
 def places_error(message, status):
-    response = current_app.make_response((message, status))
+    if request.endpoint in ('places_list', 'places_detail'):
+        response = current_app.make_response((render_template('places/error.html', message=message), status))
+    else:
+        response = current_app.make_response((message, status))
     response.headers['Cache-Control'] = 'no-store'
     return response
 

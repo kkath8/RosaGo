@@ -2,11 +2,13 @@
 {% block title %}Places | RosaGo{% endblock %}
 {% block content %}
 {% set category_labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage'} %}
-<header class="page-heading">
-    <p class="eyebrow">The public catalog</p>
-    <h1>Explore Santa Rosa</h1>
-    <p class="intro-text">Browse places by category, then open a place to learn more.</p>
+<div class="explore-page">
+<header class="explore-heading">
+    <p class="eyebrow">Discover your next stop</p>
+    <h1 class="page-heading">Explore Santa Rosa</h1>
+    <p class="intro-text">Browse places around Santa Rosa, Laguna, and find a starting point for your next visit.</p>
 </header>
+<p class="catalog-disclosure">Development preview: places marked as test records are synthetic examples, not real businesses or attractions.</p>
 <nav class="category-nav" aria-label="Place categories">
     <ul>
         <li><a href="{{ url_for('places_list') }}"{% if selected_category is none %} aria-current="page"{% endif %}>All</a></li>
@@ -20,10 +22,15 @@
     {% for place in places %}
     <li>
         <article class="place-card">
+            {% include 'places/_visual.html' %}
+            <div class="destination-card-body">
             <p class="place-category">{{ category_labels[place.category] }}</p>
-            <h2><a href="{{ url_for('places_detail', slug=place.slug) }}">{{ place.name }}</a></h2>
-            <p class="place-address">{{ place.address }}</p>
-            <p>{{ place.description | truncate(220, false, '...', 0) }}</p>
+            {% if place.slug.startswith('rosago-test-v1-') %}<span class="badge destination-test-label">Test record</span>{% endif %}
+            <h2>{{ place.name }}</h2>
+            {% if place.address %}<p class="place-address">{{ place.address }}</p>{% endif %}
+            <p class="destination-excerpt">{{ place.description | truncate(220, false, '...', 0) }}</p>
+            <a class="text-link destination-details-link" href="{{ url_for('places_detail', slug=place.slug) }}" aria-label="View details for {{ place.name }}">View Details <span aria-hidden="true">&rarr;</span></a>
+            </div>
         </article>
     </li>
     {% endfor %}
@@ -32,7 +39,7 @@
 <section class="empty-state" aria-labelledby="empty-title">
     {% if selected_category is none %}
     <h2 id="empty-title">Places are on the way</h2>
-    <p>Verified place information from the Santa Rosa City Tourism Office is pending. Please check back later.</p>
+    <p>No published places are available yet. Please check back later.</p>
     {% else %}
     <h2 id="empty-title">No places listed in {{ category_labels[selected_category] }} yet</h2>
     <p>Try another category or return to all places.</p>
@@ -40,4 +47,5 @@
     {% endif %}
 </section>
 {% endif %}
+</div>
 {% endblock %}

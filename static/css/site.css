@@ -217,3 +217,308 @@
     .public-site .dashboard .card { padding: 1.1rem; }
     .public-site .dashboard { gap: 1.25rem; }
 }
+
+/* UI-3: scoped destination browsing and detail presentation. */
+.public-site .explore-heading h1,
+.public-site .destination-heading h1 {
+    max-width: none;
+    margin-bottom: 0.75rem;
+    overflow-wrap: anywhere;
+}
+.public-site .explore-heading .eyebrow {
+    margin-bottom: 0.6rem;
+}
+.public-site .explore-heading .intro-text {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+.public-site .catalog-disclosure {
+    max-width: none;
+    padding: 0.4rem 0.75rem;
+    border-left: 3px solid var(--site-border);
+    color: var(--site-muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+.public-site .explore-page .category-nav {
+    margin-block: 1.5rem;
+}
+.public-site .explore-page .category-nav ul {
+    gap: 0.5rem;
+}
+.public-site .explore-page .category-nav a {
+    padding: 0.45rem 1rem;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.public-site .explore-page .category-nav a[aria-current] {
+    background: var(--site-red);
+    border-color: var(--site-red);
+    color: #fff;
+}
+.public-site .explore-page .category-nav a:focus-visible {
+    outline-offset: 3px;
+}
+.public-site .explore-page .places-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+    align-items: stretch;
+}
+.public-site .explore-page .place-card {
+    height: 100%;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--site-border);
+    border-radius: 12px;
+    box-shadow: 0 3px 12px #30282208;
+}
+.public-site .explore-page .place-card:focus-within {
+    border-color: var(--site-red);
+}
+.public-site .destination-visual {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 185px;
+    padding: 1.75rem;
+    background: #f3ede4;
+    border-bottom: 1px solid var(--site-border);
+    overflow: hidden;
+}
+/* A restrained arch and route-like ring; decorative, never a destination photo. */
+.public-site .destination-visual::before,
+.public-site .destination-visual::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+}
+.public-site .destination-visual::before {
+    right: 1.5rem;
+    bottom: -2rem;
+    width: 6rem;
+    height: 10rem;
+    border: 1px solid var(--site-red);
+    border-radius: 4rem 4rem 0 0;
+    opacity: 0.13;
+    transform: rotate(18deg);
+}
+.public-site .destination-visual::after {
+    right: -3rem;
+    top: -4rem;
+    width: 12rem;
+    height: 12rem;
+    border: 18px solid var(--site-gold);
+    border-radius: 50%;
+    opacity: 0.12;
+}
+.public-site .destination-monogram {
+    color: var(--site-red);
+    font-size: 2.75rem;
+    font-weight: 750;
+    line-height: 1;
+    letter-spacing: -0.08em;
+}
+.public-site .destination-monogram span {
+    color: var(--site-gold);
+}
+.public-site .destination-visual-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--site-muted);
+}
+.public-site .destination-card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 1.4rem;
+    min-width: 0;
+}
+.public-site .destination-card-body h2 {
+    font-size: 1.2rem;
+    font-weight: 650;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.65rem;
+    overflow-wrap: anywhere;
+}
+.public-site .destination-card-body p {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: var(--site-muted);
+    margin-bottom: 0.8rem;
+}
+.public-site .destination-card-body .place-category,
+.public-site .destination-heading .eyebrow {
+    align-self: flex-start;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0.2rem 0.65rem;
+    border: 1px solid var(--site-border);
+    border-radius: 999px;
+    background: #faf7f2;
+    color: var(--site-deep-red);
+    font-size: 0.73rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+.public-site .destination-test-label {
+    align-self: flex-start;
+    margin-bottom: 0.75rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+}
+.public-site .destination-excerpt {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+}
+.public-site .destination-details-link {
+    margin-top: auto;
+    align-self: flex-start;
+    gap: 0.75rem;
+    min-height: 44px;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--site-border);
+    border-radius: 6px;
+    color: var(--site-deep-red);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+.public-site .destination-page .back-link {
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--site-border);
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.public-site .destination-heading {
+    margin-block: 0.5rem 1.5rem;
+}
+.public-site .destination-heading .eyebrow {
+    margin-bottom: 0.85rem;
+}
+.public-site .destination-heading .detail-address {
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+.public-site .destination-detail > .destination-visual {
+    min-height: clamp(210px, 24vw, 300px);
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border: 1px solid var(--site-border);
+    border-radius: 12px;
+}
+.public-site .destination-detail > .destination-visual::before {
+    right: 18%;
+    width: 10rem;
+    height: 16rem;
+}
+.public-site .destination-detail > .destination-visual::after {
+    width: 20rem;
+    height: 20rem;
+    border-width: 24px;
+}
+.public-site .destination-detail > .destination-visual .destination-monogram {
+    font-size: clamp(3rem, 6vw, 4.5rem);
+}
+.public-site .destination-information {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    align-items: start;
+}
+.public-site .destination-information .card {
+    padding: 1.75rem;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px #30282208;
+}
+.public-site .destination-information h2 {
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--site-border);
+}
+.public-site .destination-about p {
+    white-space: pre-line;
+    margin: 0;
+    color: var(--site-muted);
+    line-height: 1.8;
+}
+.public-site .destination-location .detail-address {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 1.25rem;
+}
+.public-site .destination-location .site-button {
+    min-height: 44px;
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+}
+.public-site .places-error h1 {
+    max-width: none;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+}
+@media (hover: hover) and (pointer: fine) {
+    .public-site .explore-page .place-card {
+        transition: transform 160ms ease, box-shadow 160ms ease;
+    }
+    .public-site .explore-page .place-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 22px #30282212;
+    }
+    .public-site .explore-page .category-nav a:not([aria-current]):hover,
+    .public-site .destination-details-link:hover,
+    .public-site .destination-page .back-link:hover {
+        background: #faf7f2;
+        border-color: var(--site-red);
+        color: var(--site-deep-red);
+    }
+    .public-site .explore-page .category-nav a[aria-current]:hover {
+        background: var(--site-deep-red);
+        border-color: var(--site-deep-red);
+    }
+}
+@media (max-width: 1200px) {
+    .public-site .explore-page .places-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 700px) {
+    .public-site .explore-page .places-grid,
+    .public-site .destination-information {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .public-site .explore-page .places-grid {
+        max-width: 32rem;
+        margin-inline: auto;
+    }
+    .public-site .destination-information .card {
+        padding: 1.25rem;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .public-site .explore-page .place-card,
+    .public-site .explore-page .place-card:hover {
+        transition: none;
+        transform: none;
+    }
+}

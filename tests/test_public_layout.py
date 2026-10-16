@@ -275,8 +275,8 @@ class PublicLayoutTests(unittest.TestCase):
         self.assertEqual([node.text for node in headings], [self.place.name])
         links = [node for node in page.find('a') if article in node.ancestors]
         self.assertEqual([(node.text, node.attrs['href']) for node in links],
-                         [(self.place.name, '/places/synthetic-place')])
-        self.assertIs(links[0].ancestors[-1], headings[0])
+                         [('View Details ' + chr(8594), '/places/synthetic-place')])
+        self.assertEqual(links[0].attrs['aria-label'], 'View details for ' + self.place.name)
 
     def test_places_excerpts_preserve_short_text_and_word_boundaries(self):
         for description in ('Short description.', 'a ' * 109 + 'ab',
@@ -327,11 +327,11 @@ class PublicLayoutTests(unittest.TestCase):
         self.assertEqual([node.text for node in page.find('h1')], [self.place.name])
         self.assertEqual([node.text for node in page.find('h2')], ['About this place', 'Location'])
         self.assertEqual([node.text for node in page.find('p') if article in node.ancestors],
-                         ['Attractions', self.place.description, self.place.address])
+                         ['Attractions', self.place.address, self.place.description, self.place.address])
         location = page.find('section', **{'aria-labelledby': 'place-location-title'})[0]
         self.assertEqual([node.text for node in page.find('p') if location in node.ancestors],
                          [self.place.address])
-        self.assertEqual(article.text.count(self.place.address), 1)
+        self.assertEqual(article.text.count(self.place.address), 2)
         self.assertEqual(len(page.find('a', **{'class': 'back-link', 'href': '/places'})), 1)
         for path in ('/places', '/places/synthetic-place'):
             html = self.client.get(path).get_data(as_text=True)
@@ -342,7 +342,8 @@ class PublicLayoutTests(unittest.TestCase):
             for tag in ('img', 'script', 'iframe', 'address', 'canvas'):
                 self.assertEqual(rendered.find(tag), [])
             self.assertNotIn('leaflet', html.lower())
-            self.assertNotIn('map', rendered.find('main')[0].text.lower())
+            if path.endswith('synthetic-place'):
+                self.assertEqual(len(rendered.find('a', href='/map')), 2)
             self.assertNotRegex(rendered.find('main')[0].text.lower(),
                                 r'ratings|opening hours|prices|reviews|amenities')
 
@@ -358,6 +359,55 @@ class PublicLayoutTests(unittest.TestCase):
         self.assertEqual(page.find('h1')[0].text, unsafe)
         self.assertEqual(len(page.find('a', **{'class': 'back-link', 'href': '/places'})), 1)
         self.assertIn('About this place', page.find('article')[0].text)
+
+    def test_place_visuals_are_local_decorative_and_have_no_fake_features(self):
+        for image_url in (None, '', 'javascript:alert(1)', 'https://images.invalid/existing.jpg'):
+            self.place.image_url = image_url
+            for path in ('/places', '/places/synthetic-place'):
+                page = self.page(path)
+                visuals = page.find('div', **{'class': 'destination-visual'})
+                self.assertEqual(len(visuals), 1)
+                self.assertEqual(visuals[0].attrs['aria-hidden'], 'true')
+                self.assertIn('Nature', visuals[0].text)
+                for tag in ('img', 'script', 'iframe'):
+                    self.assertEqual(page.find(tag), [])
+                self.assertNotRegex(page.find('main')[0].text.lower(),
+                                    r'ratings|reviews|stars|visitors|prices|opening hours|popular|add to trip')
+                for node in page.elements:
+                    self.assertFalse(any(attr.lower().startswith('on') for attr in node.attrs))
+        css = (ROOT / 'static/css/site.css').read_text(encoding='utf-8')
+        self.assertNotRegex(css.lower(), r'@import|url\s*\(|https?://')
+
+    def test_development_records_are_disclosed_without_changing_identifiers(self):
+        self.place.slug = 'rosago-test-v1-nature'
+        page = self.page('/places')
+        self.assertIn('synthetic examples, not real businesses or attractions', page.find('main')[0].text)
+        self.assertEqual(len(page.find('span', **{'class': 'badge destination-test-label'})), 1)
+        self.assertEqual(len(page.find('a', href='/places/rosago-test-v1-nature')), 1)
+        page = self.page('/places/rosago-test-v1-nature')
+        self.assertIn('synthetic test record, not a real business or attraction', page.find('main')[0].text)
+        self.place.slug = 'ordinary-place'
+        page = self.page('/places/ordinary-place')
+        self.assertEqual(page.find('p', **{'class': 'catalog-disclosure'}), [])
+
+    def test_places_error_pages_preserve_status_and_safe_navigation(self):
+        from places_service import PlacesUnavailableError, PlacesConsistencyError
+        for path, method in (('/places', self.service.list_published),
+                             ('/places/synthetic-place', self.service.get_published_by_slug)):
+            for error, status in ((PlacesUnavailableError(), 503), (PlacesConsistencyError(), 500)):
+                error.add_note('private-provider-message')
+                method.side_effect = error
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, status)
+                self.assertEqual(response.headers['Cache-Control'], 'no-store')
+                html = response.get_data(as_text=True)
+                self.assertNotIn('private-provider-message', html)
+                page = Document(html)
+                self.assertEqual(len(page.find('h1')), 1)
+                self.assertEqual(len(page.find('main')), 1)
+                self.assertIn('Back to Explore', page.find('main')[0].text)
+                self.assertEqual(page.stack, [])
+            method.side_effect = None
 
     def test_public_layout_does_not_lookup_or_mutate_auth_state(self):
         baseline = {path: self.client.get(path).data for path in self.paths[1:]}
