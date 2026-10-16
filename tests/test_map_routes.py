@@ -177,12 +177,10 @@ class MapRouteTests(unittest.TestCase):
         with self.app.test_request_context():
             self.assertEqual(url_for('map_index'), '/map')
         page = Document(self.get('/').get_data(as_text=True))
-        rows = [node for node in page.find('li') if 'Interactive map' in node.text]
-        self.assertEqual(len(rows), 1)
-        self.assertEqual([node.text for node in page.find('span') if rows[0] in node.ancestors],
-                         ['Available \u2014 depends on listed places'])
-        self.assertEqual(len(page.find('a', href='/map')), 1)
-        self.assertEqual(self.service.mock_calls, [])
+        quick = page.find('nav', **{'aria-label': 'Dashboard quick actions'})[0]
+        links = [node for node in page.find('a', href='/map') if quick in node.ancestors]
+        self.assertEqual([node.text.strip() for node in links], ['Open Map' + chr(8594)])
+        self.service.list_published.assert_called_once_with(category=None, limit=3, offset=0)
 
     def test_shared_template_autoescaping_remains_enabled(self):
         self.assertTrue(self.app.jinja_env.autoescape('map.html'))

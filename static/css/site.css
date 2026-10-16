@@ -173,3 +173,47 @@
     .public-site .topbar-search { flex: 1 1 100%; flex-wrap: wrap; gap: 0.25rem; }
     .public-site .site-nav a, .public-site .nav-unavailable { font-size: 0.8rem; padding: 0.5rem; }
 }
+
+/* UI-2 dashboard only; shared shell and other pages retain their layout. */
+.public-site .dashboard { display: grid; gap: 1.5rem; min-width: 0; }
+.public-site .dashboard-welcome { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem 2rem; border-bottom: 1px solid var(--site-border); padding-bottom: 1.5rem; }
+.public-site .dashboard-welcome h1 { max-width: none; margin-bottom: 0.65rem; letter-spacing: -0.035em; }
+.public-site .dashboard-welcome p { margin-bottom: 0; }
+.public-site .dashboard-welcome .eyebrow { margin-bottom: 0.65rem; }
+.public-site .dashboard-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.public-site .dashboard-info { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; }
+.public-site .dashboard-info .card { padding: 1rem 1.25rem; }
+.public-site .dashboard-info dt { font-size: 0.8rem; color: var(--site-muted); margin-bottom: 0.35rem; }
+.public-site .dashboard-info dd { margin: 0; font-size: 1rem; font-weight: 600; }
+.public-site .dashboard-columns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 1.5rem; }
+.public-site .dashboard h2 { font-size: 1.2rem; margin-bottom: 0.65rem; }
+.public-site .dashboard h3 { font-size: 1.05rem; line-height: 1.4; margin: 0 0 0.5rem; }
+.public-site .dashboard .section-header { margin-bottom: 0.75rem; }
+.public-site .dashboard .section-header h2 { margin-bottom: 0; }
+.public-site .dashboard-note { color: var(--site-muted); font-size: 0.9rem; margin: 0.4rem 0 0; }
+.public-site .dashboard-empty { padding-block: 1rem; }
+.public-site .dashboard-empty p { color: var(--site-muted); margin-bottom: 0.5rem; }
+.public-site .dashboard-trip-list { list-style: none; padding: 0; margin: 0.75rem 0 1.25rem; }
+.public-site .dashboard-trip-list li { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.25rem 1rem; padding-block: 0.75rem; border-bottom: 1px solid var(--site-border); }
+.public-site .dashboard-trip-list a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+.public-site .dashboard-trip-list time, .public-site .dashboard-trip-list span { font-size: 0.85rem; color: var(--site-muted); }
+.public-site .dashboard-quick nav { display: grid; }
+.public-site .dashboard-quick a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.75rem; min-height: 44px; border-bottom: 1px solid var(--site-border); text-decoration: none; }
+.public-site .dashboard-quick a:hover { text-decoration: underline; }
+.public-site .dashboard-quick a:last-child { border-bottom: 0; }
+.public-site .dashboard-places { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; list-style: none; padding: 0; margin: 0; }
+.public-site .dashboard-places li { min-width: 0; }
+.public-site .dashboard-places .card { height: 100%; border-top: 3px solid var(--site-deep-red); }
+.public-site .dashboard-places h3 a { display: inline-flex; align-items: center; min-height: 44px; }
+.public-site .dashboard-places p { font-size: 0.85rem; margin-bottom: 0.5rem; }
+.public-site .dashboard-upcoming { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem 2rem; }
+.public-site .dashboard-upcoming ul { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; list-style: none; margin: 0; padding: 0; }
+.public-site .dashboard-upcoming li { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; font-size: 0.9rem; }
+@media (max-width: 1200px) {
+    .public-site .dashboard-columns { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+}
+@media (max-width: 700px) {
+    .public-site .dashboard-columns, .public-site .dashboard-info, .public-site .dashboard-places { grid-template-columns: minmax(0, 1fr); }
+    .public-site .dashboard .card { padding: 1.1rem; }
+    .public-site .dashboard { gap: 1.25rem; }
+}

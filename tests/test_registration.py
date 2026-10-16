@@ -74,7 +74,8 @@ class RegistrationTests(unittest.TestCase):
         }
 
     def test_existing_routes_and_form(self):
-        self.assertEqual(self.client.get("/").status_code, 200)
+        with patch.object(self.app.extensions['rosago_places'], 'list_published', return_value=()):
+            self.assertEqual(self.client.get("/").status_code, 200)
         response = self.client.get("/register")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'action="/register" method="post"', response.data)

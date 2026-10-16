@@ -1,64 +1,95 @@
 {% extends 'base.html' %}
-{% block title %}RosaGo | Discover Santa Rosa{% endblock %}
+{% block title %}Dashboard | RosaGo{% endblock %}
 {% block content %}
-<section class="home-intro" aria-labelledby="home-title">
-    <p class="eyebrow">Santa Rosa, Laguna</p>
-    <h1 id="home-title">Discover Santa Rosa with RosaGo</h1>
-    <p class="intro-text">RosaGo is a Smart Tourism System for Santa Rosa, Laguna. Start with Explore to browse the city's place catalog by category.</p>
-    <div class="page-actions">
-        <a class="site-button" href="{{ url_for('places_list') }}">Explore Places</a>
+<div class="dashboard">
+    <section class="dashboard-welcome" aria-labelledby="home-title">
+        <div>
+            <p class="eyebrow">Your Santa Rosa guide</p>
+            <h1 id="home-title" class="page-heading">Welcome to RosaGo</h1>
+            <p class="page-subheading">Plan and explore your next trip around Santa Rosa, Laguna.</p>
+        </div>
+        <div class="dashboard-actions">
+            <a class="site-button" href="{{ url_for('places_list') }}">Explore Places</a>
+            <a class="site-button site-button-secondary" href="{{ url_for('trips_new') }}">Plan a Trip</a>
+        </div>
+    </section>
+
+    <section aria-labelledby="dashboard-info-title">
+        <h2 id="dashboard-info-title" class="visually-hidden">At a glance</h2>
+        <dl class="dashboard-info">
+            <div class="card"><dt>Location</dt><dd>Santa Rosa, Laguna</dd></div>
+            <div class="card"><dt>Find your next stop</dt><dd>Explore the place catalog</dd></div>
+            <div class="card"><dt>Your itinerary</dt><dd>Keep your plans in My Trips</dd></div>
+        </dl>
+    </section>
+
+    <div class="dashboard-columns">
+        <section class="card dashboard-trips" aria-labelledby="dashboard-trips-title">
+            <div class="section-header">
+                <h2 id="dashboard-trips-title">My Trips</h2>
+                <a class="text-link" href="{{ url_for('trips_list') }}">View All Trips</a>
+            </div>
+            {% if trip_state == 'ready' %}
+                {% if dashboard_trips %}
+                <p class="dashboard-note">A few of your recent plans.</p>
+                <ul class="dashboard-trip-list">
+                    {% for trip in dashboard_trips %}
+                    <li>
+                        <a href="{{ trip.detail_url }}">{{ trip.name }}</a>
+                        {% if trip.visit_date %}<time datetime="{{ trip.visit_date.isoformat() }}">{{ trip.visit_date.strftime('%b %d, %Y') }}</time>{% else %}<span>Date not set</span>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="dashboard-empty"><h3>Your next trip starts here</h3><p>You have no trips yet. Create a trip to start planning your visit.</p></div>
+                {% endif %}
+            {% elif trip_state == 'unavailable' %}
+                <div class="dashboard-empty"><h3>Trips are temporarily unavailable</h3><p>We could not load your trips. Please try again later.</p></div>
+            {% else %}
+                <div class="dashboard-empty"><h3>Make room for your next adventure</h3><p>Sign in to view your trips and keep your plans together.</p><a class="text-link" href="{{ url_for('login') }}">Sign In</a></div>
+            {% endif %}
+            <a class="site-button site-button-secondary" href="{{ url_for('trips_new') }}">Create Trip</a>
+        </section>
+
+        <section class="card dashboard-quick" aria-labelledby="dashboard-quick-title">
+            <h2 id="dashboard-quick-title">Quick Actions</h2>
+            <nav aria-label="Dashboard quick actions">
+                {% for label, endpoint in [('Explore Places', 'places_list'), ('Plan a Trip', 'trips_new'), ('View My Trips', 'trips_list'), ('Open Map', 'map_index')] %}
+                <a href="{{ url_for(endpoint) }}">{{ label }}<span aria-hidden="true">&rarr;</span></a>
+                {% endfor %}
+            </nav>
+        </section>
     </div>
-</section>
-<section class="home-section" aria-labelledby="home-categories-title">
-    <h2 id="home-categories-title">Explore by category</h2>
-    <p>Choose a category to open Explore.</p>
-    <nav aria-labelledby="home-categories-title">
-        <ul class="home-categories">
-            {% for label, category in [
-                ('Attractions', 'attraction'), ('Dining', 'dining'),
-                ('Shopping', 'shopping'), ('Accommodation', 'accommodation'),
-                ('Nature', 'nature'), ('Heritage', 'heritage')
-            ] %}
-            <li><a href="{{ url_for('places_list', category=category) }}">{{ label }}</a></li>
+
+    <section aria-labelledby="dashboard-places-title">
+        <div class="section-header">
+            <div><h2 id="dashboard-places-title">Places to Discover</h2><p class="dashboard-note">Find a starting point for your Santa Rosa visit.</p></div>
+            <a class="text-link" href="{{ url_for('places_list') }}">Explore All Places</a>
+        </div>
+        {% if places_unavailable %}
+        <div class="empty-state"><p>Places are temporarily unavailable. Please try again later.</p></div>
+        {% elif dashboard_places %}
+        {% set category_labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage'} %}
+        <ul class="dashboard-places">
+            {% for place in dashboard_places %}
+            <li><article class="card">
+                <p class="place-category">{{ category_labels[place.category] }}</p>
+                <h3><a href="{{ url_for('places_detail', slug=place.slug) }}">{{ place.name }}</a></h3>
+                {% if place.address %}<p class="place-address">{{ place.address }}</p>{% endif %}
+            </article></li>
             {% endfor %}
         </ul>
-    </nav>
-    <p class="home-availability">Verified place information from the Santa Rosa City Tourism Office is pending. Some categories may not have listings yet.</p>
-</section>
-<section class="home-section" aria-labelledby="home-capabilities-title">
-    <h2 id="home-capabilities-title">What RosaGo offers</h2>
-    <ul class="home-capabilities">
-        <li>
-            <div class="home-capability-label">
-                <strong>Explore places</strong>
-                <span class="home-capability-status">Available &mdash; catalog pending</span>
-            </div>
-            <p>Browse by category and open place details when listings are available.</p>
-        </li>
-        <li>
-            <div class="home-capability-label">
-                <strong>Interactive map</strong>
-                <span class="home-capability-status">Available &mdash; depends on listed places</span>
-            </div>
-            <p>See available places on the map when the catalog has listings.</p>
-        </li>
-        {% for name, description in [
-            ('Trip planning', 'Organize places into a visit itinerary.'),
-            ('Personalized recommendations', 'Find suggestions based on your interests.'),
-            ('Tourism AI assistant', 'Ask questions to help prepare for a visit.')
-        ] %}
-        <li>
-            <div class="home-capability-label">
-                <strong>{{ name }}</strong>
-                <span class="home-capability-status">Planned</span>
-            </div>
-            <p>{{ description }}</p>
-        </li>
-        {% endfor %}
-    </ul>
-</section>
-<section class="home-section home-about" aria-labelledby="home-about-title">
-    <h2 id="home-about-title">About RosaGo</h2>
-    <p>RosaGo is a student capstone project developing a Smart Tourism System focused on Santa Rosa, Laguna. It brings place discovery and planned visitor tools into one platform.</p>
-</section>
+        {% else %}
+        <div class="empty-state"><p>No published places are available yet. Check back for places to discover.</p></div>
+        {% endif %}
+    </section>
+
+    <section class="card dashboard-upcoming" aria-labelledby="dashboard-upcoming-title">
+        <div><h2 id="dashboard-upcoming-title">More ways to explore, coming soon</h2><p class="dashboard-note">A look at what is planned for RosaGo.</p></div>
+        <ul>
+            <li>AI Trip Assistant <span class="coming-soon">Coming Soon</span></li>
+            <li>Transportation <span class="coming-soon">Coming Soon</span></li>
+        </ul>
+    </section>
+</div>
 {% endblock %}

@@ -4,6 +4,7 @@ import logging
 import time
 import httpx
 import secrets
+from contextlib import ExitStack
 from datetime import date
 
 from dotenv import load_dotenv
@@ -21,6 +22,7 @@ from normal_auth_flask import (
     init_normal_auth, get_normal_auth_dependencies, establish_normal_session,
     SessionEstablishmentError, normal_auth_redirect_decision, AuthRedirectDecision,
     normal_auth_state, logout_normal_session,
+    normal_authenticated, NormalAuthEntryError, read_auth_session_id,
 )
 from normal_auth_coordinator import PasswordLoginError
 from places_client import PublicPlacesClient
@@ -282,7 +284,40 @@ def reset_password():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # Bounded public preview; never interpret its length as a catalog total.
+    places_unavailable = False
+    try:
+        places = current_app.extensions['rosago_places'].list_published(
+            category=None, limit=3, offset=0)
+    except (PlacesUnavailableError, PlacesConsistencyError):
+        places = ()
+        places_unavailable = True
+
+    trips = ()
+    trip_state = 'signed_out'
+    # Cookie values are candidates only. Identity comes from the existing scope.
+    if read_auth_session_id() is not None:
+        with ExitStack() as stack:
+            try:
+                auth = stack.enter_context(normal_authenticated())
+            except NormalAuthEntryError as error:
+                if error.kind != 'unauthenticated':
+                    trip_state = 'unavailable'
+            else:
+                trip_state = 'ready'
+                try:
+                    trips = tuple(dict(name=trip.name, visit_date=trip.visit_date,
+                                       detail_url=url_for('trips_detail', trip_id=trip.id))
+                                  for trip in list_user_trips(auth, limit=3, offset=0))
+                except (TripUnavailableError, TripConsistencyError):
+                    trip_state = 'unavailable'
+        # The scope has closed its client and removed g.auth before rendering.
+    response = current_app.make_response(render_template(
+        'index.html', dashboard_places=places, places_unavailable=places_unavailable,
+        dashboard_trips=trips, trip_state=trip_state))
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['Referrer-Policy'] = 'same-origin'
+    return response
 
 
 def places_error(message, status):
