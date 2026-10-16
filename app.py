@@ -6,6 +6,7 @@ import httpx
 import secrets
 from contextlib import ExitStack
 from datetime import date
+from uuid import UUID
 
 from dotenv import load_dotenv
 from flask import Flask, current_app, flash, g, jsonify, redirect, render_template, request, session, url_for
@@ -14,7 +15,7 @@ from supabase_auth.errors import AuthApiError, AuthError
 
 from auth_helpers import login_required
 from trip_service import (
-    list_user_trips, get_user_trip, create_trip, update_trip, delete_trip,
+    list_user_trips, get_user_trip, create_trip, update_trip, delete_trip, add_place,
     TripServiceError, TripValidationError, TripNotFoundError,
     TripOperationRejectedError, TripUnavailableError, TripConsistencyError,
 )
@@ -675,6 +676,56 @@ def trips_list():
         return _trip_failure(error)
     next_offset = offset + len(trips) if len(trips) == 50 and offset + 50 <= 2147483647 - 49 else None
     return _render_trip_page('trips/list.html', trips=trips, offset=offset, next_offset=next_offset)
+
+
+@app.route('/user/trips/add-place/<slug>', methods=['GET', 'POST'])
+@login_required
+def trips_add_place(slug):
+    if request.method == 'POST':
+        failure = _trip_post_check({'csrf_token', 'trip_id'})
+        if failure is not None:
+            return failure
+        supplied_id = request.form['trip_id']
+        try:
+            trip_id = str(UUID(supplied_id))
+        except ValueError:
+            return _trip_failure(TripValidationError())
+        if supplied_id.lower() != trip_id:
+            return _trip_failure(TripValidationError())
+    else:
+        try:
+            offset = _trip_page_number('offset', 2147483647 - 49)
+        except TripValidationError as error:
+            return _trip_failure(error)
+
+    try:
+        place = current_app.extensions['rosago_places'].get_published_by_slug(slug)
+    except PlacesValidationError:
+        return 'Place not found.', 404
+    except PlacesUnavailableError:
+        return 'Places are temporarily unavailable.', 503
+    except PlacesConsistencyError:
+        return 'Unable to display places.', 500
+    if place is None:
+        return 'Place not found.', 404
+
+    if request.method == 'POST':
+        try:
+            add_place(g.auth, trip_id, place.id)
+        except TripServiceError as error:
+            return _trip_failure(error, mutation=True)
+        return redirect(url_for('trips_detail', trip_id=trip_id), code=303)
+
+    try:
+        trips = list_user_trips(g.auth, limit=50, offset=offset)
+    except TripServiceError as error:
+        return _trip_failure(error)
+    csrf = _trip_csrf()
+    if csrf is None:
+        return 'Please reload this page and try again.', 403
+    next_offset = offset + len(trips) if len(trips) == 50 and offset + 50 <= 2147483647 - 49 else None
+    return _render_trip_page('trips/add_place.html', place=place, trips=trips,
+                             csrf=csrf, offset=offset, next_offset=next_offset)
 
 
 @app.route('/user/trips/new', methods=['GET'])

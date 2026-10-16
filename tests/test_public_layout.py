@@ -372,7 +372,7 @@ class PublicLayoutTests(unittest.TestCase):
                 for tag in ('img', 'script', 'iframe'):
                     self.assertEqual(page.find(tag), [])
                 self.assertNotRegex(page.find('main')[0].text.lower(),
-                                    r'ratings|reviews|stars|visitors|prices|opening hours|popular|add to trip')
+                                    r'ratings|reviews|stars|visitors|prices|opening hours|popular')
                 for node in page.elements:
                     self.assertFalse(any(attr.lower().startswith('on') for attr in node.attrs))
         css = (ROOT / 'static/css/site.css').read_text(encoding='utf-8')
@@ -408,6 +408,13 @@ class PublicLayoutTests(unittest.TestCase):
                 self.assertIn('Back to Explore', page.find('main')[0].text)
                 self.assertEqual(page.stack, [])
             method.side_effect = None
+
+    def test_public_detail_add_link_preserves_public_boundary(self):
+        page = self.page('/places/synthetic-place')
+        self.assertEqual([node.text for node in page.find('a', href='/user/trips/add-place/synthetic-place')], ['Add to Trip'])
+        self.assertEqual(page.find('form'), [])
+        self.assertEqual(page.find('input', name='csrf_token'), [])
+        self.assertEqual(page.find('input', name='trip_id'), [])
 
     def test_public_layout_does_not_lookup_or_mutate_auth_state(self):
         baseline = {path: self.client.get(path).data for path in self.paths[1:]}

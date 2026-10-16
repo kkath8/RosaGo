@@ -13,6 +13,10 @@
         <h1 class="page-heading">{{ place.name }}</h1>
         {% if place.address %}<p class="detail-address">{{ place.address }}</p>{% endif %}
     </header>
+    <div class="add-place-entry">
+        <a class="site-button" href="{{ url_for('trips_add_place', slug=place.slug) }}">Add to Trip</a>
+        <span class="trip-help">Sign in required to choose a trip.</span>
+    </div>
     {% include 'places/_visual.html' %}
     <div class="destination-information">
         <section class="card destination-about" aria-labelledby="place-about-title">

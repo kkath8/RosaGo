@@ -51,7 +51,7 @@ class TripRouteTests(unittest.TestCase):
         self.detail = TripDetail(self.trip, (TripPlace(TRIP, OWNER, 3, stamp, None),), 3)
         self.services = {}
         results = {'list_user_trips': (self.trip,), 'get_user_trip': self.detail,
-                   'create_trip': self.trip, 'update_trip': self.trip, 'delete_trip': None}
+                   'create_trip': self.trip, 'update_trip': self.trip, 'delete_trip': None, 'add_place': None}
         for name, result in results.items():
             def operation(context, *args, result=result, **kwargs):
                 self.assertIs(context, g.auth)
@@ -353,6 +353,175 @@ class TripRouteTests(unittest.TestCase):
         html = self.client.get(DETAIL).get_data(as_text=True)
         self.assertIn('&lt;script&gt;Place&lt;/script&gt;', html)
         self.assertNotIn('<script>', html)
+
+    def setup_add_place(self):
+        self.place = SimpleNamespace(id='bbbbbbbb-0000-0000-0000-000000000003',
+            slug='synthetic-place', name='<script>Place</script>', category='nature', address='Safe address')
+        self.catalog = Mock(spec=['get_published_by_slug'])
+        self.catalog.get_published_by_slug.return_value = self.place
+        self.app.extensions['rosago_places'] = self.catalog
+        self.add_path = ROOT + '/add-place/synthetic-place'
+        return {'csrf_token': self.csrf, 'trip_id': TRIP}
+
+    def test_add_chooser_owned_choices_isolation_and_no_get_mutation(self):
+        self.setup_add_place()
+        seen = []
+        def inspect(sender, template, context, **extra):
+            self.assertNotIn('auth', g)
+            self.assertEqual(context['trips'], (self.trip,))
+            for value in context.values():
+                self.assertNotIsInstance(value, (AuthenticatedContext, NormalAuthSession))
+                self.assertTrue(all(value is not client for client in self.owned))
+            seen.append(template.name)
+        with before_render_template.connected_to(inspect, self.app):
+            response = self.client.get(self.add_path)
+        self.assertEqual(response.status_code, 200)
+        self.protected(response)
+        self.assertEqual(seen, ['trips/add_place.html'])
+        self.catalog.get_published_by_slug.assert_called_once_with('synthetic-place')
+        self.assertEqual(self.services['list_user_trips'].call_args.kwargs, {'limit': 50, 'offset': 0})
+        self.services['add_place'].assert_not_called()
+        html = response.get_data(as_text=True)
+        page = Document(html)
+        self.assertEqual(page.find('h1')[0].text, 'Add to Trip')
+        self.assertEqual(page.find('script'), [])
+        self.assertIn('&lt;script&gt;Place&lt;/script&gt;', html)
+        self.assertIn('My &lt;trip&gt;', html)
+        self.assertIn('aria-current="true">My Trips', html)
+        form = page.find('form', action=self.add_path)[0]
+        self.assertEqual(form.attrs['method'], 'post')
+        inputs = [node for node in page.find('input') if form in node.ancestors]
+        self.assertEqual([node.attrs['name'] for node in inputs], ['csrf_token', 'trip_id'])
+        self.assertEqual(inputs[1].attrs['value'], TRIP)
+        self.assertIn('required', inputs[1].attrs)
+        self.assertEqual(inputs[1].ancestors[-1].tag, 'label')
+        for secret in (OWNER, self.handle, 'private-access', 'private-refresh', 'private-provider-session'):
+            self.assertNotIn(secret, html)
+        self.assertEqual(page.stack, [])
+
+    def test_add_requires_login_and_retains_auth_failure_behavior(self):
+        data = self.setup_add_place()
+        for error in (SessionBusy(), ClientUnavailable()):
+            with patch.object(self.dependencies.coordinator, 'authenticated', side_effect=error):
+                for method in ('GET', 'POST'):
+                    response = self.client.open(self.add_path, method=method, data=data)
+                    self.assertEqual(response.status_code, 503)
+                    self.protected(response)
+        with self.client.session_transaction() as session:
+            session.clear()
+        for method in ('GET', 'POST'):
+            response = self.client.open(self.add_path, method=method, data=data)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.headers['Location'], '/login?login_required=1')
+            self.protected(response)
+        self.catalog.get_published_by_slug.assert_not_called()
+        self.untouched()
+
+    def test_add_empty_and_paginated_trip_choices(self):
+        self.setup_add_place()
+        service = self.services['list_user_trips']
+        service.side_effect = None
+        service.return_value = ()
+        response = self.client.get(self.add_path)
+        self.assertIn(b'Create a trip first', response.data)
+        self.assertIn(b'href="/user/trips/new"', response.data)
+        self.assertEqual(Document(response.get_data(as_text=True)).find('form', action=self.add_path), [])
+        response = self.client.get(self.add_path + '?offset=50')
+        self.assertIn(b'No trips on this page', response.data)
+        self.assertIn(b'offset=0', response.data)
+        self.assertNotIn(b'Create a trip first', response.data)
+        self.assertEqual(service.call_args.kwargs, {'limit': 50, 'offset': 50})
+        service.return_value = (replace(self.trip, visit_date=None),) * 50
+        response = self.client.get(self.add_path)
+        self.assertIn(b'Date not set', response.data)
+        self.assertIn(b'offset=50', response.data)
+        for query in ('offset=-1', 'offset=1&offset=2', 'offset=2147483647'):
+            self.assertEqual(self.client.get(self.add_path + '?' + query).status_code, 400)
+        self.services['add_place'].assert_not_called()
+
+    def test_add_success_single_server_resolved_mutation_and_detail_redirect(self):
+        data = self.setup_add_place()
+        data['trip_id'] = TRIP.upper()
+        response = self.client.post(self.add_path, data=data, headers={'Origin': 'http://localhost'})
+        self.assertEqual(response.status_code, 303)
+        self.protected(response)
+        self.assertEqual(response.headers['Location'], DETAIL)
+        mutation = self.services['add_place']
+        mutation.assert_called_once()
+        self.assertEqual(mutation.call_args.args[1:], (TRIP, self.place.id))
+        self.services['list_user_trips'].assert_not_called()
+        self.catalog.get_published_by_slug.assert_called_once_with('synthetic-place')
+        self.services['get_user_trip'].side_effect = None
+        member = replace(self.detail.memberships[0], place_id=self.place.id, place=self.place)
+        self.services['get_user_trip'].return_value = replace(self.detail, memberships=(member,))
+        self.assertIn(b'&lt;script&gt;Place&lt;/script&gt;', self.client.get(DETAIL).data)
+
+    def test_add_form_uuid_csrf_and_origin_rejections_before_catalog_or_mutation(self):
+        data = self.setup_add_place()
+        cases = []
+        for field in ('csrf_token', 'trip_id'):
+            missing = dict(data); del missing[field]
+            cases.append((missing, {}, 403 if field == 'csrf_token' else 400))
+            duplicate = MultiDict(data); duplicate.add(field, data[field])
+            cases.append((duplicate, {}, 403 if field == 'csrf_token' else 400))
+        for value in ('', 'invalid', ' '):
+            cases.append((data | {'csrf_token': value}, {}, 403))
+        other = self.seed()
+        wrong_csrf = self.dependencies.store.resolve(other).csrf
+        with self.client.session_transaction() as session:
+            session['auth_session_id'] = self.handle
+        cases.append((data | {'csrf_token': wrong_csrf}, {}, 403))
+        for value in ('', 'bad', ' ' + TRIP, TRIP + ' ', TRIP.replace('-', ''), '{' + TRIP + '}'):
+            cases.append((data | {'trip_id': value}, {}, 400))
+        for field in ('place_id', 'user_id', 'owner', 'extra'):
+            cases.append((data | {field: 'untrusted'}, {}, 400))
+        cases.append((data | {'upload': (io.BytesIO(b'file'), 'file.txt')}, {}, 400))
+        for origin in ('null', '', 'https://foreign.invalid', 'http://localhost.evil'):
+            cases.append((data, {'Origin': origin}, 403))
+        for payload, headers, status in cases:
+            response = self.client.post(self.add_path, data=payload, headers=headers)
+            self.assertEqual(response.status_code, status)
+            self.protected(response)
+        self.catalog.get_published_by_slug.assert_not_called()
+        self.untouched()
+
+    def test_add_unpublished_and_catalog_errors_prevent_trip_access(self):
+        from places_service import PlacesValidationError, PlacesUnavailableError, PlacesConsistencyError
+        data = self.setup_add_place()
+        self.catalog.get_published_by_slug.return_value = None
+        for method in ('GET', 'POST'):
+            self.assertEqual(self.client.open(self.add_path, method=method, data=data).status_code, 404)
+        for error, status in ((PlacesValidationError(), 404), (PlacesUnavailableError(), 503),
+                              (PlacesConsistencyError(), 500)):
+            error.args = ('private-provider-message',)
+            self.catalog.get_published_by_slug.side_effect = error
+            for method in ('GET', 'POST'):
+                response = self.client.open(self.add_path, method=method, data=data)
+                self.assertEqual(response.status_code, status)
+                self.assertNotIn(b'private-provider-message', response.data)
+                self.protected(response)
+        self.untouched()
+
+    def test_add_rpc_rejections_sanitized_and_never_replayed(self):
+        data = self.setup_add_place()
+        service = self.services['add_place']
+        for error_type, status in ((TripValidationError, 400), (TripNotFoundError, 404),
+                                  (TripOperationRejectedError, 400), (TripUnavailableError, 503),
+                                  (TripConsistencyError, 500)):
+            error = error_type(); error.args = ('private-provider-message',)
+            service.side_effect = error
+            service.reset_mock()
+            response = self.client.post(self.add_path, data=data)
+            self.assertEqual(response.status_code, status)
+            self.assertNotIn(b'private-provider-message', response.data)
+            self.protected(response)
+            service.assert_called_once()
+            if status == 503:
+                self.assertIn(b'could not be confirmed', response.data)
+        for rejected_id in (TRIP, OWNER):
+            service.side_effect = TripNotFoundError()
+            response = self.client.post(self.add_path, data=data | {'trip_id': rejected_id})
+            self.assertEqual((response.status_code, response.data), (404, b'Trip not found.'))
 
     def test_trip_templates_compile(self):
         for name in ('trips/list.html', 'trips/new.html', 'trips/detail.html', 'trips/edit.html',

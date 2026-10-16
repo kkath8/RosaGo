@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Add to Trip | RosaGo{% endblock %}
+{% block content %}
+<section class="trip-page add-place-page" aria-labelledby="add-place-title">
+    <header class="trip-heading">
+        <p class="eyebrow">Plan your visit</p>
+        <h1 id="add-place-title" class="page-heading">Add to Trip</h1>
+        <p class="page-subheading">Choose one of your trips for this destination.</p>
+    </header>
+    <section class="card add-place-summary" aria-labelledby="selected-place-title">
+        {% set category_labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage'} %}
+        <p class="place-category">{{ category_labels[place.category] }}</p>
+        <h2 id="selected-place-title">{{ place.name }}</h2>
+        {% if place.address %}<p class="place-address">{{ place.address }}</p>{% endif %}
+    </section>
+    {% if trips %}
+    <form class="card add-place-form" method="post" action="{{ url_for('trips_add_place', slug=place.slug) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+        <fieldset>
+            <legend>Choose a trip (required)</legend>
+            {% for trip in trips %}
+            <label class="add-place-choice">
+                <input type="radio" name="trip_id" value="{{ trip.id }}" required>
+                <span><strong>{{ trip.name }}</strong><span class="trip-date">{% if trip.visit_date %}<time datetime="{{ trip.visit_date.isoformat() }}">{{ trip.visit_date.strftime('%b %d, %Y') }}</time>{% else %}Date not set{% endif %}</span></span>
+            </label>
+            {% endfor %}
+        </fieldset>
+        <div class="trip-actions"><button class="site-button" type="submit">Add to Trip</button><a class="text-link" href="{{ url_for('trips_new') }}">Create a Trip</a></div>
+    </form>
+    {% else %}
+    <div class="empty-state">
+        {% if offset %}<h2>No trips on this page</h2><p>Return to the previous page to choose a trip.</p>
+        {% else %}<h2>Create a trip first</h2><p>You need a trip before you can add this destination. Create one, then return to this place to add it.</p><a class="site-button" href="{{ url_for('trips_new') }}">Create a Trip</a>{% endif %}
+    </div>
+    {% endif %}
+    {% if offset or next_offset is not none %}
+    <nav class="trip-pagination" aria-label="Trip choices pages">
+        {% if offset %}<a class="text-link" href="{{ url_for('trips_add_place', slug=place.slug, offset=[0, offset - 50] | max) }}">Previous page</a>{% endif %}
+        {% if next_offset is not none %}<a class="text-link" href="{{ url_for('trips_add_place', slug=place.slug, offset=next_offset) }}">Next page</a>{% endif %}
+    </nav>
+    {% endif %}
+    <a class="text-link trip-back" href="{{ url_for('places_detail', slug=place.slug) }}">Back to Place Details</a>
+</section>
+{% endblock %}

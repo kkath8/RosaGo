@@ -6,7 +6,7 @@
             ('Dashboard', 'index', ()),
             ('Explore', 'places_list', ('places_detail',)),
             ('Planner', 'trips_new', ('trips_create',)),
-            ('My Trips', 'trips_list', ('trips_detail', 'trips_edit', 'trips_update', 'trips_delete')),
+            ('My Trips', 'trips_list', ('trips_detail', 'trips_edit', 'trips_update', 'trips_delete', 'trips_add_place')),
             ('Map', 'map_index', ())
         ] %}
         <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint %} aria-current="page"{% elif request.endpoint in related %} aria-current="true"{% endif %}>{{ label }}</a>
@@ -22,7 +22,7 @@
         {% if user_email is defined %}
         <p class="user-summary">{% if profile is defined and profile and (profile.first_name or profile.last_name) %}{{ [profile.first_name, profile.last_name] | select | join(' ') }}{% else %}{{ user_email }}{% endif %}</p>
         {% endif %}
-        {% if request.endpoint in ('user_index', 'user_profile_edit', 'trips_list', 'trips_new', 'trips_create', 'trips_detail', 'trips_edit', 'trips_update', 'trips_delete') %}
+        {% if request.endpoint in ('user_index', 'user_profile_edit', 'trips_list', 'trips_new', 'trips_create', 'trips_detail', 'trips_edit', 'trips_update', 'trips_delete', 'trips_add_place') %}
         <form method="post" action="{{ url_for('logout') }}">
             <button class="account-logout-button" type="submit">Logout</button>
         </form>

@@ -718,3 +718,62 @@
         justify-content: center;
     }
 }
+
+/* UI-5E2: protected add-to-trip chooser. */
+.public-site .add-place-entry {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+}
+.public-site .add-place-page {
+    max-width: 760px;
+}
+.public-site .add-place-summary {
+    margin-bottom: 1.25rem;
+}
+.public-site .add-place-summary p:last-child {
+    margin-bottom: 0;
+}
+.public-site .add-place-form fieldset {
+    min-width: 0;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    border: 0;
+}
+.public-site .add-place-form legend {
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+.public-site .add-place-choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 1rem;
+    margin-bottom: 0.65rem;
+    border: 1px solid var(--site-border);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.public-site .add-place-choice:focus-within {
+    border-color: var(--site-red);
+}
+.public-site .add-place-choice input {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin: 0.25rem 0 0;
+    accent-color: var(--site-red);
+}
+.public-site .add-place-choice > span {
+    min-width: 0;
+}
+.public-site .add-place-choice strong,
+.public-site .add-place-choice .trip-date {
+    display: block;
+    overflow-wrap: anywhere;
+}
+.public-site .add-place-choice input:checked + span strong {
+    color: var(--site-deep-red);
+}
