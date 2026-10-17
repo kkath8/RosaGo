@@ -165,7 +165,7 @@ class UserProfileTests(unittest.TestCase):
 
     def test_account_layout_edit_link_and_unchanged_post_logout(self):
         self.seed()
-        page = assert_account_layout(self, self.client.get('/user'), 'Account', 'page')
+        page = assert_account_layout(self, self.client.get('/user'), 'Profile', 'page')
         self.assertEqual([node.text for node in page.find('a', href='/user/profile/edit')],
                          ['Edit Profile'])
         forms = page.find('form', **{'class': 'account-logout'})
@@ -184,6 +184,29 @@ class UserProfileTests(unittest.TestCase):
         self.assertEqual(sidebar_logout.attrs['method'], 'post')
         self.service.assert_called_once()
         self.assertEqual(len(self.requests), 1)
+
+    def test_profile_cards_show_only_existing_fields_and_decorative_initials(self):
+        self.seed()
+        for first, last, initials in (('Ana', 'Cruz', 'AC'), ('Ana', None, 'A'),
+                                      (None, 'Cruz', 'C'), (None, None, 'R')):
+            self.data[0].update(first_name=first, last_name=last)
+            page = Document(self.client.get('/user').get_data(as_text=True))
+            avatar = page.find('span', **{'class': 'profile-avatar'})[0]
+            self.assertEqual(avatar.text, initials)
+            self.assertEqual(avatar.attrs['aria-hidden'], 'true')
+            self.assertEqual([node.text for node in page.find('dt')],
+                             ['First Name', 'Last Name', 'Email'])
+            self.assertEqual([node.text for node in page.find('dd')],
+                             [first or 'Not provided', last or 'Not provided', 'verified@example.invalid'])
+            main = page.find('main')[0]
+            self.assertIn('Read-only account information', main.text)
+            self.assertNotRegex(main.text.lower(),
+                                r'places visited|favorites|achievements|followers|travel points|\d+ trips')
+            self.assertEqual([node for node in page.find('input') if main in node.ancestors], [])
+        self.data = []
+        page = Document(self.client.get('/user').get_data(as_text=True))
+        self.assertEqual([node.text for node in page.find('dd')], ['verified@example.invalid'])
+        self.assertNotIn('Not provided', page.find('main')[0].text)
 
     def test_shared_templates_have_no_auth_authority_or_extra_operations(self):
         self.seed()

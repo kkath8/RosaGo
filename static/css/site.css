@@ -778,6 +778,42 @@
     color: var(--site-deep-red);
 }
 
+/* UI-6: Profile presentation only; shared shell and secure forms are unchanged. */
+.public-site .profile-page { display: grid; gap: 1.5rem; min-width: 0; }
+.public-site .profile-heading { border-bottom: 1px solid var(--site-border); padding-bottom: 1.5rem; }
+.public-site .profile-heading .eyebrow { margin-bottom: 0.6rem; }
+.public-site .profile-heading h1 { max-width: none; margin-bottom: 0.75rem; }
+.public-site .profile-heading .page-subheading { margin-bottom: 0; }
+.public-site .profile-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: start; gap: 1.5rem; }
+.public-site .profile-details { display: grid; gap: 1.5rem; min-width: 0; }
+.public-site .profile-page h2 { font-size: 1.2rem; margin-bottom: 0.65rem; }
+.public-site .profile-summary { border-top: 3px solid var(--site-deep-red); }
+.public-site .profile-avatar { display: inline-grid; place-items: center; width: 4.5rem; height: 4.5rem; margin-bottom: 1.25rem; border: 1px solid var(--site-border); border-radius: 50%; background: #faf0ed; color: var(--site-deep-red); font-size: 1.5rem; font-weight: 650; }
+.public-site .profile-summary .account-identity { font-size: 0.9rem; }
+.public-site .profile-note { color: var(--site-muted); font-size: 0.9rem; margin-bottom: 0; }
+.public-site .profile-info-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 1.5rem; margin: 1.25rem 0 1.5rem; }
+.public-site .profile-info-grid > div { min-width: 0; }
+.public-site .profile-info-grid dt { font-size: 0.85rem; color: var(--site-muted); margin-bottom: 0.35rem; }
+.public-site .profile-info-grid dd { margin: 0; font-weight: 600; }
+.public-site .profile-account .profile-info-grid { grid-template-columns: minmax(0, 1fr); margin-bottom: 0; }
+.public-site .profile-page .account-logout { margin-top: 1rem; padding-top: 1rem; }
+.public-site .profile-page .account-logout-button { font: inherit; cursor: pointer; }
+.public-site .profile-edit-page { max-width: 880px; }
+.public-site .profile-page .profile-form-card { max-width: none; padding: 1.5rem; }
+.public-site .profile-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.public-site .profile-fields .account-field { min-width: 0; margin-block: 0.5rem 1.5rem; }
+.public-site .profile-form-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; padding-top: 1.25rem; border-top: 1px solid var(--site-border); }
+.public-site .profile-form-card .account-status { margin-bottom: 1.25rem; }
+@media (max-width: 1100px) {
+    .public-site .profile-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+    .public-site .profile-info-grid, .public-site .profile-fields { grid-template-columns: minmax(0, 1fr); }
+    .public-site .profile-fields { gap: 0; }
+    .public-site .profile-page .card { padding: 1.1rem; }
+    .public-site .profile-form-actions > * { width: 100%; justify-content: center; }
+}
+
 /* UI-5: map workspace only; Leaflet behavior and assets are unchanged. */
 .public-site .map-page {
     display: flow-root;

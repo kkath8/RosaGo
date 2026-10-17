@@ -105,6 +105,9 @@ class UserProfileEditTests(unittest.TestCase):
         forms = page.find('form', action=self.path)
         self.assertEqual(len(forms), 1)
         self.assertEqual(forms[0].attrs, {'method': 'post', 'action': self.path})
+        self.assertIn('Your email is read-only and cannot be changed here.', page.find('main')[0].text)
+        self.assertEqual(len(page.find('div', **{'class': 'profile-fields'})), 1)
+        self.assertEqual(len(page.find('div', **{'class': 'profile-form-actions'})), 1)
         inputs = [node for node in page.find('input') if forms[0] in node.ancestors]
         self.assertEqual([node.attrs['name'] for node in inputs],
                          ['csrf_token', 'first_name', 'last_name'])
