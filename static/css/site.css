@@ -777,3 +777,160 @@
 .public-site .add-place-choice input:checked + span strong {
     color: var(--site-deep-red);
 }
+
+/* UI-5: map workspace only; Leaflet behavior and assets are unchanged. */
+.public-site .map-page {
+    display: flow-root;
+    max-width: none;
+    width: 100%;
+    padding-top: 0.25rem;
+}
+.public-site .map-heading {
+    margin-bottom: 1rem;
+    scroll-margin-top: 2.5rem;
+}
+.public-site .map-heading .eyebrow {
+    margin-bottom: 0.6rem;
+}
+.public-site .map-heading h1 {
+    max-width: none;
+    margin-bottom: 0.75rem;
+}
+.public-site .map-heading .page-subheading {
+    margin-bottom: 0;
+}
+.public-site .map-workspace {
+    display: grid;
+    grid-template-columns: minmax(230px, 1fr) minmax(0, 2fr);
+    align-items: stretch;
+    border: 1px solid var(--site-border);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 3px 12px #30282208;
+    margin-top: 1.5rem;
+}
+.public-site .map-destination-panel,
+.public-site .map-canvas-panel {
+    min-width: 0;
+}
+.public-site .map-destination-panel {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--site-border);
+}
+.public-site .map-panel-heading,
+.public-site .map-canvas-heading {
+    padding: 1.25rem 1.25rem 0.75rem;
+}
+.public-site .map-workspace h2 {
+    font-size: 1.15rem;
+    margin-bottom: 0.5rem;
+}
+.public-site .map-panel-heading p,
+.public-site .map-workspace .map-privacy {
+    font-size: 0.8rem;
+    color: var(--site-muted);
+    margin-bottom: 0;
+    line-height: 1.5;
+}
+.public-site .map-panel-heading .text-link {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.public-site .map-list-scroll {
+    flex: 1 1 0;
+    min-height: 12rem;
+    overflow-y: auto;
+    scrollbar-color: #a99b90 #faf7f2;
+    border-top: 1px solid var(--site-border);
+    border-radius: 0 0 0 10px;
+}
+.public-site .map-list-scroll:hover,
+.public-site .map-list-scroll:focus-within {
+    scrollbar-color: var(--site-muted) #faf7f2;
+}
+@media (forced-colors: active) {
+    .public-site .map-list-scroll {
+        scrollbar-color: auto;
+    }
+}
+.public-site .map-list-scroll:focus-visible {
+    outline-offset: -4px;
+}
+.public-site .map-workspace .map-place-list li {
+    padding: 1rem 1.25rem;
+    border-top: 0;
+    border-bottom: 1px solid var(--site-border);
+}
+.public-site .map-workspace .map-place-list li:last-child {
+    border-bottom: 0;
+}
+.public-site .map-workspace .map-place-list h3 {
+    font-size: 1rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+.public-site .map-workspace .map-place-list h3 a {
+    padding-block: 0.5rem;
+}
+.public-site .map-workspace .map-place-list p {
+    font-size: 0.82rem;
+    color: var(--site-muted);
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+.public-site .map-category-badge {
+    display: inline-block;
+    max-width: 100%;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--site-border);
+    border-radius: 999px;
+    background: #faf7f2;
+    color: var(--site-deep-red);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.public-site .map-workspace .places-map {
+    height: clamp(18rem, calc(100vh - 33rem), 32rem);
+    height: clamp(18rem, calc(100svh - 33rem), 32rem);
+    border-inline: 0;
+    border-radius: 0;
+    background: #f3ede4;
+}
+.public-site .map-canvas-notes {
+    padding: 0.75rem 1.25rem 1.25rem;
+}
+.public-site .map-canvas-notes .map-attribution {
+    font-size: 0.75rem;
+    margin: 0.25rem 0 0;
+}
+.public-site .map-canvas-notes .map-notice {
+    background: #faf7f2;
+    margin: 0.75rem 0 0;
+    font-size: 0.85rem;
+}
+.public-site .map-canvas-notes noscript p {
+    font-size: 0.85rem;
+    margin: 0.75rem 0 0;
+}
+.public-site .map-empty {
+    margin-top: 1.5rem;
+}
+@media (max-width: 1100px) {
+    .public-site .map-workspace {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .public-site .map-destination-panel {
+        border-right: 0;
+        border-bottom: 1px solid var(--site-border);
+    }
+    .public-site .map-list-scroll {
+        flex: none;
+        min-height: 0;
+        max-height: 18rem;
+        border-radius: 0;
+    }
+    .public-site .map-workspace .places-map {
+        height: clamp(20rem, 55vh, 28rem);
+    }
+}

@@ -25,10 +25,9 @@ class MapRouteTests(unittest.TestCase):
         self.service.get_published_by_slug.assert_not_called()
         self.render.assert_called_once_with('map.html', markers=[])
         page = Document(response.get_data(as_text=True))
-        self.assertEqual([node.text for node in page.find('h1')], ['Explore Santa Rosa on the map'])
+        self.assertEqual([node.text for node in page.find('h1')], ['Explore Santa Rosa Map'])
         self.assertEqual([node.text for node in page.find('h2')], ['Places are on the way'])
-        self.assertIn('Verified place information from the Santa Rosa City Tourism Office is '
-                      'pending. Please check back later.', page.find('main')[0].text)
+        self.assertIn('No published places are available yet. Please check back later.', page.find('main')[0].text)
         self.assertEqual([node.text for node in page.find('a', href='/places')
                           if page.find('main')[0] in node.ancestors], ['Browse places'])
 
@@ -208,6 +207,26 @@ class MapRouteTests(unittest.TestCase):
         self.assertIn('&lt;img', html)
         listing = page.find('ul', **{'class': 'map-place-list'})[0]
         self.assertIn(hostile, listing.text)
+
+    def test_workspace_panel_precedes_map_and_uses_only_payload_places(self):
+        page = Document(self.get('/map').get_data(as_text=True))
+        workspace = page.find('div', **{'class': 'map-workspace'})[0]
+        panel = page.find('section', **{'class': 'map-destination-panel'})[0]
+        canvas = page.find('section', **{'class': 'map-canvas-panel'})[0]
+        self.assertIn(workspace, panel.ancestors)
+        self.assertIn(workspace, canvas.ancestors)
+        self.assertLess(page.elements.index(panel), page.elements.index(canvas))
+        scroller = page.find('div', **{'class': 'map-list-scroll'})[0]
+        self.assertEqual(scroller.attrs['tabindex'], '0')
+        self.assertEqual(scroller.attrs['aria-label'], 'Destination list')
+        self.assertEqual([node.text for node in page.find('span', **{'class': 'map-category-badge'})], ['Nature'])
+        self.assertEqual([node.attrs['href'] for node in page.find('a') if scroller in node.ancestors],
+                         ['/places/synthetic-place'])
+        self.assertIn('test records are synthetic examples', page.find('main')[0].text)
+        self.assertNotRegex(page.find('main')[0].text.lower(),
+                            r'ratings|reviews|live traffic|travel time|distance|prices|current location')
+        self.service.list_published.assert_called_once_with(category=None, limit=50, offset=0)
+        self.assertEqual(page.stack, [])
 
     def test_vendored_assets_are_local_pinned_and_integrity_recorded(self):
         import hashlib

@@ -11,38 +11,52 @@
 {% block content %}
 {% set category_labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage'} %}
 <div class="map-page">
-    <h1>Explore Santa Rosa on the map</h1>
+    <header class="map-heading">
+        <p class="eyebrow">Explore the city</p>
+        <h1 class="page-heading">Explore Santa Rosa Map</h1>
+        <p class="page-subheading">View available RosaGo destinations around Santa Rosa, Laguna, and open a place to learn more.</p>
+    </header>
+    <p class="catalog-disclosure">Development preview: test records are synthetic examples, not real businesses or attractions.</p>
     {% if markers %}
-    <p class="intro-text">See available places on the map, or open their details from the list below. This view shows up to 50 places.</p>
-    <a class="text-link" href="{{ url_for('places_list') }}">Browse places</a>
-    <section class="map-page-state" aria-labelledby="map-view-title">
-        <h2 id="map-view-title">Places on the map</h2>
-        <p class="map-privacy">The map background uses OpenStreetMap tiles and sends requests to an external map service.</p>
-        <div id="places-map" class="places-map" role="region" aria-label="Map of available places in Santa Rosa" hidden></div>
-        <p class="map-attribution">&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></p>
-        <p id="map-failure" class="map-notice" role="status" hidden>The interactive map could not be loaded. You can still browse the place details below.</p>
-        <p id="map-tile-failure" class="map-notice" role="status" hidden>The map background could not be loaded. You can still browse place details.</p>
-        <noscript><p>The interactive map needs JavaScript. You can still browse the place details below.</p></noscript>
-    </section>
-    <section class="map-page-state" aria-labelledby="map-list-title">
-        <h2 id="map-list-title">Place details</h2>
-        <ul class="map-place-list">
-            {% for marker in markers %}
-            <li>
-                <h3><a href="{{ marker.detail_url }}">{{ marker.name }}</a></h3>
-                <p>{{ category_labels[marker.category] }}</p>
-                <p>{{ marker.address }}</p>
-            </li>
-            {% endfor %}
-        </ul>
-    </section>
+    <div class="map-workspace">
+        <section class="map-destination-panel" aria-labelledby="map-list-title">
+            <div class="map-panel-heading">
+                <h2 id="map-list-title">Destinations</h2>
+                <p>Showing up to 50 places. Select a name to open Place Details.</p>
+                <a class="text-link" href="{{ url_for('places_list') }}">Browse places</a>
+            </div>
+            <div class="map-list-scroll" role="region" aria-label="Destination list" tabindex="0">
+                <ul class="map-place-list">
+                    {% for marker in markers %}
+                    <li>
+                        <span class="map-category-badge">{{ category_labels[marker.category] }}</span>
+                        <h3><a href="{{ marker.detail_url }}">{{ marker.name }}</a></h3>
+                        <p>{{ marker.address }}</p>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </section>
+        <section class="map-canvas-panel" aria-labelledby="map-view-title">
+            <div class="map-canvas-heading">
+                <h2 id="map-view-title">Places on the map</h2>
+                <p class="map-privacy">The map background uses OpenStreetMap tiles and sends requests to an external map service.</p>
+            </div>
+            <div id="places-map" class="places-map" role="region" aria-label="Map of available places in Santa Rosa" hidden></div>
+            <div class="map-canvas-notes">
+                <p class="map-attribution">&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></p>
+                <p id="map-failure" class="map-notice" role="status" hidden>The interactive map could not be loaded. You can still open Place Details from the destination list.</p>
+                <p id="map-tile-failure" class="map-notice" role="status" hidden>The map background could not be loaded. You can still browse place details.</p>
+                <noscript><p>The interactive map needs JavaScript. You can still open Place Details from the destination list.</p></noscript>
+            </div>
+        </section>
+    </div>
     <script id="map-data" type="application/json">{{ markers | tojson }}</script>
     {% else %}
-    <p class="intro-text">Browse Santa Rosa's places as information becomes available.</p>
-    <section class="map-page-state" aria-labelledby="map-state-title">
+    <section class="empty-state map-empty" aria-labelledby="map-state-title">
         <h2 id="map-state-title">Places are on the way</h2>
-        <p>Verified place information from the Santa Rosa City Tourism Office is pending. Please check back later.</p>
-        <a class="text-link" href="{{ url_for('places_list') }}">Browse places</a>
+        <p>No published places are available yet. Please check back later.</p>
+        <a class="site-button" href="{{ url_for('places_list') }}">Browse places</a>
     </section>
     {% endif %}
 </div>
