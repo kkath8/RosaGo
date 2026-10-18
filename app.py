@@ -19,7 +19,8 @@ from itinerary_draft_service import (
     DraftError, DraftValidationError, DraftRejectedError, DraftUnavailableError, DraftConsistencyError,
 )
 from itinerary_quiz_form import (
-    COMPANIONS, TRANSPORTATION, FORM_FIELDS, parse_quiz_form, form_values,
+    COMPANIONS, TRANSPORTATION, TRIP_PACES, ACTIVITIES, ENVIRONMENTS,
+    FORM_FIELDS, REPEATED_FIELDS, parse_quiz_form, form_values,
     submitted_values, expected_revision as quiz_expected_revision,
 )
 from trip_service import (
@@ -704,7 +705,8 @@ def _quiz_form(draft, values, revision, *, message='', status=200):
     return _render_trip_page('itinerary/preferences.html', draft_id=draft.draft_id,
                              revision=revision, values=values, csrf=csrf, message=message,
                              interests=sorted(CATEGORIES), companions=COMPANIONS,
-                             transportation=TRANSPORTATION), status
+                             transportation=TRANSPORTATION, trip_paces=TRIP_PACES,
+                             activities=ACTIVITIES, environments=ENVIRONMENTS), status
 
 
 @app.route('/user/itinerary/start', methods=['POST'])
@@ -724,11 +726,11 @@ def itinerary_start():
 @login_required
 def itinerary_preferences(draft_id):
     if request.method == 'POST':
-        # Reuse established CSRF/Origin/files/single-value checks. Only interests repeat.
-        failure = _trip_post_check(set(request.form), repeated={'interests'})
+        # Only the two controlled checkbox lists may repeat.
+        failure = _trip_post_check(set(request.form), repeated=REPEATED_FIELDS)
         if failure:
             return failure
-        if (set(request.form) - FORM_FIELDS or FORM_FIELDS - {'interests'} - set(request.form)):
+        if (set(request.form) - FORM_FIELDS or FORM_FIELDS - REPEATED_FIELDS - set(request.form)):
             return 'Invalid preference form. Please reload this page and try again.', 400
         try:
             revision = quiz_expected_revision(request.form['expected_revision'])
@@ -747,7 +749,9 @@ def itinerary_preferences(draft_id):
     except DraftValidationError:
         return _quiz_form(draft, submitted_values(request.form), revision, status=400,
                           message='Check all fields: select 1–6 different interests, a companion type and transport; '
-                                  'use a budget up to PHP 100,000, dates within 7 days, and an end time after the start.')
+                                  'select pace, environment and 1–6 different activities; limit other interests to 200 '
+                                  'characters and additional preferences to 500; use a budget up to PHP 100,000, '
+                                  'dates within 7 days, and an end time after the start.')
     try:
         update_itinerary_draft_preferences(g.auth, str(draft_id), revision, preferences)
     except DraftError as error:

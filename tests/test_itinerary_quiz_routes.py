@@ -101,7 +101,7 @@ class QuizRouteTests(unittest.TestCase):
         for path, valid in ((START, MultiDict({'csrf_token': self.csrf})), (QUIZ, self.payload())):
             cases = []
             for field in valid:
-                if field == 'interests':
+                if field in ('interests', 'activity_preferences'):
                     continue
                 missing = valid.copy(); del missing[field]
                 duplicate = valid.copy(); duplicate.add(field, valid[field])
@@ -130,6 +130,50 @@ class QuizRouteTests(unittest.TestCase):
         self.assertIn(b'name="expected_revision" value="2"', response.data)
         self.protected(response)
         self.drafts['update_itinerary_draft_preferences'].assert_not_called()
+
+    def test_legacy_review_and_edit_require_explicit_new_choices(self):
+        from itinerary_draft_service import EXTENSION_FIELDS
+        from test_public_layout import Document
+        legacy = {key: value for key, value in self.draft.preferences.items() if key not in EXTENSION_FIELDS}
+        read = self.drafts['get_itinerary_draft']
+        read.side_effect = None
+        read.return_value = replace(self.draft, preferences=legacy)
+        response = self.client.get(REVIEW)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.count(b'Not selected'), 3)
+        self.assertIn(b'PHP 5000.50', response.data)
+        page = Document(self.client.get(QUIZ).get_data(as_text=True))
+        for field in ('trip_pace', 'environment_preference'):
+            select = page.find('select', name=field)[0]
+            self.assertIn('required', select.attrs)
+            self.assertFalse(any('selected' in node.attrs for node in page.find('option') if select in node.ancestors))
+        self.assertFalse(any('checked' in node.attrs for node in page.find('input', name='activity_preferences')))
+        for field in ('trip_pace', 'environment_preference', 'activity_preferences'):
+            data = self.payload(); del data[field]
+            self.assertEqual(self.client.post(QUIZ, data=data).status_code, 400)
+        self.drafts['update_itinerary_draft_preferences'].assert_not_called()
+        self.assertEqual(self.client.post(QUIZ, data=self.payload()).status_code, 303)
+        self.drafts['update_itinerary_draft_preferences'].assert_called_once()
+
+    def test_literal_text_escaped_in_review_form_and_error_page(self):
+        literal = '<script>alert(1)</script>'
+        read = self.drafts['get_itinerary_draft']
+        read.side_effect = None
+        read.return_value = replace(self.draft, preferences=self.draft.preferences | {
+            'other_interests': literal, 'additional_preferences': literal})
+        for response in (self.client.get(QUIZ), self.client.get(REVIEW),
+                         self.client.post(QUIZ, data=self.payload(budget='NaN', other_interests=literal,
+                                                                 additional_preferences=literal))):
+            self.assertIn(b'&lt;script&gt;alert(1)&lt;/script&gt;', response.data)
+            self.assertNotIn(literal.encode(), response.data)
+            self.protected(response)
+        self.drafts['update_itinerary_draft_preferences'].assert_not_called()
+        response = self.client.post(QUIZ, data=self.payload(other_interests='  ' + literal + '  ',
+                                                           additional_preferences=literal))
+        self.assertEqual(response.status_code, 303)
+        stored = self.drafts['update_itinerary_draft_preferences'].call_args.args[3]
+        self.assertEqual(stored['other_interests'], literal)
+        self.assertEqual(stored['additional_preferences'], literal)
 
     def test_stale_revision_is_passed_unchanged_and_never_retried(self):
         update = self.drafts['update_itinerary_draft_preferences']

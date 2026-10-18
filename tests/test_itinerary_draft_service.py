@@ -22,7 +22,8 @@ def preferences(**changes):
     return dict(interests=['nature', 'dining'], companion_type='solo',
                 start_date='2026-10-17', end_date='2026-10-23',
                 daily_start_time='08:00:00', daily_end_time='18:00:00',
-                transportation='walking') | changes
+                transportation='walking', trip_pace='balanced', activity_preferences=['sightseeing'],
+                environment_preference='mixed', other_interests=None, additional_preferences=None) | changes
 
 
 class DraftServiceTests(unittest.TestCase):
@@ -103,7 +104,7 @@ class DraftServiceTests(unittest.TestCase):
     def test_invalid_preferences_never_call_rpc(self):
         invalid = [None, [], {}, preferences(user_id=OWNER), preferences(state='saved'),
                    preferences(preview={}), preferences(schema_version=1)]
-        for key in service.REQUIRED:
+        for key in service.REQUIRED | service.EXTENDED_REQUIRED:
             value = preferences()
             del value[key]
             invalid.append(value)
@@ -136,6 +137,14 @@ class DraftServiceTests(unittest.TestCase):
                         AuthenticatedContext('h', OWNER, 'e', object())):
             with self.assertRaises(TypeError):
                 service.create_itinerary_draft(context)
+        self.client.rpc.assert_not_called()
+
+    def test_legacy_or_partial_extension_cannot_be_written(self):
+        legacy = {key: value for key, value in preferences().items() if key not in service.EXTENSION_FIELDS}
+        for value in (legacy, legacy | {'other_interests': 'coffee'},
+                      legacy | {'trip_pace': 'balanced'}, legacy | {'activity_preferences': ['sightseeing']}):
+            with self.assertRaises(service.DraftValidationError):
+                self.update(preferences=value)
         self.client.rpc.assert_not_called()
 
     def test_sanitized_provider_mapping_without_exception_chains(self):
@@ -217,6 +226,21 @@ class DraftReadServiceTests(unittest.TestCase):
         self.assertIsNone(service.get_itinerary_draft(self.context, DRAFT))
         self.read_query([self.row(preferences=None, revision=1)])
         self.assertIsNone(service.get_itinerary_draft(self.context, DRAFT).preferences)
+
+    def test_old_snapshot_remains_readable_without_fabricating_choices(self):
+        legacy = {key: value for key, value in self.row()['preferences'].items()
+                  if key not in service.EXTENSION_FIELDS}
+        self.read_query([self.row(preferences=legacy)])
+        draft = service.get_itinerary_draft(self.context, DRAFT)
+        self.assertEqual(draft.preferences, legacy)
+        self.assertFalse(draft.preferences.keys() & service.EXTENSION_FIELDS)
+        for invalid in (legacy | {'trip_pace': 'balanced'},
+                        legacy | {'transportation': 'bicycle'},
+                        self.row()['preferences'] | {'other_interests': ' untrimmed '},
+                        self.row()['preferences'] | {'activity_preferences': []}):
+            self.read_query([self.row(preferences=invalid)])
+            with self.assertRaises(service.DraftConsistencyError):
+                service.get_itinerary_draft(self.context, DRAFT)
 
     def test_invalid_rows_and_local_uuid(self):
         for data in (None, {}, [self.row(), self.row()], [{}],

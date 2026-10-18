@@ -20,6 +20,15 @@ MAX_REVISION = 9223372036854775807
 DRAFT_PROJECTION = 'id,user_id,state,schema_version,revision,preferences,expires_at'
 REQUIRED = frozenset(('interests', 'companion_type', 'start_date', 'end_date',
                       'daily_start_time', 'daily_end_time', 'transportation'))
+TRANSPORTATION = ('walking', 'bicycle', 'motorcycle', 'private_car',
+                  'public_transport', 'ride_hailing', 'mixed_transport')
+TRIP_PACES = ('relaxed', 'balanced', 'packed')
+ACTIVITIES = ('sightseeing', 'food_trip', 'shopping', 'outdoor_activities',
+              'culture_heritage', 'relaxation')
+ENVIRONMENTS = ('indoor', 'outdoor', 'mixed')
+TEXT_LIMITS = {'other_interests': 200, 'additional_preferences': 500}
+EXTENDED_REQUIRED = frozenset(('trip_pace', 'activity_preferences', 'environment_preference'))
+EXTENSION_FIELDS = EXTENDED_REQUIRED | TEXT_LIMITS.keys()
 
 
 class DraftError(Exception):
@@ -83,8 +92,26 @@ def _context(context):
     _uuid(context.user_id, lambda: TypeError('An active AuthenticatedContext is required.'))
 
 
-def _preferences(value):
-    if type(value) is not dict or not REQUIRED <= value.keys() or value.keys() - REQUIRED - {'budget_centavos', 'timezone'}:
+def preference_text(value, maximum):
+    """Untrusted text only: never interpret markup, JSON, SQL, or instructions."""
+    if value is None:
+        return None
+    if type(value) is not str:
+        raise DraftValidationError()
+    value = value.strip()
+    if (len(value) > maximum or '\x00' in value
+            or any(0xD800 <= ord(char) <= 0xDFFF for char in value)):
+        raise DraftValidationError()
+    return value or None
+
+
+def _preferences(value, *, allow_legacy=False):
+    if type(value) is not dict:
+        raise DraftValidationError()
+    legacy = allow_legacy and not (value.keys() & EXTENSION_FIELDS)
+    required = REQUIRED if legacy else REQUIRED | EXTENDED_REQUIRED
+    allowed = required | {'budget_centavos', 'timezone'} | (set() if legacy else TEXT_LIMITS.keys())
+    if not required <= value.keys() or value.keys() - allowed:
         raise DraftValidationError()
     interests = value['interests']
     if (type(interests) is not list or not 1 <= len(interests) <= 6
@@ -94,7 +121,7 @@ def _preferences(value):
     if any(type(value[key]) is not str for key in REQUIRED - {'interests'}):
         raise DraftValidationError()
     if (value['companion_type'] not in ('solo', 'couple', 'family', 'friends', 'group')
-            or value['transportation'] not in ('walking', 'private_car', 'public_transport')
+            or value['transportation'] not in (('walking', 'private_car', 'public_transport') if legacy else TRANSPORTATION)
             or ('timezone' in value and (type(value['timezone']) is not str or value['timezone'] != 'Asia/Manila'))):
         raise DraftValidationError()
     budget = value.get('budget_centavos')
@@ -119,6 +146,19 @@ def _preferences(value):
     if value['daily_end_time'] <= value['daily_start_time']:
         raise DraftValidationError()
     canonical = dict(value, interests=list(interests), budget_centavos=budget, timezone='Asia/Manila')
+    if not legacy:
+        if (type(value['trip_pace']) is not str or value['trip_pace'] not in TRIP_PACES
+                or type(value['environment_preference']) is not str
+                or value['environment_preference'] not in ENVIRONMENTS):
+            raise DraftValidationError()
+        activities = value['activity_preferences']
+        if (type(activities) is not list or not 1 <= len(activities) <= 6
+                or any(type(item) is not str or item not in ACTIVITIES for item in activities)
+                or len(set(activities)) != len(activities)):
+            raise DraftValidationError()
+        canonical['activity_preferences'] = list(activities)
+        for key, maximum in TEXT_LIMITS.items():
+            canonical[key] = preference_text(value.get(key), maximum)
     # All types/strings are now validated and bounded; no arbitrary JSON objects.
     if len(json.dumps(canonical, ensure_ascii=False).encode('utf-8')) > 16384:
         raise DraftValidationError()
@@ -192,7 +232,7 @@ def get_itinerary_draft(context: AuthenticatedContext, draft_id) -> ItineraryDra
         snapshot = row['preferences']
         if snapshot is not None:
             try:
-                canonical = _preferences(snapshot)
+                canonical = _preferences(snapshot, allow_legacy=True)
             except DraftValidationError:
                 canonical = None
             if canonical is None or canonical != snapshot:

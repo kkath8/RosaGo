@@ -14,6 +14,11 @@
         <dt>Daily start time</dt><dd>{{ values.daily_start_time }}</dd>
         <dt>Daily end time</dt><dd>{{ values.daily_end_time }}</dd>
         <dt>Transportation</dt><dd>{{ values.transportation | replace('_', ' ') }}</dd>
+        <dt>Trip pace</dt><dd>{{ values.trip_pace or 'Not selected' }}</dd>
+        <dt>Activity preferences</dt><dd>{{ (values.activity_preferences | join(', ')) or 'Not selected' }}</dd>
+        <dt>Environment preference</dt><dd>{{ values.environment_preference or 'Not selected' }}</dd>
+        <dt>Other interests</dt><dd>{{ values.other_interests or 'Not provided' }}</dd>
+        <dt>Additional preferences</dt><dd>{{ values.additional_preferences or 'Not provided' }}</dd>
         <dt>Timezone</dt><dd>Asia/Manila</dd>
     </dl>
     <a class="text-link" href="{{ url_for('itinerary_preferences', draft_id=draft_id) }}">Edit Preferences</a>

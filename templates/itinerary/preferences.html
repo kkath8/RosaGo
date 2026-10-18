@@ -40,6 +40,28 @@
                 {% for value in transportation %}<option value="{{ value }}" {% if values.transportation == value %}selected{% endif %}>{{ value | replace('_', ' ') | title }}</option>{% endfor %}
             </select>
         </div>
+        {% for field, label, choices in [('trip_pace', 'Trip pace', trip_paces), ('environment_preference', 'Environment preference', environments)] %}
+        <div class="account-field">
+            <label for="{{ field }}">{{ label }}</label>
+            <select id="{{ field }}" name="{{ field }}" required>
+                <option value="">Choose {{ label | lower }}</option>
+                {% for choice in choices %}<option value="{{ choice }}" {% if values[field] == choice %}selected{% endif %}>{{ choice | title }}</option>{% endfor %}
+            </select>
+        </div>
+        {% endfor %}
+        <fieldset>
+            <legend>Activity preferences (choose 1–6)</legend>
+            {% for activity in activities %}
+            <label><input type="checkbox" name="activity_preferences" value="{{ activity }}" {% if activity in values.activity_preferences %}checked{% endif %}> {{ activity | replace('_', ' ') | title }}</label>
+            {% endfor %}
+        </fieldset>
+        {% for field, label, maximum in [('other_interests', 'Other interests (optional)', 200), ('additional_preferences', "Anything else you'd like us to consider? (optional)", 500)] %}
+        <div class="account-field">
+            <label for="{{ field }}">{{ label }}</label>
+            <textarea id="{{ field }}" name="{{ field }}" maxlength="{{ maximum }}">{{ values[field] }}</textarea>
+            <p>Maximum {{ maximum }} characters.</p>
+        </div>
+        {% endfor %}
         <button class="site-button" type="submit">Save Preferences and Review</button>
     </form>
     <a class="text-link" href="{{ url_for('trips_new') }}">Back to Planner</a>
