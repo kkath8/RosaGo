@@ -1,69 +1,116 @@
 {% extends 'base.html' %}
-{% block title %}Itinerary Preferences | RosaGo{% endblock %}
+{% block title %}Trip Preferences | RosaGo{% endblock %}
 {% block extra_head %}<meta name="referrer" content="same-origin">{% endblock %}
 {% block content %}
-<section class="account-panel" aria-labelledby="quiz-title">
-    <h1 id="quiz-title" class="page-heading">Itinerary Preferences</h1>
-    <p>Choose your preferences for Santa Rosa. Times use Asia/Manila.</p>
-    {% if message %}<p class="account-status" role="alert">{{ message }}</p>{% endif %}
-    <form method="post" action="{{ url_for('itinerary_preferences', draft_id=draft_id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf }}">
-        <input type="hidden" name="expected_revision" value="{{ revision }}">
-        <fieldset>
-            <legend>Interests (choose 1–6)</legend>
-            {% for interest in interests %}
-            <label><input type="checkbox" name="interests" value="{{ interest }}" {% if interest in values.interests %}checked{% endif %}> {{ interest | title }}</label>
+{% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private Car', 'public_transport': 'Public Transport', 'ride_hailing': 'Ride-Hailing / Taxi', 'mixed_transport': 'Mixed Transport', 'sightseeing': 'Sightseeing', 'food_trip': 'Food Trip', 'outdoor_activities': 'Outdoor Activities', 'culture_heritage': 'Culture & Heritage', 'relaxation': 'Relaxation', 'indoor': 'Mostly Indoor', 'outdoor': 'Mostly Outdoor', 'mixed': 'Mix of Both'} %}
+{% set pace_notes = {'relaxed': 'Fewer stops, more time at each place', 'balanced': 'A comfortable mix of activities and free time', 'packed': 'More stops and activities during the day'} %}
+{% macro choices(name, options, kind, descriptions=none) %}
+<div class="itinerary-choices{% if descriptions %} itinerary-choices-detailed{% endif %}">
+    {% for option in options %}
+    <label class="itinerary-choice">
+        <input type="{{ kind }}" name="{{ name }}" value="{{ option }}" {% if (kind == 'checkbox' and option in values[name]) or (kind == 'radio' and values[name] == option) %}checked{% endif %}{% if kind == 'radio' %} required{% endif %}>
+        <span><strong>{{ labels.get(option, option | title) }}</strong>{% if descriptions %}<small>{{ descriptions[option] }}</small>{% endif %}</span>
+    </label>
+    {% endfor %}
+</div>
+{% endmacro %}
+<section class="itinerary-page" aria-labelledby="quiz-title">
+    <header class="itinerary-heading">
+        <p class="eyebrow">Personalized itinerary · Santa Rosa, Laguna</p>
+        <h1 id="quiz-title" class="page-heading">Plan Your Perfect Santa Rosa Trip</h1>
+        <p class="page-subheading">Tell us what kind of trip you're looking for and RosaGo will use your preferences to personalize your itinerary.</p>
+        <p class="itinerary-help">Start with your preferences. Itinerary generation is coming soon.</p>
+    </header>
+    <ol class="itinerary-progress" aria-label="Planning progress">
+        <li aria-current="step"><span aria-hidden="true">1</span> Preferences</li>
+        <li><span aria-hidden="true">2</span> Review</li>
+        <li><span aria-hidden="true">3</span> Itinerary <small>Coming soon</small></li>
+    </ol>
+    <div class="card itinerary-card">
+        <div class="itinerary-card-heading">
+            <h2>Trip Preferences</h2>
+            <p class="itinerary-help">A little about you, a trip that feels like you. All choices are required unless marked optional.</p>
+        </div>
+        {% if message %}
+        <div class="itinerary-error" role="alert" id="quiz-error">
+            <strong>Let's check your preferences</strong>
+            <p>{{ message }}</p>
+        </div>
+        {% endif %}
+        <form class="itinerary-form" method="post" action="{{ url_for('itinerary_preferences', draft_id=draft_id) }}"{% if message %} aria-describedby="quiz-error"{% endif %}>
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <input type="hidden" name="expected_revision" value="{{ revision }}">
+            <fieldset class="itinerary-section" aria-describedby="interests-help">
+                <legend><span class="itinerary-number" aria-hidden="true">01</span> Interests</legend>
+                <p id="interests-help" class="itinerary-help">What would you love to explore? Choose 1–6 interests.</p>
+                {{ choices('interests', interests, 'checkbox') }}
+                <div class="itinerary-field itinerary-custom">
+                    <label for="other_interests">Other interests <span>(optional)</span></label>
+                    <input class="form-field" id="other_interests" name="other_interests" type="text" maxlength="200" value="{{ values.other_interests }}" placeholder="Photography, coffee shops, local crafts..." aria-describedby="other-help">
+                    <p class="itinerary-help" id="other-help">Up to 200 characters. Keep at least one interest selected above.</p>
+                </div>
+            </fieldset>
+            <fieldset class="itinerary-section">
+                <legend><span class="itinerary-number" aria-hidden="true">02</span> Traveling With</legend>
+                <p class="itinerary-help">Who will be joining you?</p>
+                {{ choices('companion_type', companions, 'radio') }}
+            </fieldset>
+            <fieldset class="itinerary-section" aria-describedby="budget-help">
+                <legend><span class="itinerary-number" aria-hidden="true">03</span> Budget</legend>
+                <div class="itinerary-field itinerary-budget">
+                    <label for="budget">Budget per person <span>· For the whole itinerary</span></label>
+                    <div class="itinerary-money"><span aria-hidden="true">₱</span><input class="form-field" id="budget" name="budget" type="text" inputmode="decimal" value="{{ values.budget }}" aria-describedby="budget-help"></div>
+                    <p id="budget-help" class="itinerary-help">Optional · Maximum ₱100,000 (PHP). Leave blank if you're not sure yet.</p>
+                </div>
+            </fieldset>
+            {% for number, title, kind, help, fields in [('04', 'Travel Dates', 'date', 'Choose your dates for a visit of up to 7 days.', [('start_date', 'Start Date'), ('end_date', 'End Date')]), ('05', 'Daily Schedule', 'time', "Choose the daily time window you'd like to spend exploring. End time must be after start time. All times use Asia/Manila.", [('daily_start_time', 'Start Time'), ('daily_end_time', 'End Time')])] %}
+            <fieldset class="itinerary-section" aria-describedby="{{ kind }}-help">
+                <legend><span class="itinerary-number" aria-hidden="true">{{ number }}</span> {{ title }}</legend>
+                <p id="{{ kind }}-help" class="itinerary-help">{{ help }}</p>
+                <div class="itinerary-pair">
+                    {% for field, label in fields %}
+                    <div class="itinerary-field">
+                        <label for="{{ field }}">{{ label }}</label>
+                        <input class="form-field" id="{{ field }}" name="{{ field }}" type="{{ kind }}" value="{{ values[field][:5] if kind == 'time' else values[field] }}" {% if kind == 'time' %}step="60"{% endif %} aria-describedby="{{ kind }}-help" required>
+                    </div>
+                    {% endfor %}
+                </div>
+            </fieldset>
             {% endfor %}
-        </fieldset>
-        <div class="account-field">
-            <label for="companion-type">Companion type</label>
-            <select id="companion-type" class="form-field" name="companion_type" required>
-                <option value="">Choose a companion type</option>
-                {% for value in companions %}<option value="{{ value }}" {% if values.companion_type == value %}selected{% endif %}>{{ value | title }}</option>{% endfor %}
-            </select>
-        </div>
-        <div class="account-field">
-            <label for="budget">Budget in PHP (optional, per person for the whole itinerary)</label>
-            <input id="budget" name="budget" type="text" inputmode="decimal" value="{{ values.budget }}" aria-describedby="budget-help">
-            <p id="budget-help">Maximum PHP 100,000. Leave blank if unknown.</p>
-        </div>
-        {% for field, label, kind in [('start_date', 'Start date', 'date'), ('end_date', 'End date', 'date'), ('daily_start_time', 'Daily start time', 'time'), ('daily_end_time', 'Daily end time', 'time')] %}
-        <div class="account-field">
-            <label for="{{ field }}">{{ label }}</label>
-            <input id="{{ field }}" name="{{ field }}" type="{{ kind }}" value="{{ values[field][:5] if kind == 'time' else values[field] }}" {% if kind == 'time' %}step="60"{% endif %} required>
-        </div>
-        {% endfor %}
-        <div class="account-field">
-            <label for="transportation">Transportation</label>
-            <select id="transportation" class="form-field" name="transportation" required>
-                <option value="">Choose transportation</option>
-                {% for value in transportation %}<option value="{{ value }}" {% if values.transportation == value %}selected{% endif %}>{{ value | replace('_', ' ') | title }}</option>{% endfor %}
-            </select>
-        </div>
-        {% for field, label, choices in [('trip_pace', 'Trip pace', trip_paces), ('environment_preference', 'Environment preference', environments)] %}
-        <div class="account-field">
-            <label for="{{ field }}">{{ label }}</label>
-            <select id="{{ field }}" name="{{ field }}" required>
-                <option value="">Choose {{ label | lower }}</option>
-                {% for choice in choices %}<option value="{{ choice }}" {% if values[field] == choice %}selected{% endif %}>{{ choice | title }}</option>{% endfor %}
-            </select>
-        </div>
-        {% endfor %}
-        <fieldset>
-            <legend>Activity preferences (choose 1–6)</legend>
-            {% for activity in activities %}
-            <label><input type="checkbox" name="activity_preferences" value="{{ activity }}" {% if activity in values.activity_preferences %}checked{% endif %}> {{ activity | replace('_', ' ') | title }}</label>
-            {% endfor %}
-        </fieldset>
-        {% for field, label, maximum in [('other_interests', 'Other interests (optional)', 200), ('additional_preferences', "Anything else you'd like us to consider? (optional)", 500)] %}
-        <div class="account-field">
-            <label for="{{ field }}">{{ label }}</label>
-            <textarea id="{{ field }}" name="{{ field }}" maxlength="{{ maximum }}">{{ values[field] }}</textarea>
-            <p>Maximum {{ maximum }} characters.</p>
-        </div>
-        {% endfor %}
-        <button class="site-button" type="submit">Save Preferences and Review</button>
-    </form>
-    <a class="text-link" href="{{ url_for('trips_new') }}">Back to Planner</a>
+            <fieldset class="itinerary-section">
+                <legend><span class="itinerary-number" aria-hidden="true">06</span> Transportation</legend>
+                <p class="itinerary-help">How would you prefer to get around?</p>
+                {{ choices('transportation', transportation, 'radio') }}
+            </fieldset>
+            <fieldset class="itinerary-section">
+                <legend><span class="itinerary-number" aria-hidden="true">07</span> Trip Pace</legend>
+                <p class="itinerary-help">Set the rhythm of your visit.</p>
+                {{ choices('trip_pace', trip_paces, 'radio', pace_notes) }}
+            </fieldset>
+            <fieldset class="itinerary-section" aria-describedby="activities-help">
+                <legend><span class="itinerary-number" aria-hidden="true">08</span> Preferred Activities</legend>
+                <p id="activities-help" class="itinerary-help">What do you enjoy doing? Choose 1–6 activities.</p>
+                {{ choices('activity_preferences', activities, 'checkbox') }}
+            </fieldset>
+            <fieldset class="itinerary-section">
+                <legend><span class="itinerary-number" aria-hidden="true">09</span> Indoor or Outdoor</legend>
+                <p class="itinerary-help">Where do you feel most in your element?</p>
+                {{ choices('environment_preference', environments, 'radio') }}
+            </fieldset>
+            <fieldset class="itinerary-section">
+                <legend><span class="itinerary-number" aria-hidden="true">10</span> Anything Else?</legend>
+                <div class="itinerary-field">
+                    <label for="additional_preferences">Anything else you'd like us to consider? <span>(optional)</span></label>
+                    <p class="itinerary-help" id="additional-help">Tell us about preferences such as quiet places, kid-friendly activities, affordable cafés, photography spots, or anything else that could help personalize your trip.</p>
+                    <textarea class="form-field" id="additional_preferences" name="additional_preferences" rows="4" maxlength="500" aria-describedby="additional-help additional-limit">{{ values.additional_preferences }}</textarea>
+                    <p class="itinerary-help" id="additional-limit">Up to 500 characters.</p>
+                </div>
+            </fieldset>
+            <div class="itinerary-actions">
+                <a class="text-link" href="{{ url_for('trips_new') }}">Back to Planner</a>
+                <button class="site-button" type="submit">Review My Trip <span aria-hidden="true">→</span></button>
+            </div>
+        </form>
+    </div>
 </section>
 {% endblock %}

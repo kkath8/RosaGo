@@ -74,7 +74,7 @@ class QuizRouteTests(unittest.TestCase):
         update.assert_called_once()
         self.assertEqual(update.call_args.args[1:], (trips.TRIP, 2, self.draft.preferences))
         response = self.client.get(REVIEW + '?budget=999&preview=forged')
-        self.assertIn(b'PHP 5000.50', response.data)
+        self.assertIn('₱5,000.50', response.get_data(as_text=True))
         self.assertNotIn(b'forged', response.data)
         self.assertIn(b'No trip has been created.', response.data)
         self.protected(response)
@@ -141,12 +141,13 @@ class QuizRouteTests(unittest.TestCase):
         response = self.client.get(REVIEW)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.count(b'Not selected'), 3)
-        self.assertIn(b'PHP 5000.50', response.data)
+        self.assertIn('₱5,000.50', response.get_data(as_text=True))
         page = Document(self.client.get(QUIZ).get_data(as_text=True))
         for field in ('trip_pace', 'environment_preference'):
-            select = page.find('select', name=field)[0]
-            self.assertIn('required', select.attrs)
-            self.assertFalse(any('selected' in node.attrs for node in page.find('option') if select in node.ancestors))
+            options = page.find('input', name=field, type='radio')
+            self.assertEqual(len(options), 3)
+            self.assertTrue(all('required' in node.attrs for node in options))
+            self.assertFalse(any('checked' in node.attrs for node in options))
         self.assertFalse(any('checked' in node.attrs for node in page.find('input', name='activity_preferences')))
         for field in ('trip_pace', 'environment_preference', 'activity_preferences'):
             data = self.payload(); del data[field]
@@ -183,6 +184,87 @@ class QuizRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 409)
         update.assert_called_once()
         self.assertEqual(update.call_args.args[2], 1)
+
+    def test_quiz_native_controls_exact_fields_and_selected_form_roundtrip(self):
+        from test_public_layout import Document
+        from itinerary_quiz_form import FORM_FIELDS
+        from itinerary_draft_service import TRANSPORTATION, ACTIVITIES, TRIP_PACES, ENVIRONMENTS
+        page = Document(self.client.get(QUIZ).get_data(as_text=True))
+        self.assertEqual(page.find('h1')[0].text, 'Plan Your Perfect Santa Rosa Trip')
+        forms = page.find('form')
+        self.assertEqual(len(forms), 1)
+        self.assertEqual((forms[0].attrs['method'], forms[0].attrs['action']), ('post', QUIZ))
+        inputs = [node for node in page.elements if node.tag in ('input', 'textarea') and forms[0] in node.ancestors]
+        self.assertEqual({node.attrs['name'] for node in inputs}, FORM_FIELDS)
+        payload = MultiDict()
+        for node in inputs:
+            kind = node.attrs.get('type')
+            if kind not in ('radio', 'checkbox') or 'checked' in node.attrs:
+                payload.add(node.attrs['name'], node.text if node.tag == 'textarea' else node.attrs['value'])
+        self.assertEqual(parse_quiz_form(payload), (2, self.draft.preferences))
+        for field, options, kind in (('transportation', TRANSPORTATION, 'radio'),
+                                      ('trip_pace', TRIP_PACES, 'radio'),
+                                      ('environment_preference', ENVIRONMENTS, 'radio'),
+                                      ('activity_preferences', ACTIVITIES, 'checkbox')):
+            controls = page.find('input', name=field, type=kind)
+            self.assertEqual([node.attrs['value'] for node in controls], list(options))
+            for node in controls:
+                self.assertEqual(node.ancestors[-1].tag, 'label')
+                self.assertTrue(any(parent.tag == 'fieldset' for parent in node.ancestors))
+                self.assertEqual('required' in node.attrs, kind == 'radio')
+        self.assertEqual(page.find('input', name='other_interests')[0].attrs['maxlength'], '200')
+        self.assertEqual(page.find('textarea', name='additional_preferences')[0].attrs['maxlength'], '500')
+        self.assertNotIn('required', page.find('input', name='budget')[0].attrs)
+        for field in ('daily_start_time', 'daily_end_time'):
+            self.assertEqual(page.find('input', name=field)[0].attrs['step'], '60')
+        self.assertEqual(page.find('script'), [])
+        self.assertEqual(page.stack, [])
+        self.assertEqual(page.find('button', type='submit')[0].text.strip(), 'Review My Trip →')
+
+    def test_review_display_formats_real_values_and_disables_generation(self):
+        from test_public_layout import Document
+        read = self.drafts['get_itinerary_draft']
+        read.side_effect = None
+        for transport, label in (('motorcycle', 'Motorcycle'), ('public_transport', 'Public Transport'),
+                                 ('ride_hailing', 'Ride-Hailing / Taxi'), ('mixed_transport', 'Mixed Transport'),
+                                 ('bicycle', 'Bicycle'), ('walking', 'Walking'), ('private_car', 'Private Car')):
+            read.return_value = replace(self.draft, preferences=self.draft.preferences | {
+                'transportation': transport, 'daily_start_time': '00:00:00', 'daily_end_time': '12:01:30',
+                'activity_preferences': ['food_trip', 'outdoor_activities', 'culture_heritage']})
+            page = Document(self.client.get(REVIEW).get_data(as_text=True))
+            main = page.find('main')[0].text
+            for expected in (label, 'Food Trip', 'Outdoor Activities', 'Culture & Heritage',
+                             'Mix of Both', 'Attractions', 'Balanced', 'Feb 29, 2020', 'Mar 6, 2020',
+                             '12:00 AM', '12:01:30 PM', '₱5,000.50'):
+                self.assertIn(expected, main)
+            self.assertEqual(page.find('h1')[0].text, 'Review Your Trip')
+            button = page.find('button')[0]
+            self.assertEqual(button.attrs['type'], 'button')
+            self.assertIn('disabled', button.attrs)
+            self.assertEqual(page.find('form'), [])
+            self.assertTrue(page.find('a', href=QUIZ))
+            self.assertTrue(page.find('a', href='/user/trips/new'))
+            self.assertEqual(page.find('script'), [])
+            self.assertEqual(page.stack, [])
+        for amount, display in ((None, 'Not provided'), (0, '₱0'), (10000000, '₱100,000'), (1, '₱0.01')):
+            read.return_value = replace(self.draft, preferences=self.draft.preferences | {
+                'budget_centavos': amount, 'end_date': self.draft.preferences['start_date']})
+            page = Document(self.client.get(REVIEW).get_data(as_text=True))
+            self.assertIn(display, page.find('main')[0].text)
+            self.assertEqual(len(page.find('time', datetime='2020-02-29')), 1)
+        self.drafts['update_itinerary_draft_preferences'].assert_not_called()
+
+    def test_validation_notice_is_accessible_and_preserves_selection(self):
+        from test_public_layout import Document
+        response = self.client.post(QUIZ, data=self.payload(budget='100000.01'))
+        self.assertEqual(response.status_code, 400)
+        page = Document(response.get_data(as_text=True))
+        alert = page.find('div', role='alert', id='quiz-error')[0]
+        self.assertIn('Check all fields', alert.text)
+        self.assertEqual(page.find('form')[0].attrs['aria-describedby'], 'quiz-error')
+        self.assertEqual(page.find('input', name='budget')[0].attrs['value'], '100000.01')
+        self.assertIn('checked', page.find('input', name='trip_pace', value='balanced')[0].attrs)
+        self.drafts['update_itinerary_draft_preferences'].assert_not_called()
 
     def test_missing_foreign_noneditable_and_empty_drafts(self):
         read = self.drafts['get_itinerary_draft']
