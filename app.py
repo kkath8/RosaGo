@@ -5,7 +5,7 @@ import time
 import httpx
 import secrets
 from contextlib import ExitStack
-from datetime import date
+from datetime import date, datetime, timezone
 from uuid import UUID
 
 from dotenv import load_dotenv
@@ -14,6 +14,14 @@ from supabase import Client, ClientOptions, create_client
 from supabase_auth.errors import AuthApiError, AuthError
 
 from auth_helpers import login_required
+from itinerary_draft_service import (
+    create_itinerary_draft, get_itinerary_draft, update_itinerary_draft_preferences,
+    DraftError, DraftValidationError, DraftRejectedError, DraftUnavailableError, DraftConsistencyError,
+)
+from itinerary_quiz_form import (
+    COMPANIONS, TRANSPORTATION, FORM_FIELDS, parse_quiz_form, form_values,
+    submitted_values, expected_revision as quiz_expected_revision,
+)
 from trip_service import (
     list_user_trips, get_user_trip, create_trip, update_trip, delete_trip, add_place,
     TripServiceError, TripValidationError, TripNotFoundError,
@@ -96,7 +104,8 @@ def auth_callback():
 
 @app.after_request
 def protect_auth_response(response):
-    if request.path == '/user/trips' or request.path.startswith('/user/trips/'):
+    if (request.path == '/user/trips' or request.path.startswith('/user/trips/')
+            or request.path.startswith('/user/itinerary/')):
         response.headers['Cache-Control'] = 'no-store'
         response.headers['Referrer-Policy'] = 'same-origin'
     if request.path in ("/auth/callback", "/auth/reset-callback", "/reset-password", "/login", "/register", "/user", "/user/profile/edit"):
@@ -605,7 +614,7 @@ def _trip_csrf():
     return record.csrf if record is not None else None
 
 
-def _trip_post_check(fields):
+def _trip_post_check(fields, *, repeated=()):
     tokens = request.form.getlist('csrf_token')
     if (len(tokens) != 1 or not tokens[0].strip()
             or not get_normal_auth_dependencies().coordinator.validate_csrf(
@@ -614,7 +623,7 @@ def _trip_post_check(fields):
     if request.headers.get('Origin') not in (None, request.host_url.rstrip('/')):
         return 'Please reload this page and try again.', 403
     if (request.files or set(request.form) != fields
-            or any(len(request.form.getlist(field)) != 1 for field in fields)):
+            or any(len(request.form.getlist(field)) != 1 for field in fields if field not in repeated)):
         return 'Invalid trip form. Please reload this page and try again.', 400
     return None
 
@@ -664,6 +673,101 @@ def _trip_form(template, *, trip_id=None, name='', visit_date='', message='', st
         return 'Please reload this page and try again.', 403
     return _render_trip_page(template, trip_id=trip_id, name=name, visit_date=visit_date,
                              csrf=csrf, message=message), status
+
+
+def _draft_failure(error, *, mutation=False):
+    if isinstance(error, DraftValidationError):
+        return 'Invalid itinerary preferences. Please check your entries.', 400
+    if isinstance(error, DraftRejectedError):
+        return 'This draft cannot be updated. Reload it before trying again.', 409
+    if isinstance(error, DraftUnavailableError):
+        return (('Your change could not be confirmed. Check your draft before trying again.'
+                 if mutation else 'Draft information is temporarily unavailable.'), 503)
+    if isinstance(error, DraftConsistencyError):
+        return 'We could not display this draft. Please try again later.', 500
+    raise error
+
+
+def _editable_draft(draft_id):
+    draft = get_itinerary_draft(g.auth, str(draft_id))
+    if draft is None:
+        return None, ('Draft not found.', 404)
+    if draft.state != 'editing' or draft.expires_at <= datetime.now(timezone.utc):
+        return None, ('This draft is no longer editable. Start a new draft from Planner.', 409)
+    return draft, None
+
+
+def _quiz_form(draft, values, revision, *, message='', status=200):
+    csrf = _trip_csrf()
+    if csrf is None:
+        return 'Please reload this page and try again.', 403
+    return _render_trip_page('itinerary/preferences.html', draft_id=draft.draft_id,
+                             revision=revision, values=values, csrf=csrf, message=message,
+                             interests=sorted(CATEGORIES), companions=COMPANIONS,
+                             transportation=TRANSPORTATION), status
+
+
+@app.route('/user/itinerary/start', methods=['POST'])
+@login_required
+def itinerary_start():
+    failure = _trip_post_check({'csrf_token'})
+    if failure:
+        return failure
+    try:
+        draft = create_itinerary_draft(g.auth)
+    except DraftError as error:
+        return _draft_failure(error, mutation=True)
+    return redirect(url_for('itinerary_preferences', draft_id=draft.draft_id), code=303)
+
+
+@app.route('/user/itinerary/<uuid:draft_id>/preferences', methods=['GET', 'POST'])
+@login_required
+def itinerary_preferences(draft_id):
+    if request.method == 'POST':
+        # Reuse established CSRF/Origin/files/single-value checks. Only interests repeat.
+        failure = _trip_post_check(set(request.form), repeated={'interests'})
+        if failure:
+            return failure
+        if (set(request.form) - FORM_FIELDS or FORM_FIELDS - {'interests'} - set(request.form)):
+            return 'Invalid preference form. Please reload this page and try again.', 400
+        try:
+            revision = quiz_expected_revision(request.form['expected_revision'])
+        except DraftValidationError:
+            return 'Invalid draft revision. Please reload this page and try again.', 400
+    try:
+        draft, failure = _editable_draft(draft_id)
+    except DraftError as error:
+        return _draft_failure(error)
+    if failure:
+        return failure
+    if request.method == 'GET':
+        return _quiz_form(draft, form_values(draft.preferences), draft.revision)
+    try:
+        revision, preferences = parse_quiz_form(request.form)
+    except DraftValidationError:
+        return _quiz_form(draft, submitted_values(request.form), revision, status=400,
+                          message='Check all fields: select 1–6 different interests, a companion type and transport; '
+                                  'use a budget up to PHP 100,000, dates within 7 days, and an end time after the start.')
+    try:
+        update_itinerary_draft_preferences(g.auth, str(draft_id), revision, preferences)
+    except DraftError as error:
+        return _draft_failure(error, mutation=True)
+    return redirect(url_for('itinerary_review', draft_id=draft_id), code=303)
+
+
+@app.route('/user/itinerary/<uuid:draft_id>/review', methods=['GET'])
+@login_required
+def itinerary_review(draft_id):
+    try:
+        draft, failure = _editable_draft(draft_id)
+    except DraftError as error:
+        return _draft_failure(error)
+    if failure:
+        return failure
+    if draft.preferences is None:
+        return redirect(url_for('itinerary_preferences', draft_id=draft_id), code=303)
+    return _render_trip_page('itinerary/review.html', draft_id=draft.draft_id,
+                             revision=draft.revision, values=form_values(draft.preferences))
 
 
 @app.route('/user/trips', methods=['GET'])

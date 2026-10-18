@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Review Preferences | RosaGo{% endblock %}
+{% block content %}
+<section class="account-panel" aria-labelledby="review-title">
+    <h1 id="review-title" class="page-heading">Review Preferences</h1>
+    <p>Your preferences are saved in a temporary draft. Itinerary generation is not implemented yet. No trip has been created.</p>
+    <p>Draft revision: {{ revision }}</p>
+    <dl>
+        <dt>Interests</dt><dd>{{ values.interests | join(', ') }}</dd>
+        <dt>Companion type</dt><dd>{{ values.companion_type }}</dd>
+        <dt>Budget per person for the whole itinerary</dt><dd>{% if values.budget != '' %}PHP {{ values.budget }}{% else %}Not provided{% endif %}</dd>
+        <dt>Start date</dt><dd>{{ values.start_date }}</dd>
+        <dt>End date</dt><dd>{{ values.end_date }}</dd>
+        <dt>Daily start time</dt><dd>{{ values.daily_start_time }}</dd>
+        <dt>Daily end time</dt><dd>{{ values.daily_end_time }}</dd>
+        <dt>Transportation</dt><dd>{{ values.transportation | replace('_', ' ') }}</dd>
+        <dt>Timezone</dt><dd>Asia/Manila</dd>
+    </dl>
+    <a class="text-link" href="{{ url_for('itinerary_preferences', draft_id=draft_id) }}">Edit Preferences</a>
+    <a class="text-link" href="{{ url_for('trips_new') }}">Back to Planner</a>
+</section>
+{% endblock %}

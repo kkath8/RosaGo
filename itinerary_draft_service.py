@@ -4,7 +4,7 @@ Writes are never automatically retried. In particular an ambiguous create may
 have committed: callers must not blindly create another draft.
 """
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 import json
 import re
 from uuid import UUID
@@ -17,6 +17,7 @@ from places_service import CATEGORIES
 
 
 MAX_REVISION = 9223372036854775807
+DRAFT_PROJECTION = 'id,user_id,state,schema_version,revision,preferences,expires_at'
 REQUIRED = frozenset(('interests', 'companion_type', 'start_date', 'end_date',
                       'daily_start_time', 'daily_end_time', 'transportation'))
 
@@ -53,6 +54,18 @@ class DraftResult:
 
     def __repr__(self):
         return '<DraftResult redacted>'
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class ItineraryDraft:
+    draft_id: str
+    state: str
+    revision: int
+    preferences: dict | None
+    expires_at: datetime
+
+    def __repr__(self):
+        return '<ItineraryDraft redacted>'
 
 
 def _uuid(value, error=DraftValidationError):
@@ -141,6 +154,52 @@ def _call(context, name, params, expected_id, expected_revision):
 def create_itinerary_draft(context: AuthenticatedContext) -> DraftResult:
     _context(context)
     return _call(context, 'rosago_itinerary_draft_create', {}, None, 1)
+
+
+def get_itinerary_draft(context: AuthenticatedContext, draft_id) -> ItineraryDraft | None:
+    """Read one own draft through RLS and explicit ownership; no authority returned."""
+    _context(context)
+    draft_id = _uuid(draft_id)
+    owner = _uuid(context.user_id)
+    try:
+        response = (context.client.table('itinerary_drafts').select(DRAFT_PROJECTION)
+                    .eq('id', draft_id).eq('user_id', owner).limit(2).retry(False).execute())
+    except (APIError, httpx.HTTPError):
+        pass
+    else:
+        data = getattr(response, 'data', None)
+        if type(data) is not list or len(data) > 1:
+            raise DraftConsistencyError()
+        if not data:
+            return None
+        row = data[0]
+        if type(row) is not dict or set(row) != set(DRAFT_PROJECTION.split(',')):
+            raise DraftConsistencyError()
+        if (_uuid(row['id'], DraftConsistencyError) != draft_id
+                or _uuid(row['user_id'], DraftConsistencyError) != owner
+                or row['state'] not in ('editing', 'generating', 'preview_ready', 'failed', 'saved', 'expired')
+                or type(row['schema_version']) is not int or row['schema_version'] != 1
+                or type(row['revision']) is not int or not 1 <= row['revision'] <= MAX_REVISION):
+            raise DraftConsistencyError()
+        expires = None
+        if type(row['expires_at']) is str:
+            try:
+                expires = datetime.fromisoformat(row['expires_at'])
+            except ValueError:
+                pass
+        if expires is None or expires.tzinfo is None or expires.utcoffset() is None:
+            raise DraftConsistencyError()
+        snapshot = row['preferences']
+        if snapshot is not None:
+            try:
+                canonical = _preferences(snapshot)
+            except DraftValidationError:
+                canonical = None
+            if canonical is None or canonical != snapshot:
+                raise DraftConsistencyError()
+            snapshot = canonical
+        return ItineraryDraft(draft_id, row['state'], row['revision'], snapshot, expires)
+    raise DraftUnavailableError() from None
 
 
 def update_itinerary_draft_preferences(context: AuthenticatedContext, draft_id,

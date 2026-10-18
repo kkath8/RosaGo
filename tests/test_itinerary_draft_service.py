@@ -178,5 +178,71 @@ class DraftServiceTests(unittest.TestCase):
         self.query.execute.assert_called_once()
 
 
+class DraftReadServiceTests(unittest.TestCase):
+    setUp = DraftServiceTests.setUp
+    result = DraftServiceTests.result
+
+    def read_query(self, data):
+        query = Mock(spec=['select', 'eq', 'limit', 'retry', 'execute'])
+        for name in ('select', 'eq', 'limit', 'retry'):
+            getattr(query, name).return_value = query
+        query.execute.return_value = SimpleNamespace(data=data)
+        self.client.table.return_value = query
+        return query
+
+    def row(self, **changes):
+        return dict(id=DRAFT, user_id=OWNER, state='editing', schema_version=1, revision=2,
+                    preferences=preferences(budget_centavos=None, timezone='Asia/Manila'),
+                    expires_at='2099-01-01T00:00:00+00:00') | changes
+
+    def tearDown(self):
+        self.client.rpc.assert_not_called()
+        self.client.close.assert_not_called()
+        self.assertEqual(self.client.auth.mock_calls, [])
+
+    def test_exact_projection_owner_filter_and_safe_result(self):
+        query = self.read_query([self.row()])
+        draft = service.get_itinerary_draft(self.context, DRAFT)
+        self.client.table.assert_called_once_with('itinerary_drafts')
+        query.select.assert_called_once_with(service.DRAFT_PROJECTION)
+        self.assertEqual(query.eq.call_args_list, [unittest.mock.call('id', DRAFT), unittest.mock.call('user_id', OWNER)])
+        query.limit.assert_called_once_with(2)
+        query.retry.assert_called_once_with(False)
+        self.assertEqual(draft.revision, 2)
+        self.assertFalse(hasattr(draft, 'user_id'))
+        self.assertNotIn(DRAFT, repr(draft))
+
+    def test_missing_and_null_snapshot(self):
+        self.read_query([])
+        self.assertIsNone(service.get_itinerary_draft(self.context, DRAFT))
+        self.read_query([self.row(preferences=None, revision=1)])
+        self.assertIsNone(service.get_itinerary_draft(self.context, DRAFT).preferences)
+
+    def test_invalid_rows_and_local_uuid(self):
+        for data in (None, {}, [self.row(), self.row()], [{}],
+                     [self.row(user_id=DRAFT)], [self.row(id=OWNER)], [self.row(revision=True)],
+                     [self.row(schema_version=2)], [self.row(state='unknown')],
+                     [self.row(expires_at='infinity')], [self.row(expires_at='2026-01-01')],
+                     [self.row(preferences={})], [self.row(preferences=preferences())],
+                     [self.row(preferences=preferences(timezone='UTC'))]):
+            self.read_query(data)
+            with self.assertRaises(service.DraftConsistencyError):
+                service.get_itinerary_draft(self.context, DRAFT)
+        self.client.table.reset_mock()
+        with self.assertRaises(service.DraftValidationError):
+            service.get_itinerary_draft(self.context, 'bad')
+        self.client.table.assert_not_called()
+
+    def test_read_provider_failures_sanitized(self):
+        query = self.read_query([])
+        for error in (APIError(dict(code='42501', message='private-token', details='private-token', hint='private-token')),
+                      httpx.ReadTimeout('private-token')):
+            query.execute.side_effect = error
+            with self.assertRaises(service.DraftUnavailableError) as raised:
+                service.get_itinerary_draft(self.context, DRAFT)
+            self.assertIsNone(raised.exception.__context__)
+            self.assertNotIn('private-token', ''.join(traceback.format_exception(raised.exception)))
+
+
 if __name__ == '__main__':
     unittest.main()
