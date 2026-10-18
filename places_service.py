@@ -6,7 +6,6 @@ whitespace, which can reject boundaries PostgreSQL's locale-dependent POSIX
 Image URLs receive only the migration baseline check; no URL is fetched.
 """
 from collections.abc import Mapping
-from dataclasses import dataclass
 from datetime import datetime
 import math
 import re
@@ -15,9 +14,10 @@ from uuid import UUID
 import httpx
 from postgrest.exceptions import APIError
 
+from place_model import CATEGORIES, Place
+
 
 PROJECTION = 'id,name,slug,description,category,address,latitude,longitude,image_url,created_at,updated_at'
-CATEGORIES = frozenset(('attraction', 'dining', 'shopping', 'accommodation', 'nature', 'heritage'))
 _SLUG = re.compile(r'[a-z0-9]+(?:-[a-z0-9]+)*')
 _FIELDS = frozenset(PROJECTION.split(','))
 
@@ -39,24 +39,6 @@ class PlacesUnavailableError(PlacesServiceError):
 class PlacesConsistencyError(PlacesServiceError):
     def __init__(self):
         super().__init__('Places data is inconsistent.')
-
-
-@dataclass(frozen=True, slots=True, repr=False)
-class Place:
-    id: str
-    name: str
-    slug: str
-    description: str
-    category: str
-    address: str
-    latitude: float
-    longitude: float
-    image_url: str | None
-    created_at: datetime
-    updated_at: datetime
-
-    def __repr__(self):
-        return '<Place redacted>'
 
 
 def _text(value, maximum):
