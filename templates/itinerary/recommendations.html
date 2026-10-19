@@ -7,13 +7,13 @@
         <p class="eyebrow">Personalized itinerary · Santa Rosa, Laguna</p>
         <h1 id="recommendations-title" class="page-heading">Recommended Places</h1>
         <p class="page-subheading">Based on your selected interests</p>
-        <p class="itinerary-help">This is a destination shortlist. Itinerary scheduling will be available in the next planning step.</p>
+        <p class="itinerary-help">Choose destinations, review your selection, then build an untimed itinerary preview.</p>
     </header>
     <ol class="itinerary-progress" aria-label="Planning progress">
         <li class="is-complete"><span aria-hidden="true">✓</span> Preferences</li>
         <li class="is-complete"><span aria-hidden="true">✓</span> Review</li>
         <li aria-current="step"><span aria-hidden="true">3</span> Recommendations</li>
-        <li><span aria-hidden="true">4</span> Itinerary <small>Coming soon</small></li>
+        <li><span aria-hidden="true">4</span> Preview</li>
     </ol>
     {% if message %}
     <div class="itinerary-notice" role="alert"><p>{{ message }}</p></div>
@@ -44,8 +44,8 @@
             </article></li>
             {% endfor %}
         </ul>
-        <div class="itinerary-actions"><button class="site-button" type="submit" aria-describedby="selection-next-step">Build My Itinerary</button></div>
-        <p id="selection-next-step" class="itinerary-help">Next, review your selected destinations. Itinerary building is coming next; your selection is not saved yet.</p>
+        <div class="itinerary-actions"><button class="site-button" type="submit" aria-describedby="selection-next-step">Review Selected Destinations</button></div>
+        <p id="selection-next-step" class="itinerary-help">Next, review your selected destinations before building your preview. Your selection is not saved yet.</p>
         </form>
         {% else %}
         <div class="empty-state"><p>We couldn't find published destinations matching your selected interests.</p></div>

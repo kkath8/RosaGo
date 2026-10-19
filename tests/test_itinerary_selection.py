@@ -51,7 +51,7 @@ class SelectionRouteTests(unittest.TestCase):
             self.assertIn(form, node.ancestors)
         self.assertEqual(page.find('input', name='expected_revision')[0].attrs['value'], '2')
         self.assertEqual(page.find('input', name='csrf_token')[0].attrs['value'], self.csrf)
-        self.assertEqual(page.find('button', type='submit')[0].text, 'Build My Itinerary')
+        self.assertEqual(page.find('button', type='submit')[0].text, 'Review Selected Destinations')
         self.assertTrue(page.find('a', href='/places/matched-place'))
         self.assertEqual(page.stack, [])
 
@@ -175,7 +175,13 @@ class SelectionRouteTests(unittest.TestCase):
         self.assertTrue(page.find('a', href=quiz.QUIZ))
         form = page.find('form', action=recommendations.ROUTE)[0]
         self.assertEqual(form.attrs['method'], 'post')
-        self.assertEqual(page.find('button')[0].text, 'Back to Recommendations')
+        self.assertIn('Back to Recommendations', form.text)
+        build = page.find('form', action=quiz.REVIEW.replace('/review', '/preview'))[0]
+        self.assertEqual(build.attrs['method'], 'post')
+        self.assertIn('Build Itinerary', build.text)
+        self.assertEqual(page.find('input', name='expected_revision')[0].attrs['value'], '2')
+        self.assertEqual([node.attrs['value'] for node in page.find('input', name='selected_place_ids')],
+                         [self.match.id, later.id])
         self.assertEqual(page.stack, [])
         for forbidden in (b'Day 1', b'Save Itinerary', b'Arrival', b'Departure', b'08:00'):
             self.assertNotIn(forbidden, response.data)

@@ -18,6 +18,10 @@ REPEATED_FIELDS = frozenset(('interests', 'activity_preferences'))
 FORM_FIELDS = frozenset((*VALUE_FIELDS, *REPEATED_FIELDS, 'expected_revision', 'csrf_token'))
 
 
+class QuizTimeWindowError(DraftValidationError):
+    """Valid clock values that do not form a forward, same-day window."""
+
+
 def expected_revision(value):
     if not re.fullmatch(r'[1-9][0-9]{0,18}', value) or not 1 <= int(value) < MAX_REVISION:
         raise DraftValidationError()
@@ -68,7 +72,7 @@ def parse_quiz_form(form):
             raise DraftValidationError()
         times.append(form[key] + ':00')
     if times[1] <= times[0]:
-        raise DraftValidationError()
+        raise QuizTimeWindowError()
     return revision, dict(interests=interests, companion_type=form['companion_type'],
                           budget_centavos=centavos, start_date=form['start_date'],
                           end_date=form['end_date'], daily_start_time=times[0],

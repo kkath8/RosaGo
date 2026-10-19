@@ -61,7 +61,7 @@ class RecommendationRouteTests(unittest.TestCase):
         page = Document(response.get_data(as_text=True))
         self.assertEqual(page.find('h1')[0].text, 'Recommended Places')
         heading = page.find('header', **{'class': 'itinerary-heading'})[0]
-        self.assertIn('This is a destination shortlist. Itinerary scheduling will be available in the next planning step.', heading.text)
+        self.assertIn('Choose destinations, review your selection, then build an untimed itinerary preview.', heading.text)
         self.assertIn(b'Matched &lt;Place&gt;', response.data)
         self.assertNotIn(b'Unmatched dining', response.data)
         self.assertIn(b'Matches your Attractions interest.', response.data)
@@ -106,9 +106,16 @@ class RecommendationRouteTests(unittest.TestCase):
                 response = self.client.post(ROUTE, data=data, headers=headers)
                 self.assertEqual(response.status_code, status)
                 self.protected(response)
-        self.assertEqual(self.client.get(ROUTE).status_code, 405)
         self.read.assert_not_called()
         self.catalog.list_published.assert_not_called()
+
+    def test_get_recommendations_is_read_only_return_target(self):
+        response = self.client.get(ROUTE)
+        self.assertEqual(response.status_code, 200)
+        self.protected(response)
+        self.read.assert_called_once()
+        self.catalog.list_published.assert_called_once_with(limit=100, offset=0)
+        self.assertIn(b'name="expected_revision" value="2"', response.data)
 
     def test_missing_foreign_and_unusable_states(self):
         self.read.side_effect = None

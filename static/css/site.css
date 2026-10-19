@@ -973,6 +973,28 @@
 
 /* Phase 6C-3: presentation only, scoped to the itinerary quiz and review. */
 .public-site .itinerary-page { min-width: 0; }
+.public-site .preview-summary { margin-bottom: 1.25rem; }
+.public-site .preview-overview { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.public-site .preview-date-range { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.public-site .preview-counts { border-radius: 999px; padding: 0.5rem 0.85rem; background: #fff4da; color: #684d1c; font-size: 0.85rem; }
+.public-site .preview-days { display: grid; gap: 1.25rem; }
+.public-site .preview-day-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee6de; }
+.public-site .preview-day-heading h2 { margin: 0; }
+.public-site .preview-day-heading time { color: var(--site-muted); font-size: 0.9rem; }
+.public-site .preview-stops { padding-left: 1.7rem; margin-bottom: 0; }
+.public-site .preview-stops > li { padding: 1rem 0 1rem 0.5rem; border-bottom: 1px solid #eee6de; }
+.public-site .preview-stops > li:last-child { border-bottom: 0; padding-bottom: 0; }
+.public-site .preview-stops > li::marker { color: var(--site-red); font-weight: 700; }
+.public-site .preview-stop { min-width: 0; overflow-wrap: anywhere; }
+.public-site .preview-stop h3 { font-size: 1.05rem; margin: 0.35rem 0; }
+.public-site .preview-stop .place-address { margin: 0.5rem 0; }
+.public-site .preview-footer { margin-top: 1.5rem; }
+.public-site .preview-footer .itinerary-help { margin: 0.65rem 0 0; }
+.public-site .itinerary-page .site-button-outline { background: transparent; color: var(--site-red); border: 1px solid currentColor; }
+@media (max-width: 600px) {
+    .public-site .preview-footer .site-button { width: 100%; white-space: normal; }
+    .public-site .preview-day-heading { align-items: flex-start; flex-direction: column; }
+}
 .public-site .itinerary-heading { margin-bottom: 1.75rem; }
 .public-site .itinerary-heading h1 { max-width: none; margin-bottom: 0.75rem; }
 .public-site .itinerary-heading .eyebrow { margin-bottom: 0.65rem; }

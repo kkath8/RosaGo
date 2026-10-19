@@ -18,11 +18,11 @@
         <li class="is-complete"><span aria-hidden="true">✓</span> Preferences <small>Saved</small></li>
         <li aria-current="step"><span aria-hidden="true">2</span> Review</li>
         <li><span aria-hidden="true">3</span> Recommendations</li>
-        <li><span aria-hidden="true">4</span> Itinerary <small>Coming soon</small></li>
+        <li><span aria-hidden="true">4</span> Preview</li>
     </ol>
     <div class="itinerary-notice" role="status">
         <span class="itinerary-notice-icon" aria-hidden="true">✓</span>
-        <div><strong>Preferences saved</strong><p>Your selections are stored in this temporary planning draft. Itinerary generation is coming soon. No trip has been created.</p></div>
+        <div><strong>Preferences saved</strong><p>Your selections are stored in this temporary planning draft. Choose recommended destinations next. No trip has been created.</p></div>
     </div>
     <section class="card itinerary-card" aria-labelledby="summary-title">
         <div class="itinerary-card-heading itinerary-summary-heading">
@@ -58,7 +58,7 @@
         <form class="itinerary-future-action" method="post" action="{{ url_for('itinerary_recommendations', draft_id=draft_id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf }}">
             <button class="site-button" type="submit" aria-describedby="generation-note">Find Recommended Places <span aria-hidden="true">→</span></button>
-            <p id="generation-note" class="itinerary-help">Find places matching your interests. Itinerary planning comes later.</p>
+            <p id="generation-note" class="itinerary-help">Find places matching your interests, then choose destinations for your preview.</p>
         </form>
     </div>
 </section>

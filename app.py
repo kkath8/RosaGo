@@ -18,6 +18,11 @@ from itinerary_draft_service import (
     create_itinerary_draft, get_itinerary_draft, update_itinerary_draft_preferences,
     DraftError, DraftValidationError, DraftRejectedError, DraftUnavailableError, DraftConsistencyError,
     validate_complete_preferences,
+    get_itinerary_preview_draft, store_itinerary_draft_preview,
+    return_itinerary_draft_to_editing,
+)
+from itinerary_preview import (
+    build_personalized_preview, compute_catalog_fingerprint, PreviewContractError,
 )
 from recommendation_engine import (
     rank_candidates, MAX_CANDIDATES, CATEGORY_INTEREST_MATCH, RecommendationInputError,
@@ -25,7 +30,7 @@ from recommendation_engine import (
 from itinerary_quiz_form import (
     COMPANIONS, TRANSPORTATION, TRIP_PACES, ACTIVITIES, ENVIRONMENTS,
     FORM_FIELDS, REPEATED_FIELDS, parse_quiz_form, form_values,
-    submitted_values, expected_revision as quiz_expected_revision,
+    submitted_values, expected_revision as quiz_expected_revision, QuizTimeWindowError,
 )
 from trip_service import (
     list_user_trips, get_user_trip, create_trip, update_trip, delete_trip, add_place,
@@ -750,6 +755,11 @@ def itinerary_preferences(draft_id):
         return _quiz_form(draft, form_values(draft.preferences), draft.revision)
     try:
         revision, preferences = parse_quiz_form(request.form)
+    except QuizTimeWindowError:
+        return _quiz_form(draft, submitted_values(request.form), revision, status=400,
+                          message='End Time must be later than Start Time on the same day. '
+                                  'Check AM/PM if your time picker displays it. '
+                                  'Overnight daily windows are not supported.')
     except DraftValidationError:
         return _quiz_form(draft, submitted_values(request.form), revision, status=400,
                           message='Check all fields: select 1–6 different interests, a companion type and transport; '
@@ -807,12 +817,13 @@ def _recommendation_cards(draft):
     return cards, preferences, None
 
 
-@app.route('/user/itinerary/<uuid:draft_id>/recommendations', methods=['POST'])
+@app.route('/user/itinerary/<uuid:draft_id>/recommendations', methods=['GET', 'POST'])
 @login_required
 def itinerary_recommendations(draft_id):
-    failure = _trip_post_check({'csrf_token'})
-    if failure:
-        return failure
+    if request.method == 'POST':
+        failure = _trip_post_check({'csrf_token'})
+        if failure:
+            return failure
     try:
         draft, failure = _editable_draft(draft_id)
     except DraftError as error:
@@ -831,9 +842,8 @@ def itinerary_recommendations(draft_id):
         has_test_records=any(card['place'].slug.startswith('rosago-test-v1-') for card in cards))
 
 
-@app.route('/user/itinerary/<uuid:draft_id>/selection', methods=['POST'])
-@login_required
-def itinerary_selection(draft_id):
+def _selection_input():
+    """Same strict transient input for Selection Ready and Build Itinerary."""
     # Unchecked checkbox groups submit no field; validate their minimum below.
     fields = {'csrf_token', 'expected_revision'}
     if 'selected_place_ids' in request.form:
@@ -841,21 +851,39 @@ def itinerary_selection(draft_id):
     failure = _trip_post_check(fields,
                                repeated={'selected_place_ids'})
     if failure:
-        return failure
+        return None, None, failure
     try:
         revision = quiz_expected_revision(request.form['expected_revision'])
     except DraftValidationError:
-        return 'Invalid draft revision. Please reload this page and try again.', 400
+        return None, None, ('Invalid draft revision. Please reload this page and try again.', 400)
     selected = request.form.getlist('selected_place_ids')
     if not 1 <= len(selected) <= MAX_CANDIDATES or len(set(selected)) != len(selected):
-        return 'Select between 1 and 100 different recommended destinations.', 400
+        return None, None, ('Select between 1 and 100 different recommended destinations.', 400)
     for identity in selected:
         try:
             canonical = str(UUID(identity))
         except ValueError:
-            return 'Invalid destination selection. Reload recommendations and try again.', 400
+            return None, None, ('Invalid destination selection. Reload recommendations and try again.', 400)
         if canonical != identity:
-            return 'Invalid destination selection. Reload recommendations and try again.', 400
+            return None, None, ('Invalid destination selection. Reload recommendations and try again.', 400)
+    return revision, set(selected), None
+
+
+def _selected_places(draft, selected_ids):
+    cards, preferences, failure = _recommendation_cards(draft)
+    if failure:
+        return None, None, failure
+    if not selected_ids <= {card['place'].id for card in cards}:
+        return None, None, ('Your selection is not in the current recommendations. Return to Review and reload recommendations.', 409)
+    return tuple(card['place'] for card in cards if card['place'].id in selected_ids), preferences, None
+
+
+@app.route('/user/itinerary/<uuid:draft_id>/selection', methods=['POST'])
+@login_required
+def itinerary_selection(draft_id):
+    revision, selected_ids, failure = _selection_input()
+    if failure:
+        return failure
     try:
         draft, failure = _editable_draft(draft_id)
     except DraftError as error:
@@ -864,19 +892,125 @@ def itinerary_selection(draft_id):
         return failure
     if revision != draft.revision:
         return 'Your preferences have changed. Return to Review and reload recommendations.', 409
-    cards, _, failure = _recommendation_cards(draft)
+    places, _, failure = _selected_places(draft, selected_ids)
     if failure:
         return failure
-    selected_ids = set(selected)
-    if not selected_ids <= {card['place'].id for card in cards}:
-        return 'Your selection is not in the current recommendations. Return to Review and reload recommendations.', 409
-    # Current matched order is authoritative, never browser checkbox order.
-    places = tuple(card['place'] for card in cards if card['place'].id in selected_ids)
     csrf = _trip_csrf()
     if csrf is None:
         return 'Please reload this page and try again.', 403
     return _render_trip_page('itinerary/selection.html', draft_id=draft.draft_id,
-                             places=places, csrf=csrf)
+                             places=places, csrf=csrf, revision=draft.revision)
+
+
+def _preview_draft(draft_id, required_state):
+    # The service enforces ownership and parses the stored versioned contract.
+    draft = get_itinerary_preview_draft(g.auth, str(draft_id))
+    if draft is None:
+        return None, ('Draft not found.', 404)
+    if draft.expires_at <= datetime.now(timezone.utc) or draft.state != required_state:
+        return None, ('This draft is not available for this action. Return to Planner or reload your draft.', 409)
+    return draft, None
+
+
+@app.route('/user/itinerary/<uuid:draft_id>/preview', methods=['POST'])
+@login_required
+def itinerary_preview_build(draft_id):
+    if request.headers.get('Origin') != request.host_url.rstrip('/'):
+        return 'Please reload this page and try again.', 403
+    revision, selected_ids, failure = _selection_input()
+    if failure:
+        return failure
+    try:
+        draft, failure = _preview_draft(draft_id, 'editing')
+        if failure:
+            return failure
+        if revision != draft.revision:
+            return 'Your draft has changed. Reload recommendations before building a preview.', 409
+        places, preferences, failure = _selected_places(draft, selected_ids)
+        if failure:
+            return failure
+        candidate = build_personalized_preview(
+            preferences=preferences, selected_places=places,
+            selected_place_ids=tuple(place.id for place in places),
+            draft_id=draft.draft_id, draft_revision=draft.revision,
+            publication_confirmed=True).to_document()
+        store_itinerary_draft_preview(g.auth, draft.draft_id, revision, candidate)
+    except PreviewContractError:
+        return 'We could not prepare this preview. Reload recommendations and try again.', 409
+    except DraftValidationError:
+        return 'This preview could not be stored. Reload recommendations and check your selection.', 400
+    except DraftError as error:
+        return _draft_failure(error, mutation=True)
+    return redirect(url_for('itinerary_preview_page', draft_id=draft_id), code=303)
+
+
+@app.route('/user/itinerary/<uuid:draft_id>/preview', methods=['GET'])
+@login_required
+def itinerary_preview_page(draft_id):
+    try:
+        draft, failure = _preview_draft(draft_id, 'preview_ready')
+    except DraftError as error:
+        return _draft_failure(error)
+    if failure:
+        return failure
+    # Reader already validated the contract. Revalidation catches inconsistent
+    # models without generating a new candidate or changing the stored plan.
+    try:
+        draft.preview.to_document()
+    except (PreviewContractError, AttributeError):
+        return 'We could not display this preview. Please reload your draft.', 500
+    csrf = _trip_csrf()
+    if csrf is None:
+        return 'Please reload this page and try again.', 403
+    message, status = None, 200
+    days = ()
+    try:
+        catalog = current_app.extensions['rosago_places'].list_published(limit=MAX_CANDIDATES, offset=0)
+        if len(catalog) >= MAX_CANDIDATES:
+            message, status = 'We cannot verify the complete destination catalog right now. Your preview has not changed.', 503
+        else:
+            by_id = {place.id: place for place in catalog}
+            ids = draft.preview.source.selected_place_ids
+            selected = tuple(by_id[identity] for identity in ids if identity in by_id)
+            if (len(selected) != len(ids) or compute_catalog_fingerprint(
+                    selected, publication_confirmed=True) != draft.preview.source.catalog_fingerprint):
+                message, status = 'A selected destination has changed or is no longer available. Return to edit and select destinations again.', 409
+            else:
+                days = tuple(dict(date=day.date, stops=tuple(
+                    dict(order=stop.order, place=by_id[stop.place_id]) for stop in day.stops))
+                    for day in draft.preview.plan.days)
+    except (PlacesUnavailableError, PlacesConsistencyError, PreviewContractError):
+        message, status = 'Destination information is temporarily unavailable. Your preview has not changed.', 503
+    return _render_trip_page('itinerary/preview.html', draft_id=draft.draft_id,
+        revision=draft.revision, csrf=csrf, days=days, message=message,
+        constraints=draft.preview.plan.constraints, day_count=len(draft.preview.plan.days),
+        destination_count=len(draft.preview.source.selected_place_ids),
+        has_test_records=any(stop['place'].slug.startswith('rosago-test-v1-')
+                             for day in days for stop in day['stops'])), status
+
+
+@app.route('/user/itinerary/<uuid:draft_id>/preview/edit', methods=['POST'])
+@login_required
+def itinerary_preview_edit(draft_id):
+    if request.headers.get('Origin') != request.host_url.rstrip('/'):
+        return 'Please reload this page and try again.', 403
+    failure = _trip_post_check({'csrf_token', 'expected_revision'})
+    if failure:
+        return failure
+    try:
+        revision = quiz_expected_revision(request.form['expected_revision'])
+    except DraftValidationError:
+        return 'Invalid draft revision. Please reload this page and try again.', 400
+    try:
+        draft, failure = _preview_draft(draft_id, 'preview_ready')
+        if failure:
+            return failure
+        if revision != draft.revision:
+            return 'Your draft has changed. Reload the preview before returning to edit.', 409
+        return_itinerary_draft_to_editing(g.auth, draft.draft_id, revision)
+    except DraftError as error:
+        return _draft_failure(error, mutation=True)
+    return redirect(url_for('itinerary_recommendations', draft_id=draft_id), code=303)
 
 
 @app.route('/user/trips', methods=['GET'])

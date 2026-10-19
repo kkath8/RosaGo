@@ -18,9 +18,15 @@
         <p class="itinerary-help">This selection is temporary and has not been saved. Refreshing or returning to this page may require resubmission. No itinerary or trip has been created.</p>
     </section>
     <div class="itinerary-review-actions">
+        <form method="post" action="{{ url_for('itinerary_preview_build', draft_id=draft_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <input type="hidden" name="expected_revision" value="{{ revision }}">
+            {% for place in places %}<input type="hidden" name="selected_place_ids" value="{{ place.id }}">{% endfor %}
+            <button class="site-button" type="submit">Build Itinerary</button>
+        </form>
         <form method="post" action="{{ url_for('itinerary_recommendations', draft_id=draft_id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf }}">
-            <button class="site-button" type="submit">Back to Recommendations</button>
+            <button class="site-button site-button-outline" type="submit">Back to Recommendations</button>
         </form>
         <a class="text-link" href="{{ url_for('itinerary_preferences', draft_id=draft_id) }}">Edit Preferences</a>
     </div>
