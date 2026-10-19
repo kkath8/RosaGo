@@ -781,6 +781,32 @@ def itinerary_review(draft_id):
                              revision=draft.revision, values=form_values(draft.preferences), csrf=csrf)
 
 
+def _recommendation_cards(draft):
+    """Reconstruct current eligibility for display and transient selection alike."""
+    try:
+        preferences = validate_complete_preferences(draft.preferences)
+    except DraftValidationError:
+        return None, None, redirect(url_for('itinerary_preferences', draft_id=draft.draft_id), code=303)
+    try:
+        places = current_app.extensions['rosago_places'].list_published(limit=MAX_CANDIDATES, offset=0)
+        # One bounded query: a short page proves exhaustion for that read. A full
+        # page cannot establish completeness, even if there are exactly 100 rows.
+        if len(places) >= MAX_CANDIDATES:
+            return None, None, (_render_trip_page('itinerary/recommendations.html', draft_id=draft.draft_id,
+                message='The published catalog has reached the current recommendation limit. '
+                        'We cannot show a complete shortlist. Please explore places instead.'), 503)
+        result = rank_candidates(preferences, places)
+    except (PlacesUnavailableError, PlacesConsistencyError, RecommendationInputError):
+        return None, None, (_render_trip_page('itinerary/recommendations.html', draft_id=draft.draft_id,
+            message='Recommendations are temporarily unavailable. Please try again later.'), 503)
+    by_id = {place.id: place for place in places}
+    cards = tuple(dict(place=by_id[candidate.place_id],
+                       evidence=tuple(signal.category for signal in candidate.matched_signals
+                                      if signal.kind == CATEGORY_INTEREST_MATCH))
+                  for candidate in result.matched)
+    return cards, preferences, None
+
+
 @app.route('/user/itinerary/<uuid:draft_id>/recommendations', methods=['POST'])
 @login_required
 def itinerary_recommendations(draft_id):
@@ -793,30 +819,64 @@ def itinerary_recommendations(draft_id):
         return _draft_failure(error)
     if failure:
         return failure
-    try:
-        preferences = validate_complete_preferences(draft.preferences)
-    except DraftValidationError:
-        return redirect(url_for('itinerary_preferences', draft_id=draft_id), code=303)
-    try:
-        places = current_app.extensions['rosago_places'].list_published(limit=MAX_CANDIDATES, offset=0)
-        # One bounded query: a short page proves exhaustion for that read. A full
-        # page cannot establish completeness, even if there are exactly 100 rows.
-        if len(places) >= MAX_CANDIDATES:
-            return _render_trip_page('itinerary/recommendations.html', draft_id=draft.draft_id,
-                message='The published catalog has reached the current recommendation limit. '
-                        'We cannot show a complete shortlist. Please explore places instead.'), 503
-        result = rank_candidates(preferences, places)
-    except (PlacesUnavailableError, PlacesConsistencyError, RecommendationInputError):
-        return _render_trip_page('itinerary/recommendations.html', draft_id=draft.draft_id,
-            message='Recommendations are temporarily unavailable. Please try again later.'), 503
-    by_id = {place.id: place for place in places}
-    cards = tuple(dict(place=by_id[candidate.place_id],
-                       evidence=tuple(signal.category for signal in candidate.matched_signals
-                                      if signal.kind == CATEGORY_INTEREST_MATCH))
-                  for candidate in result.matched)
+    cards, preferences, failure = _recommendation_cards(draft)
+    if failure:
+        return failure
+    csrf = _trip_csrf()
+    if csrf is None:
+        return 'Please reload this page and try again.', 403
     return _render_trip_page('itinerary/recommendations.html', draft_id=draft.draft_id,
         message=None, cards=cards, interests=preferences['interests'],
+        csrf=csrf, revision=draft.revision,
         has_test_records=any(card['place'].slug.startswith('rosago-test-v1-') for card in cards))
+
+
+@app.route('/user/itinerary/<uuid:draft_id>/selection', methods=['POST'])
+@login_required
+def itinerary_selection(draft_id):
+    # Unchecked checkbox groups submit no field; validate their minimum below.
+    fields = {'csrf_token', 'expected_revision'}
+    if 'selected_place_ids' in request.form:
+        fields.add('selected_place_ids')
+    failure = _trip_post_check(fields,
+                               repeated={'selected_place_ids'})
+    if failure:
+        return failure
+    try:
+        revision = quiz_expected_revision(request.form['expected_revision'])
+    except DraftValidationError:
+        return 'Invalid draft revision. Please reload this page and try again.', 400
+    selected = request.form.getlist('selected_place_ids')
+    if not 1 <= len(selected) <= MAX_CANDIDATES or len(set(selected)) != len(selected):
+        return 'Select between 1 and 100 different recommended destinations.', 400
+    for identity in selected:
+        try:
+            canonical = str(UUID(identity))
+        except ValueError:
+            return 'Invalid destination selection. Reload recommendations and try again.', 400
+        if canonical != identity:
+            return 'Invalid destination selection. Reload recommendations and try again.', 400
+    try:
+        draft, failure = _editable_draft(draft_id)
+    except DraftError as error:
+        return _draft_failure(error)
+    if failure:
+        return failure
+    if revision != draft.revision:
+        return 'Your preferences have changed. Return to Review and reload recommendations.', 409
+    cards, _, failure = _recommendation_cards(draft)
+    if failure:
+        return failure
+    selected_ids = set(selected)
+    if not selected_ids <= {card['place'].id for card in cards}:
+        return 'Your selection is not in the current recommendations. Return to Review and reload recommendations.', 409
+    # Current matched order is authoritative, never browser checkbox order.
+    places = tuple(card['place'] for card in cards if card['place'].id in selected_ids)
+    csrf = _trip_csrf()
+    if csrf is None:
+        return 'Please reload this page and try again.', 403
+    return _render_trip_page('itinerary/selection.html', draft_id=draft.draft_id,
+                             places=places, csrf=csrf)
 
 
 @app.route('/user/trips', methods=['GET'])

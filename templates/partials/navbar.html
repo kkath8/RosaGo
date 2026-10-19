@@ -5,7 +5,7 @@
         {% for label, endpoint, related in [
             ('Dashboard', 'index', ()),
             ('Explore', 'places_list', ('places_detail',)),
-            ('Planner', 'trips_new', ('trips_create', 'itinerary_start', 'itinerary_preferences', 'itinerary_review', 'itinerary_recommendations')),
+            ('Planner', 'trips_new', ('trips_create', 'itinerary_start', 'itinerary_preferences', 'itinerary_review', 'itinerary_recommendations', 'itinerary_selection')),
             ('My Trips', 'trips_list', ('trips_detail', 'trips_edit', 'trips_update', 'trips_delete', 'trips_add_place')),
             ('Map', 'map_index', ())
         ] %}
