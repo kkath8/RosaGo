@@ -27,6 +27,7 @@ from itinerary_preview import (
 from recommendation_engine import (
     rank_candidates, MAX_CANDIDATES, CATEGORY_INTEREST_MATCH, RecommendationInputError,
 )
+from itinerary_selection_policy import select_destinations, SelectionPolicyError
 from itinerary_quiz_form import (
     COMPANIONS, TRANSPORTATION, TRIP_PACES, ACTIVITIES, ENVIRONMENTS,
     FORM_FIELDS, REPEATED_FIELDS, parse_quiz_form, form_values,
@@ -788,27 +789,35 @@ def itinerary_review(draft_id):
     if csrf is None:
         return 'Please reload this page and try again.', 403
     return _render_trip_page('itinerary/review.html', draft_id=draft.draft_id,
-                             revision=draft.revision, values=form_values(draft.preferences), csrf=csrf)
+                             revision=draft.revision, values=form_values(draft.preferences), csrf=csrf,
+                             no_matches=request.args.getlist('notice') == ['no_matches'])
 
 
-def _recommendation_cards(draft):
+def _recommendation_data(draft):
     """Reconstruct current eligibility for display and transient selection alike."""
     try:
         preferences = validate_complete_preferences(draft.preferences)
     except DraftValidationError:
-        return None, None, redirect(url_for('itinerary_preferences', draft_id=draft.draft_id), code=303)
+        return None, None, None, redirect(url_for('itinerary_preferences', draft_id=draft.draft_id), code=303)
     try:
         places = current_app.extensions['rosago_places'].list_published(limit=MAX_CANDIDATES, offset=0)
         # One bounded query: a short page proves exhaustion for that read. A full
         # page cannot establish completeness, even if there are exactly 100 rows.
         if len(places) >= MAX_CANDIDATES:
-            return None, None, (_render_trip_page('itinerary/recommendations.html', draft_id=draft.draft_id,
+            return None, None, None, (_render_trip_page('itinerary/recommendations.html', draft_id=draft.draft_id,
                 message='The published catalog has reached the current recommendation limit. '
                         'We cannot show a complete shortlist. Please explore places instead.'), 503)
         result = rank_candidates(preferences, places)
     except (PlacesUnavailableError, PlacesConsistencyError, RecommendationInputError):
-        return None, None, (_render_trip_page('itinerary/recommendations.html', draft_id=draft.draft_id,
+        return None, None, None, (_render_trip_page('itinerary/recommendations.html', draft_id=draft.draft_id,
             message='Recommendations are temporarily unavailable. Please try again later.'), 503)
+    return places, result, preferences, None
+
+
+def _recommendation_cards(draft):
+    places, result, preferences, failure = _recommendation_data(draft)
+    if failure:
+        return None, None, failure
     by_id = {place.id: place for place in places}
     cards = tuple(dict(place=by_id[candidate.place_id],
                        evidence=tuple(signal.category for signal in candidate.matched_signals
@@ -929,6 +938,14 @@ def itinerary_preview_build(draft_id):
         places, preferences, failure = _selected_places(draft, selected_ids)
         if failure:
             return failure
+    except DraftError as error:
+        return _draft_failure(error)
+    return _store_preview_response(draft, revision, places, preferences)
+
+
+def _store_preview_response(draft, revision, places, preferences):
+    """One existing adapter/store pipeline for automatic and legacy selection."""
+    try:
         candidate = build_personalized_preview(
             preferences=preferences, selected_places=places,
             selected_place_ids=tuple(place.id for place in places),
@@ -936,12 +953,45 @@ def itinerary_preview_build(draft_id):
             publication_confirmed=True).to_document()
         store_itinerary_draft_preview(g.auth, draft.draft_id, revision, candidate)
     except PreviewContractError:
-        return 'We could not prepare this preview. Reload recommendations and try again.', 409
+        return 'We could not prepare this preview. Return to Review and try again.', 409
     except DraftValidationError:
-        return 'This preview could not be stored. Reload recommendations and check your selection.', 400
+        return 'This preview could not be stored. Return to Review and try again.', 400
     except DraftError as error:
         return _draft_failure(error, mutation=True)
-    return redirect(url_for('itinerary_preview_page', draft_id=draft_id), code=303)
+    return redirect(url_for('itinerary_preview_page', draft_id=draft.draft_id), code=303)
+
+
+@app.route('/user/itinerary/<uuid:draft_id>/generate', methods=['POST'])
+@login_required
+def itinerary_generate(draft_id):
+    if request.headers.get('Origin') != request.host_url.rstrip('/'):
+        return 'Please reload this page and try again.', 403
+    failure = _trip_post_check({'csrf_token', 'expected_revision'})
+    if failure:
+        return failure
+    try:
+        revision = quiz_expected_revision(request.form['expected_revision'])
+    except DraftValidationError:
+        return 'Invalid draft revision. Please reload this page and try again.', 400
+    try:
+        draft, failure = _preview_draft(draft_id, 'editing')
+        if failure:
+            return failure
+        if revision != draft.revision:
+            return 'Your preferences have changed. Return to Review before generating a preview.', 409
+        catalog, result, preferences, failure = _recommendation_data(draft)
+        if failure:
+            return failure
+        selected = select_destinations(preferences, result.matched)
+        if not selected:
+            return redirect(url_for('itinerary_review', draft_id=draft_id, notice='no_matches'), code=303)
+        by_id = {place.id: place for place in catalog}
+        places = tuple(by_id[candidate.place_id] for candidate in selected)
+    except SelectionPolicyError:
+        return 'We could not select destinations. Please return to Review and try again.', 409
+    except DraftError as error:
+        return _draft_failure(error)
+    return _store_preview_response(draft, revision, places, preferences)
 
 
 @app.route('/user/itinerary/<uuid:draft_id>/preview', methods=['GET'])
@@ -974,7 +1024,7 @@ def itinerary_preview_page(draft_id):
             selected = tuple(by_id[identity] for identity in ids if identity in by_id)
             if (len(selected) != len(ids) or compute_catalog_fingerprint(
                     selected, publication_confirmed=True) != draft.preview.source.catalog_fingerprint):
-                message, status = 'A selected destination has changed or is no longer available. Return to edit and select destinations again.', 409
+                message, status = 'A selected destination has changed or is no longer available. Edit Preferences, then generate a new preview.', 409
             else:
                 days = tuple(dict(date=day.date, stops=tuple(
                     dict(order=stop.order, place=by_id[stop.place_id]) for stop in day.stops))
@@ -1010,7 +1060,7 @@ def itinerary_preview_edit(draft_id):
         return_itinerary_draft_to_editing(g.auth, draft.draft_id, revision)
     except DraftError as error:
         return _draft_failure(error, mutation=True)
-    return redirect(url_for('itinerary_recommendations', draft_id=draft_id), code=303)
+    return redirect(url_for('itinerary_preferences', draft_id=draft_id), code=303)
 
 
 @app.route('/user/trips', methods=['GET'])

@@ -3,7 +3,7 @@
 {% block extra_head %}<meta name="referrer" content="same-origin">{% endblock %}
 {% block content %}
 {% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private Car', 'public_transport': 'Public Transport', 'ride_hailing': 'Ride-Hailing / Taxi', 'mixed_transport': 'Mixed Transport', 'sightseeing': 'Sightseeing', 'food_trip': 'Food Trip', 'outdoor_activities': 'Outdoor Activities', 'culture_heritage': 'Culture & Heritage', 'relaxation': 'Relaxation', 'indoor': 'Mostly Indoor', 'outdoor': 'Mostly Outdoor', 'mixed': 'Mix of Both'} %}
-{% set pace_notes = {'relaxed': 'Fewer stops, more time at each place', 'balanced': 'A comfortable mix of activities and free time', 'packed': 'More stops and activities during the day'} %}
+{% set pace_notes = {'relaxed': 'Fewer suggested destinations per day', 'balanced': 'Moderate number of suggested destinations per day', 'packed': 'More suggested destinations per day'} %}
 {% macro choices(name, options, kind, descriptions=none) %}
 <div class="itinerary-choices{% if descriptions %} itinerary-choices-detailed{% endif %}">
     {% for option in options %}
@@ -19,13 +19,12 @@
         <p class="eyebrow">Personalized itinerary · Santa Rosa, Laguna</p>
         <h1 id="quiz-title" class="page-heading">Plan Your Perfect Santa Rosa Trip</h1>
         <p class="page-subheading">Tell us what kind of trip you're looking for and RosaGo will use your preferences to personalize your itinerary.</p>
-        <p class="itinerary-help">Start with your preferences, then choose destinations for an untimed itinerary preview.</p>
+        <p class="itinerary-help">Start with your preferences. RosaGo will select matching destinations for an untimed itinerary preview.</p>
     </header>
     <ol class="itinerary-progress" aria-label="Planning progress">
         <li aria-current="step"><span aria-hidden="true">1</span> Preferences</li>
         <li><span aria-hidden="true">2</span> Review</li>
-        <li><span aria-hidden="true">3</span> Recommendations</li>
-        <li><span aria-hidden="true">4</span> Preview</li>
+        <li><span aria-hidden="true">3</span> Preview</li>
     </ol>
     <div class="card itinerary-card">
         <div class="itinerary-card-heading">

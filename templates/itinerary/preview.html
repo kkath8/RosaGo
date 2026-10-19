@@ -6,13 +6,12 @@
     <header class="itinerary-heading">
         <p class="eyebrow">Personalized planning · Santa Rosa, Laguna</p>
         <h1 id="preview-title" class="page-heading">Personalized Itinerary Preview</h1>
-        <p class="page-subheading">Your selected destinations, organized by day.</p>
+        <p class="page-subheading">Your personalized destinations, recommended and organized by RosaGo.</p>
     </header>
     <ol class="itinerary-progress" aria-label="Planning progress">
         <li class="is-complete"><span aria-hidden="true">✓</span> Preferences</li>
         <li class="is-complete"><span aria-hidden="true">✓</span> Review</li>
-        <li class="is-complete"><span aria-hidden="true">✓</span> Destinations</li>
-        <li aria-current="step"><span aria-hidden="true">4</span> Preview</li>
+        <li aria-current="step"><span aria-hidden="true">3</span> Preview</li>
     </ol>
     <section class="card itinerary-card preview-summary" aria-label="Trip overview">
         <div class="preview-overview">
@@ -27,7 +26,7 @@
         </dl>
     </section>
     <aside class="itinerary-notice preview-note" aria-label="About this preview">
-        <div><strong>An untimed plan</strong><p>This preview organizes your selected destinations by day. Exact visit times, travel times, operating hours, costs, weather conditions, and route optimization are not yet applied.</p></div>
+        <div><p>Generate Personalized Itinerary automatically selects an initial set from currently published destinations matching your interests. Planning pace controls the suggested count, not time feasibility. If fewer matches are available, only those matches are included.</p><strong>An untimed plan</strong><p>This preview organizes your selected destinations by day. Exact visit times, travel times, operating hours, costs, weather conditions, and route optimization are not yet applied.</p></div>
     </aside>
     {% if message %}
     <div class="itinerary-error" role="alert"><strong>Preview unavailable</strong><p>{{ message }}</p></div>
@@ -60,9 +59,9 @@
         <form method="post" action="{{ url_for('itinerary_preview_edit', draft_id=draft_id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf }}">
             <input type="hidden" name="expected_revision" value="{{ revision }}">
-            <button class="site-button" type="submit" aria-describedby="preview-edit-help">Back to Edit / Change Destinations</button>
+            <button class="site-button" type="submit" aria-describedby="preview-edit-help">Edit Preferences</button>
         </form>
-        <p id="preview-edit-help" class="itinerary-help">Returning to edit clears this preview. Your preferences stay saved; select your destinations again.</p>
+        <p id="preview-edit-help" class="itinerary-help">Returning to edit clears this preview and keeps your preferences. Review your preferences, then generate a new preview.</p>
         <p class="itinerary-help">This is a temporary preview. No trip has been added to My Trips.</p>
     </footer>
 </section>

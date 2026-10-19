@@ -221,7 +221,7 @@ class QuizRouteTests(unittest.TestCase):
         self.assertEqual(page.stack, [])
         self.assertEqual(page.find('button', type='submit')[0].text.strip(), 'Review My Trip →')
 
-    def test_review_display_formats_real_values_and_offers_recommendations(self):
+    def test_review_display_formats_real_values_and_offers_generation(self):
         from test_public_layout import Document
         read = self.drafts['get_itinerary_draft']
         read.side_effect = None
@@ -241,7 +241,10 @@ class QuizRouteTests(unittest.TestCase):
             button = page.find('button')[0]
             self.assertEqual(button.attrs['type'], 'submit')
             self.assertNotIn('disabled', button.attrs)
-            self.assertEqual(page.find('form')[0].attrs['action'], REVIEW.replace('/review', '/recommendations'))
+            self.assertEqual(page.find('form')[0].attrs['action'], REVIEW.replace('/review', '/generate'))
+            self.assertIn('Generate Personalized Itinerary', button.text)
+            self.assertEqual(page.find('input', name='expected_revision')[0].attrs['value'], '2')
+            self.assertEqual(page.find('input', name='selected_place_ids'), [])
             self.assertEqual(page.find('input', name='csrf_token')[0].attrs['value'], self.csrf)
             self.assertTrue(page.find('a', href=QUIZ))
             self.assertTrue(page.find('a', href='/user/trips/new'))

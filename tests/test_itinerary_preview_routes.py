@@ -114,7 +114,7 @@ class PreviewRouteTests(unittest.TestCase):
         self.assertLess(response.data.index(b'Matched &lt;Place&gt;'), response.data.index(b'Later destination'))
         self.adapter.assert_called_once()  # No new candidate on GET.
         response = self.return_edit()
-        self.assertEqual((response.status_code, response.location), (303, recommendations.ROUTE))
+        self.assertEqual((response.status_code, response.location), (303, quiz.QUIZ))
         self.edit.assert_called_once()
         self.assertEqual(self.edit.call_args.args[1:], (trips.TRIP, 3))
         self.assertEqual((self.current.state, self.current.revision, self.current.preview), ('editing', 4, None))
@@ -123,6 +123,7 @@ class PreviewRouteTests(unittest.TestCase):
         response = self.client.get(response.location)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'name="expected_revision" value="4"', response.data)
+        response = self.client.get(recommendations.ROUTE)
         for node in Document(response.get_data(as_text=True)).find('input', type='checkbox'):
             self.assertNotIn('checked', node.attrs)
 
@@ -288,7 +289,7 @@ class PreviewRouteTests(unittest.TestCase):
             response = self.client.get(PREVIEW)
             self.assertEqual(response.status_code, 409)
             self.assertIn(b'Preview unavailable', response.data)
-            self.assertIn(b'Change Destinations', response.data)
+            self.assertIn(b'Edit Preferences', response.data)
             self.assertNotIn(b'preview-day-heading', response.data)
             self.protected(response)
         self.assertEqual(self.current, before)

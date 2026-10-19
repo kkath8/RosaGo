@@ -188,7 +188,7 @@ class ItineraryRuntimeTests(unittest.TestCase):
         original = deepcopy(self.row)
         review = self.client.get(ROOT + '/review')
         self.assertEqual(review.status_code, 200)
-        recommendations = self.submit_form(review, ROOT + '/recommendations')
+        recommendations = self.client.get(ROOT + '/recommendations')
         self.assertEqual(recommendations.status_code, 200)
         selection = self.submit_form(recommendations, ROOT + '/selection')
         self.assertEqual(selection.status_code, 200)
@@ -201,7 +201,7 @@ class ItineraryRuntimeTests(unittest.TestCase):
         self.assertEqual(preview.status_code, 200)
         self.assertIn(b'Personalized Itinerary Preview', preview.data)
         edited = self.submit_form(preview, ROOT + '/preview/edit')
-        self.assertEqual((edited.status_code, edited.location), (303, ROOT + '/recommendations'))
+        self.assertEqual((edited.status_code, edited.location), (303, ROOT + '/preferences'))
         returned = self.client.get(edited.location)
         self.assertEqual(returned.status_code, 200)
         self.assertEqual(self.row, original | {'revision': 4})
@@ -212,3 +212,27 @@ class ItineraryRuntimeTests(unittest.TestCase):
             self.protected(response)
             for secret in (trips.OWNER, self.handle, 'private-access', 'private-refresh'):
                 self.assertNotIn(secret.encode(), response.data)
+
+    def test_rendered_review_automatic_generation_and_edit_preferences(self):
+        before = deepcopy(self.row)
+        review = self.client.get(ROOT + '/review')
+        page = Document(review.get_data(as_text=True))
+        target = page.find('form', action=ROOT + '/generate')[0]
+        self.assertEqual({node.attrs['name'] for node in page.find('input') if target in node.ancestors},
+                         {'csrf_token', 'expected_revision'})
+        built = self.submit_form(review, ROOT + '/generate')
+        self.assertEqual((built.status_code, built.location), (303, ROOT + '/preview'))
+        self.assertEqual(self.row['preview']['source']['selected_place_ids'], [self.place['id']])
+        preview = self.client.get(built.location)
+        self.assertEqual(preview.status_code, 200)
+        self.assertIn(b'automatically selects', preview.data)
+        edited = self.submit_form(preview, ROOT + '/preview/edit')
+        self.assertEqual((edited.status_code, edited.location), (303, ROOT + '/preferences'))
+        preferences = self.client.get(edited.location)
+        self.assertEqual(preferences.status_code, 200)
+        self.assertEqual(self.row, before | {'revision': 4})
+        self.assertEqual([path for method, path in self.calls if method == 'POST'], [
+            '/rest/v1/rpc/rosago_itinerary_draft_store_preview',
+            '/rest/v1/rpc/rosago_itinerary_draft_return_to_editing'])
+        for response in (review, built, preview, edited, preferences):
+            self.protected(response)
