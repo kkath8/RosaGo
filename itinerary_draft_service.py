@@ -14,10 +14,12 @@ from postgrest.exceptions import APIError
 
 from normal_auth_coordinator import AuthenticatedContext
 from places_service import CATEGORIES
+from itinerary_preview import PreviewContractError, ValidatedPreview, validate_preview
 
 
 MAX_REVISION = 9223372036854775807
 DRAFT_PROJECTION = 'id,user_id,state,schema_version,revision,preferences,expires_at'
+PREVIEW_DRAFT_PROJECTION = DRAFT_PROJECTION + ',preview'
 REQUIRED = frozenset(('interests', 'companion_type', 'start_date', 'end_date',
                       'daily_start_time', 'daily_end_time', 'transportation'))
 TRANSPORTATION = ('walking', 'bicycle', 'motorcycle', 'private_car',
@@ -75,6 +77,16 @@ class ItineraryDraft:
 
     def __repr__(self):
         return '<ItineraryDraft redacted>'
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class ItineraryPreviewDraft(ItineraryDraft):
+    user_id: str
+    schema_version: int
+    preview: ValidatedPreview | None
+
+    def __repr__(self):
+        return '<ItineraryPreviewDraft redacted>'
 
 
 def _uuid(value, error=DraftValidationError):
@@ -170,7 +182,7 @@ def validate_complete_preferences(value):
     return _preferences(value)
 
 
-def _call(context, name, params, expected_id, expected_revision):
+def _call(context, name, params, expected_id, expected_revision, expected_state='editing'):
     try:
         response = context.client.rpc(name, params).retry(False).execute()
     except APIError as error:
@@ -187,7 +199,7 @@ def _call(context, name, params, expected_id, expected_revision):
         if set(row) != {'draft_id', 'state', 'revision'}:
             raise DraftConsistencyError()
         draft_id = _uuid(row['draft_id'], DraftConsistencyError)
-        if (row['state'] != 'editing' or type(row['revision']) is not int
+        if (row['state'] != expected_state or type(row['revision']) is not int
                 or row['revision'] != expected_revision
                 or (expected_id is not None and draft_id != expected_id)):
             raise DraftConsistencyError()
@@ -203,11 +215,21 @@ def create_itinerary_draft(context: AuthenticatedContext) -> DraftResult:
 
 def get_itinerary_draft(context: AuthenticatedContext, draft_id) -> ItineraryDraft | None:
     """Read one own draft through RLS and explicit ownership; no authority returned."""
+    return _get_itinerary_draft(context, draft_id, include_preview=False)
+
+
+def get_itinerary_preview_draft(context: AuthenticatedContext, draft_id) -> ItineraryPreviewDraft | None:
+    """Read the stored contract, not a guarantee of current catalog eligibility."""
+    return _get_itinerary_draft(context, draft_id, include_preview=True)
+
+
+def _get_itinerary_draft(context, draft_id, *, include_preview):
     _context(context)
     draft_id = _uuid(draft_id)
     owner = _uuid(context.user_id)
+    projection = PREVIEW_DRAFT_PROJECTION if include_preview else DRAFT_PROJECTION
     try:
-        response = (context.client.table('itinerary_drafts').select(DRAFT_PROJECTION)
+        response = (context.client.table('itinerary_drafts').select(projection)
                     .eq('id', draft_id).eq('user_id', owner).limit(2).retry(False).execute())
     except (APIError, httpx.HTTPError):
         pass
@@ -218,7 +240,7 @@ def get_itinerary_draft(context: AuthenticatedContext, draft_id) -> ItineraryDra
         if not data:
             return None
         row = data[0]
-        if type(row) is not dict or set(row) != set(DRAFT_PROJECTION.split(',')):
+        if type(row) is not dict or set(row) != set(projection.split(',')):
             raise DraftConsistencyError()
         if (_uuid(row['id'], DraftConsistencyError) != draft_id
                 or _uuid(row['user_id'], DraftConsistencyError) != owner
@@ -243,6 +265,25 @@ def get_itinerary_draft(context: AuthenticatedContext, draft_id) -> ItineraryDra
             if canonical is None or canonical != snapshot:
                 raise DraftConsistencyError()
             snapshot = canonical
+        if include_preview:
+            parsed = None
+            if row['preview'] is not None:
+                try:
+                    parsed = validate_preview(row['preview'])
+                except (PreviewContractError, ValueError, TypeError):
+                    pass
+                if parsed is None or parsed.source.draft_id != draft_id:
+                    raise DraftConsistencyError()
+                if row['state'] == 'preview_ready':
+                    constraints = row['preview']['constraints']
+                    if (parsed.source.draft_revision != row['revision'] - 1 or snapshot is None
+                            or any(snapshot.get(key) != value for key, value in constraints.items())):
+                        raise DraftConsistencyError()
+            if ((row['state'] == 'preview_ready' and parsed is None)
+                    or (row['state'] == 'editing' and parsed is not None)):
+                raise DraftConsistencyError()
+            return ItineraryPreviewDraft(draft_id, row['state'], row['revision'], snapshot,
+                                         expires, owner, row['schema_version'], parsed)
         return ItineraryDraft(draft_id, row['state'], row['revision'], snapshot, expires)
     raise DraftUnavailableError() from None
 
@@ -256,4 +297,37 @@ def update_itinerary_draft_preferences(context: AuthenticatedContext, draft_id,
     return _call(context, 'rosago_itinerary_draft_update_preferences', {
         'p_draft_id': draft_id, 'p_expected_revision': expected_revision,
         'p_preferences': _preferences(preferences),
+    }, draft_id, expected_revision + 1)
+
+
+def store_itinerary_draft_preview(context: AuthenticatedContext, draft_id,
+                                  expected_revision, candidate_preview) -> DraftResult:
+    """Submit one candidate once; database independently checks every authority."""
+    _context(context)
+    draft_id = _uuid(draft_id)
+    if type(expected_revision) is not int or not 1 <= expected_revision < MAX_REVISION:
+        raise DraftValidationError()
+    parsed = None
+    try:
+        parsed = validate_preview(candidate_preview)
+    except (PreviewContractError, ValueError, TypeError):
+        pass
+    if (parsed is None or parsed.source.draft_id != draft_id
+            or parsed.source.draft_revision != expected_revision):
+        raise DraftValidationError()
+    return _call(context, 'rosago_itinerary_draft_store_preview', {
+        'p_draft_id': draft_id, 'p_expected_revision': expected_revision,
+        'p_candidate_preview': parsed.to_document(),
+    }, draft_id, expected_revision + 1, expected_state='preview_ready')
+
+
+def return_itinerary_draft_to_editing(context: AuthenticatedContext, draft_id,
+                                      expected_revision) -> DraftResult:
+    """Invalidate preview and selection; the database preserves preferences/expiry."""
+    _context(context)
+    draft_id = _uuid(draft_id)
+    if type(expected_revision) is not int or not 1 <= expected_revision < MAX_REVISION:
+        raise DraftValidationError()
+    return _call(context, 'rosago_itinerary_draft_return_to_editing', {
+        'p_draft_id': draft_id, 'p_expected_revision': expected_revision,
     }, draft_id, expected_revision + 1)
