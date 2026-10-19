@@ -165,6 +165,11 @@ def _preferences(value, *, allow_legacy=False):
     return canonical
 
 
+def validate_complete_preferences(value):
+    """Validate the current expanded snapshot without legacy defaults or I/O."""
+    return _preferences(value)
+
+
 def _call(context, name, params, expected_id, expected_revision):
     try:
         response = context.client.rpc(name, params).retry(False).execute()

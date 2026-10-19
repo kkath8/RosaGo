@@ -17,7 +17,8 @@
     <ol class="itinerary-progress" aria-label="Planning progress">
         <li class="is-complete"><span aria-hidden="true">✓</span> Preferences <small>Saved</small></li>
         <li aria-current="step"><span aria-hidden="true">2</span> Review</li>
-        <li><span aria-hidden="true">3</span> Itinerary <small>Coming soon</small></li>
+        <li><span aria-hidden="true">3</span> Recommendations</li>
+        <li><span aria-hidden="true">4</span> Itinerary <small>Coming soon</small></li>
     </ol>
     <div class="itinerary-notice" role="status">
         <span class="itinerary-notice-icon" aria-hidden="true">✓</span>
@@ -54,10 +55,11 @@
     </section>
     <div class="itinerary-review-actions">
         <a class="text-link" href="{{ url_for('trips_new') }}">Back to Planner</a>
-        <div class="itinerary-future-action">
-            <button class="site-button" type="button" disabled aria-describedby="generation-note">Generate My Itinerary <span aria-hidden="true">→</span></button>
-            <p id="generation-note" class="itinerary-help">Coming soon · Your preferences are ready for review.</p>
-        </div>
+        <form class="itinerary-future-action" method="post" action="{{ url_for('itinerary_recommendations', draft_id=draft_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <button class="site-button" type="submit" aria-describedby="generation-note">Find Recommended Places <span aria-hidden="true">→</span></button>
+            <p id="generation-note" class="itinerary-help">Find places matching your interests. Itinerary planning comes later.</p>
+        </form>
     </div>
 </section>
 {% endblock %}
