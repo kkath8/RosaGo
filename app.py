@@ -14,6 +14,7 @@ from supabase import Client, ClientOptions, create_client
 from supabase_auth.errors import AuthApiError, AuthError
 
 from auth_helpers import login_required
+from admin_auth import admin_required, render_admin_page
 from itinerary_draft_service import (
     create_itinerary_draft, get_itinerary_draft, update_itinerary_draft_preferences,
     DraftError, DraftValidationError, DraftRejectedError, DraftUnavailableError, DraftConsistencyError,
@@ -115,6 +116,9 @@ def auth_callback():
 
 @app.after_request
 def protect_auth_response(response):
+    if request.path == '/admin' or request.path.startswith('/admin/'):
+        response.headers['Cache-Control'] = 'private, no-store'
+        response.headers['Referrer-Policy'] = 'same-origin'
     if (request.path == '/user/trips' or request.path.startswith('/user/trips/')
             or request.path.startswith('/user/itinerary/')):
         response.headers['Cache-Control'] = 'no-store'
@@ -530,6 +534,12 @@ def login():
     ), status))
     response.headers["Cache-Control"] = "no-store"
     return response
+
+
+@app.route('/admin', methods=['GET'])
+@admin_required
+def admin_index():
+    return render_admin_page('admin/index.html')
 
 
 @app.route("/user")
