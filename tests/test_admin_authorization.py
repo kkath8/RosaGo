@@ -52,6 +52,12 @@ class AdminBoundaryTests(unittest.TestCase):
         def respond(request):
             self.requests.append(request)
             self.assertIsNotNone(g.auth)
+            if request.url.path == '/rest/v1/places':
+                self.assertEqual(request.headers['authorization'], 'Bearer fixture-access')
+                if request.method == 'HEAD':
+                    return httpx.Response(200, headers={'Content-Range': '*/0', 'Preference-Applied': 'count=exact'})
+                self.assertEqual(request.method, 'GET')
+                return httpx.Response(200, json=[])
             self.assertEqual(request.url.path, '/rest/v1/rpc/rosago_is_admin')
             self.assertEqual(request.method, 'POST')
             self.assertEqual(request.content, b'{}')
@@ -81,7 +87,7 @@ class AdminBoundaryTests(unittest.TestCase):
                 session.clear(); session.update(state)
             response = self.client.get('/admin')
             self.protected(response, 302)
-            self.assertEqual(response.location, '/login?login_required=1')
+            self.assertEqual(response.location, '/admin/login?login_required=1')
         self.assertEqual(self.requests, [])
 
     def test_membership_revocation_and_render_isolation(self):
@@ -98,10 +104,10 @@ class AdminBoundaryTests(unittest.TestCase):
             response = self.client.get('/admin')
         self.protected(response, 200)
         self.assertIn(b'RosaGo Admin', response.data)
-        self.assertEqual(seen, ['admin/index.html'])
+        self.assertEqual(seen, ['admin/dashboard.html'])
         self.value = False
         self.protected(self.client.get('/admin'), 403)
-        self.assertEqual(len(self.requests), 3)
+        self.assertEqual(sum(r.url.path == '/rest/v1/rpc/rosago_is_admin' for r in self.requests), 3)
         with self.client.session_transaction() as session:
             self.assertNotIn('is_admin', session)
             self.assertNotIn('role', session)

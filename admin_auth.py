@@ -8,8 +8,8 @@ from admin_authorization_service import AdminAuthorizationError, is_current_admi
 
 
 def admin_required(view):
-    """Use /login temporarily; Phase 7A-2 will add the shared Admin login UI."""
-    @login_required
+    """Verify normal authentication and fresh membership for each request."""
+    @login_required(login_endpoint='admin.login')
     @wraps(view)
     def authorized(*args, **kwargs):
         try:
@@ -24,8 +24,9 @@ def admin_required(view):
 
 def render_admin_page(template, **values):
     """Render only display data, with request authority hidden from Jinja."""
-    auth = g.pop('auth')
+    auth = g.pop('auth', None)
     try:
         return render_template(template, **values)
     finally:
-        g.auth = auth
+        if auth is not None:
+            g.auth = auth

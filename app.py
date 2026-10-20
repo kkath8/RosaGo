@@ -14,7 +14,7 @@ from supabase import Client, ClientOptions, create_client
 from supabase_auth.errors import AuthApiError, AuthError
 
 from auth_helpers import login_required
-from admin_auth import admin_required, render_admin_page
+from admin_routes import admin
 from itinerary_draft_service import (
     create_itinerary_draft, get_itinerary_draft, update_itinerary_draft_preferences,
     DraftError, DraftValidationError, DraftRejectedError, DraftUnavailableError, DraftConsistencyError,
@@ -536,10 +536,7 @@ def login():
     return response
 
 
-@app.route('/admin', methods=['GET'])
-@admin_required
-def admin_index():
-    return render_admin_page('admin/index.html')
+app.register_blueprint(admin)
 
 
 @app.route("/user")
