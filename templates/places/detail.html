@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}{{ place.name }} | RosaGo{% endblock %}
+{% block content %}
+{% set category_labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage'} %}
+<div class="destination-page">
+<a class="back-link" href="{{ url_for('places_list') }}"><span aria-hidden="true">&larr;</span> Back to Explore</a>
+{% if place.slug.startswith('rosago-test-v1-') %}
+<p class="catalog-disclosure">Development example: this is a synthetic test record, not a real business or attraction.</p>
+{% endif %}
+<article class="destination-detail">
+    <header class="destination-heading">
+        <p class="eyebrow">{{ category_labels[place.category] }}</p>
+        <h1 class="page-heading">{{ place.name }}</h1>
+        {% if place.address %}<p class="detail-address">{{ place.address }}</p>{% endif %}
+    </header>
+    <div class="add-place-entry">
+        <a class="site-button" href="{{ url_for('trips_add_place', slug=place.slug) }}">Add to Trip</a>
+        <span class="trip-help">Sign in required to choose a trip.</span>
+    </div>
+    {% include 'places/_visual.html' %}
+    <div class="destination-information">
+        <section class="card destination-about" aria-labelledby="place-about-title">
+            <h2 id="place-about-title">About this place</h2>
+            <p>{{ place.description }}</p>
+        </section>
+        <section class="card destination-location" aria-labelledby="place-location-title">
+            <h2 id="place-location-title">Location</h2>
+            {% if place.address %}<p class="detail-address">{{ place.address }}</p>{% else %}<p>Address not available.</p>{% endif %}
+            <a class="site-button site-button-secondary" href="{{ url_for('map_index') }}">Open Map</a>
+        </section>
+    </div>
+</article>
+</div>
+{% endblock %}

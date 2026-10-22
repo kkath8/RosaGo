@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create an account | RosaGo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+    <script src="{{ url_for('static', filename='js/auth.js') }}" defer></script>
+</head>
+<body>
+    <main class="registration-layout">
+        <section class="welcome" aria-labelledby="welcome-title">
+            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGo home">Rosa<span>Go</span><span class="brand-dot" aria-hidden="true">.</span></a>
+            <p class="brand-description">Smart Tourism System for Santa Rosa, Laguna</p>
+
+            <div class="welcome-copy">
+                <p class="eyebrow">A little closer to local</p>
+                <h1 id="welcome-title">Your next story<br>starts in<br><span>Santa Rosa.</span></h1>
+                <p>From familiar streets to new discoveries, there’s more to explore in the Lion City of the South.</p>
+            </div>
+
+            <div class="destination-note">
+                <span class="destination-mark" aria-hidden="true">SR</span>
+                <div><strong>Santa Rosa, Laguna</strong><span>Local places. Lasting memories.</span></div>
+            </div>
+        </section>
+
+        <section class="form-panel" aria-labelledby="register-title">
+            <div class="registration-card">
+                <p class="eyebrow">Start exploring</p>
+                <h2 id="register-title">Create your account</h2>
+                <p class="form-intro">A new way to discover Santa Rosa starts here.</p>
+                <form id="registration-form" action="{{ url_for('register') }}" method="post" novalidate>
+                    <div class="name-fields">
+                        <div class="field">
+                            <label for="first-name">First Name</label>
+                            <input id="first-name" name="first_name" value="{{ form_data.get('first_name', '') }}" type="text" autocomplete="given-name" required aria-describedby="first-name-error">
+                            <p class="field-error" id="first-name-error" hidden></p>
+                        </div>
+                        <div class="field">
+                            <label for="last-name">Last Name</label>
+                            <input id="last-name" name="last_name" value="{{ form_data.get('last_name', '') }}" type="text" autocomplete="family-name" required aria-describedby="last-name-error">
+                            <p class="field-error" id="last-name-error" hidden></p>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="email">Email Address</label>
+                        <input id="email" name="email" value="{{ form_data.get('email', '') }}" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" required aria-describedby="email-error">
+                        <p class="field-error" id="email-error" hidden></p>
+                    </div>
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <div class="password-input">
+                            <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="password-help password-error">
+                            <button class="password-toggle" type="button" aria-controls="password" aria-label="Show password" aria-pressed="false">Show</button>
+                        </div>
+                        <p class="field-help" id="password-help">Use at least 8 characters.</p>
+                        <p class="field-error" id="password-error" hidden></p>
+                    </div>
+                    <div class="field">
+                        <label for="confirm-password">Confirm Password</label>
+                        <div class="password-input">
+                            <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" required aria-describedby="confirm-password-error">
+                            <button class="password-toggle" type="button" aria-controls="confirm-password" aria-label="Show confirm password" aria-pressed="false">Show</button>
+                        </div>
+                        <p class="field-error" id="confirm-password-error" hidden></p>
+                    </div>
+                    <div class="terms-field">
+                        <label class="checkbox-label" for="terms">
+                            <input id="terms" name="terms" value="accepted" type="checkbox" required aria-describedby="terms-error" {% if form_data.get('terms') %}checked{% endif %}>
+                            <span>I agree to the <strong>Terms</strong> and <strong>Privacy Policy</strong>.</span>
+                        </label>
+                        <p class="field-error" id="terms-error" hidden></p>
+                    </div>
+                    <button class="submit-button" id="create-account" type="submit">Create Account <span aria-hidden="true">→</span></button>
+                    <p class="form-status" id="form-status" data-state="{{ state }}" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">{{ message }}</p>
+                </form>
+                <p class="login-prompt">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+            </div>
+            <p class="footer-note">Made for discovering Santa Rosa.</p>
+        </section>
+    </main>
+</body>
+</html>

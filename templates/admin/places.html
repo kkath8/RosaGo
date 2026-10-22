@@ -1,0 +1,19 @@
+{% extends 'admin/base.html' %}
+{% block title %}Destinations · RosaGo Admin{% endblock %}
+{% block content %}
+<p class="eyebrow">Read-only catalog</p><h1>Destinations</h1><p class="intro">Review destination information and publication status.</p>
+<nav class="status-filters" aria-label="Filter destinations by status">
+<a href="{{ url_for('admin.places') }}" {% if not selected_status %}aria-current="page"{% endif %}>All statuses</a>
+{% for value in ['published', 'draft', 'archived'] %}<a href="{{ url_for('admin.places', status=value) }}" {% if selected_status == value %}aria-current="page"{% endif %}>{{ value|title }}</a>{% endfor %}</nav>
+{% if rows is none %}<p class="notice" role="alert">Destination information is unavailable. Please try again later.</p>
+{% elif not rows %}<p class="panel">No destinations on this page{% if selected_status %} with status {{ selected_status }}{% endif %}.</p>
+{% else %}<ul class="destination-list">{% for place in rows %}<li class="panel">
+<div class="destination-heading"><h2>{{ place.name }}</h2><span class="status-badge status-{{ place.status }}">{{ place.status|title }}</span></div>
+<p class="muted">{{ place.category|title }}</p><p>{{ place.address }}</p>
+<p class="muted">Last updated: <time datetime="{{ place.updated_at.isoformat() }}">{{ place.updated_at.strftime('%d %b %Y, %H:%M %z') }}</time></p>
+{% if place.is_test_record %}<p class="notice">Development/test record — not an official or endorsed tourism listing.</p>{% endif %}
+</li>{% endfor %}</ul>{% endif %}
+<nav class="status-filters" aria-label="Destination pages">
+{% if offset %}<a href="{{ url_for('admin.places', status=selected_status, offset=previous_offset) }}">Previous page</a>{% endif %}
+{% if next_offset is not none %}<a href="{{ url_for('admin.places', status=selected_status, offset=next_offset) }}">Next page</a>{% endif %}</nav>
+{% endblock %}

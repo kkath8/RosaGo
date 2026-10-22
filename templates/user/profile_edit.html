@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Edit Profile | RosaGo{% endblock %}
+{% block extra_head %}
+<meta name="referrer" content="same-origin">
+{% endblock %}
+{% block content %}
+<section class="profile-page profile-edit-page" aria-labelledby="edit-title">
+    <header class="profile-heading">
+        <p class="eyebrow">Your RosaGo account</p>
+        <h1 id="edit-title" class="page-heading">Edit Profile</h1>
+        <p class="page-subheading">Update your personal information.</p>
+    </header>
+    <div class="card account-panel profile-form-card">
+        <h2>Personal Information</h2>
+        <p id="name-guidance" class="account-help">Names may be blank. Use up to 100 characters per name.</p>
+        {% for success in get_flashed_messages(category_filter=['profile_success']) %}
+        <p class="account-status" role="status">{{ success }}</p>
+        {% endfor %}
+        <form method="post" action="{{ url_for('user_profile_edit') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <div class="profile-fields">
+                <div class="account-field">
+                    <label for="first-name">First Name</label>
+                    <input id="first-name" name="first_name" type="text" autocomplete="given-name" aria-describedby="name-guidance" value="{{ first_name }}">
+                </div>
+                <div class="account-field">
+                    <label for="last-name">Last Name</label>
+                    <input id="last-name" name="last_name" type="text" autocomplete="family-name" aria-describedby="name-guidance" value="{{ last_name }}">
+                </div>
+            </div>
+            {% if message %}<p class="account-status" role="alert">{{ message }}</p>{% endif %}
+            <div class="profile-form-actions">
+                <button class="site-button" type="submit">Save Changes</button>
+                <a class="site-button site-button-secondary" href="{{ url_for('user_index') }}">Cancel / Back to profile</a>
+            </div>
+        </form>
+    </div>
+    <section class="card profile-account" aria-labelledby="account-info-title">
+        <h2 id="account-info-title">Account Information</h2>
+        <p class="account-identity">Signed in as {{ user_email }}</p>
+        <p class="profile-note">Your email is read-only and cannot be changed here.</p>
+    </section>
+</section>
+{% endblock %}

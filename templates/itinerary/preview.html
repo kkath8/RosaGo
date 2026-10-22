@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Personalized Itinerary Preview | RosaGo{% endblock %}
+{% block content %}
+{% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private car', 'public_transport': 'Public transport', 'ride_hailing': 'Ride-hailing / Taxi', 'mixed_transport': 'Mixed transport'} %}
+<section class="itinerary-page preview-page" aria-labelledby="preview-title">
+    <header class="itinerary-heading">
+        <p class="eyebrow">Personalized planning · Santa Rosa, Laguna</p>
+        <h1 id="preview-title" class="page-heading">Personalized Itinerary Preview</h1>
+        <p class="page-subheading">Your personalized destinations, recommended and organized by RosaGo.</p>
+    </header>
+    <ol class="itinerary-progress" aria-label="Planning progress">
+        <li class="is-complete"><span aria-hidden="true">✓</span> Preferences</li>
+        <li class="is-complete"><span aria-hidden="true">✓</span> Review</li>
+        <li aria-current="step"><span aria-hidden="true">3</span> Preview</li>
+    </ol>
+    <section class="card itinerary-card preview-summary" aria-label="Trip overview">
+        <div class="preview-overview">
+            <div><p class="eyebrow">Your visit</p><p class="preview-date-range"><time datetime="{{ constraints.start_date.isoformat() }}">{{ constraints.start_date.strftime('%b %d, %Y') }}</time>{% if constraints.end_date != constraints.start_date %} – <time datetime="{{ constraints.end_date.isoformat() }}">{{ constraints.end_date.strftime('%b %d, %Y') }}</time>{% endif %}</p></div>
+            <p class="preview-counts">{{ day_count }} {{ 'day' if day_count == 1 else 'days' }} <span aria-hidden="true">·</span> {{ destination_count }} {{ 'destination' if destination_count == 1 else 'destinations' }}</p>
+        </div>
+        <dl class="itinerary-summary">
+            <div><dt>Requested daily planning window</dt><dd>{{ constraints.daily_start_time }} – {{ constraints.daily_end_time }}<small>{{ constraints.timezone }} · Not assigned visit times</small></dd></div>
+            <div><dt>Transportation preference</dt><dd>{{ labels[constraints.transportation] }}</dd></div>
+            <div><dt>Trip pace preference</dt><dd>{{ constraints.trip_pace | title }}</dd></div>
+            {% if constraints.budget_centavos is not none %}<div><dt>Requested budget per person</dt><dd>PHP {{ '{:,}'.format(constraints.budget_centavos // 100) }}.{{ '%02d' | format(constraints.budget_centavos % 100) }}<small>For the whole itinerary · Costs not evaluated</small></dd></div>{% endif %}
+        </dl>
+    </section>
+    <aside class="itinerary-notice preview-note" aria-label="About this preview">
+        <div><p>Generate Personalized Itinerary automatically selects an initial set from currently published destinations matching your interests. Planning pace controls the suggested count, not time feasibility. If fewer matches are available, only those matches are included.</p><strong>An untimed plan</strong><p>This preview organizes your selected destinations by day. Exact visit times, travel times, operating hours, costs, weather conditions, and route optimization are not yet applied.</p></div>
+    </aside>
+    {% if message %}
+    <div class="itinerary-error" role="alert"><strong>Preview unavailable</strong><p>{{ message }}</p></div>
+    {% else %}
+    {% if has_test_records %}<p class="catalog-disclosure">Development preview: places marked “Test record” are synthetic examples, not real businesses or attractions. They are not official tourism records or endorsed by the Santa Rosa City Tourism Office.</p>{% endif %}
+    <div class="preview-days">
+        {% for day in days %}
+        <section class="card itinerary-card preview-day" aria-labelledby="preview-day-{{ loop.index }}">
+            <header class="preview-day-heading"><h2 id="preview-day-{{ loop.index }}">Day {{ loop.index }}</h2><time datetime="{{ day.date.isoformat() }}">{{ day.date.strftime('%A, %b %d') }}</time></header>
+            {% if day.stops %}
+            <ol class="preview-stops" start="{{ day.stops[0].order }}">
+                {% for stop in day.stops %}
+                <li value="{{ stop.order }}">
+                    <article class="preview-stop">
+                        <p class="place-category">{{ labels[stop.place.category] }}</p>
+                        <h3>{{ stop.place.name }}</h3>
+                        {% if stop.place.slug.startswith('rosago-test-v1-') %}<span class="badge destination-test-label">Test record</span>{% endif %}
+                        <p class="place-address">{{ stop.place.address }}</p>
+                        <a class="text-link" href="{{ url_for('places_detail', slug=stop.place.slug) }}">View destination details</a>
+                    </article>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}<p class="itinerary-muted">No selected destinations are assigned to this day.</p>{% endif %}
+        </section>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <footer class="preview-footer">
+        <form method="post" action="{{ url_for('itinerary_preview_edit', draft_id=draft_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <input type="hidden" name="expected_revision" value="{{ revision }}">
+            <button class="site-button" type="submit" aria-describedby="preview-edit-help">Edit Preferences</button>
+        </form>
+        <p id="preview-edit-help" class="itinerary-help">Returning to edit clears this preview and keeps your preferences. Review your preferences, then generate a new preview.</p>
+        <p class="itinerary-help">This is a temporary preview. No trip has been added to My Trips.</p>
+    </footer>
+</section>
+{% endblock %}
