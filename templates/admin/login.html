@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="same-origin"><title>Admin Login · RosaGo</title><link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}"></head>
+<body class="admin-site login-page"><main class="login-card" id="main-content">
+<a class="wordmark" href="{{ url_for('index') }}" aria-label="RosaGo"><span>Rosa</span><span>Go</span></a><span class="admin-badge">ADMIN</span>
+<p class="eyebrow">Tourism administration</p><h1>Admin sign in</h1><p class="intro">Access the RosaGo administration workspace.</p>
+{% if message %}<p class="notice" role="alert">{{ message }}</p>{% endif %}
+{% if signed_in %}
+<a class="button" href="{{ url_for('user_index') }}">Continue to User side</a>
+<form method="post" action="{{ url_for('admin.logout') }}"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><button class="secondary-button" type="submit">Log out</button></form>
+{% else %}
+<form method="post" action="{{ url_for('admin.login') }}">
+<input type="hidden" name="csrf_token" value="{{ login_csrf }}">
+<label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="username" value="{{ email }}" required>
+<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+<button class="button" type="submit">Sign in to Admin</button>
+</form><a class="text-link" href="{{ url_for('forgot_password') }}">Forgot password?</a>
+{% endif %}
+<a class="text-link" href="{{ url_for('login') }}">Looking for User sign in?</a>
+</main></body></html>

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Places | RosaGo{% endblock %}
+{% block content %}
+<section class="empty-state places-error" aria-labelledby="places-error-title">
+    <p class="eyebrow">Explore Santa Rosa</p>
+    <h1 id="places-error-title" class="page-heading">{{ message }}</h1>
+    <p>Please return to Explore or try again later.</p>
+    <a class="site-button" href="{{ url_for('places_list') }}">Back to Explore</a>
+</section>
+{% endblock %}

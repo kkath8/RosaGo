@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Profile | RosaGo{% endblock %}
+{% block content %}
+<section class="profile-page" aria-labelledby="account-title">
+    <header class="profile-heading">
+        <p class="eyebrow">Your RosaGo account</p>
+        <h1 id="account-title" class="page-heading">Profile</h1>
+        <p class="page-subheading">Manage your personal information.</p>
+    </header>
+    <div class="profile-layout">
+        <section class="card profile-summary" aria-labelledby="profile-summary-title">
+            <span class="profile-avatar" aria-hidden="true">{% if profile and (profile.first_name or profile.last_name) %}{{ ((profile.first_name or '')[:1] ~ (profile.last_name or '')[:1]) | upper }}{% else %}R{% endif %}</span>
+            <h2 id="profile-summary-title">{% if profile and (profile.first_name or profile.last_name) %}Welcome, {{ [profile.first_name, profile.last_name] | select | join(' ') }}{% else %}Welcome to RosaGo{% endif %}</h2>
+            <p class="account-identity">Signed in as {{ user_email }}</p>
+            <a class="text-link" href="{{ url_for('trips_list') }}">My Trips</a>
+            <form class="account-logout" method="post" action="{{ url_for('logout') }}">
+                <button class="account-logout-button" type="submit">Logout</button>
+            </form>
+        </section>
+        <div class="profile-details">
+            <section class="card profile-information" aria-labelledby="personal-title">
+                <h2 id="personal-title">Personal Information</h2>
+                <p class="profile-note">Your name as it appears on your profile.</p>
+                {% if profile is none %}
+                <p class="account-status">Your profile information is currently unavailable.</p>
+                {% else %}
+                <dl class="profile-info-grid">
+                    <div><dt>First Name</dt><dd>{{ profile.first_name or 'Not provided' }}</dd></div>
+                    <div><dt>Last Name</dt><dd>{{ profile.last_name or 'Not provided' }}</dd></div>
+                </dl>
+                {% endif %}
+                <a class="site-button" href="{{ url_for('user_profile_edit') }}">Edit Profile</a>
+            </section>
+            <section class="card profile-account" aria-labelledby="account-info-title">
+                <h2 id="account-info-title">Account Information</h2>
+                <p class="profile-note">Read-only account information. Editing your profile changes your name only.</p>
+                <dl class="profile-info-grid">
+                    <div><dt>Email</dt><dd>{{ user_email }}</dd></div>
+                </dl>
+            </section>
+        </div>
+    </div>
+</section>
+{% endblock %}

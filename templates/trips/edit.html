@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Edit Trip | RosaGo{% endblock %}
+{% block content %}
+<section class="trip-page" aria-labelledby="trip-title">
+    <header class="trip-heading">
+        <p class="eyebrow">Your trip, your plans</p>
+        <h1 id="trip-title" class="page-heading">Edit Trip</h1>
+        <p class="page-subheading">Update your trip name or visit date.</p>
+    </header>
+    <div class="trip-form-layout">
+        {% set form_action = url_for('trips_update', trip_id=trip_id) %}
+        {% set cancel_url = url_for('trips_detail', trip_id=trip_id) %}
+        {% set submit_label = 'Save Changes' %}
+        {% include 'trips/_form.html' %}
+        <aside class="card trip-guidance" aria-labelledby="trip-guidance-title">
+            <span class="coming-soon">Coming Soon</span>
+            <h2 id="trip-guidance-title">Destination planning</h2>
+            <p>Create your trip now. Controls to add, remove, and reorder destinations are coming next.</p>
+            <p class="trip-help">For now, you can save a trip name and date, then return to update them.</p>
+        </aside>
+    </div>
+</section>
+{% endblock %}

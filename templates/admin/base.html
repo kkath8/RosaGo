@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="same-origin"><title>{% block title %}RosaGo Admin{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}"></head>
+<body class="admin-site">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<aside class="admin-sidebar">
+    <a class="wordmark" href="{{ url_for('admin.index') }}" aria-label="RosaGo Admin"><span>Rosa</span><span>Go</span></a>
+    <span class="admin-badge">ADMIN</span>
+    <p class="sidebar-caption">Tourism administration</p>
+    <nav aria-label="Admin navigation">
+        <a href="{{ url_for('admin.index') }}" {% if active == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+        <a href="{{ url_for('admin.places') }}" {% if active == 'places' %}aria-current="page"{% endif %}>Destinations</a>
+    </nav>
+    <div class="admin-account"><p>Administrator</p>
+        <a href="{{ url_for('index') }}">View User Side <span aria-hidden="true">↗</span></a>
+        <form method="post" action="{{ url_for('admin.logout') }}"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><button class="logout-button" type="submit">Log out</button></form>
+    </div>
+</aside>
+<div class="admin-workspace"><header class="admin-topbar"><span>Santa Rosa, Laguna</span><span class="verified">Admin access verified</span></header>
+<main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
+<footer>RosaGo · Tourism administration</footer></div>
+</body></html>

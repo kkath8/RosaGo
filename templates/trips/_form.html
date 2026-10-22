@@ -1,0 +1,20 @@
+<form class="trip-form card" method="post" action="{{ form_action }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <h2>Trip information</h2>
+    <p class="trip-help">Give your visit a name. You can choose a date now or leave it for later.</p>
+    {% if message %}<p class="account-status" id="trip-form-error" role="alert">{{ message }}</p>{% endif %}
+    <div class="account-field">
+        <label for="trip-name">Trip name <span class="trip-required">(required)</span></label>
+        <input id="trip-name" name="name" type="text" required value="{{ name }}" aria-describedby="trip-name-help{% if message %} trip-form-error{% endif %}">
+        <p class="trip-help" id="trip-name-help">Use 1 to 100 characters to name your trip.</p>
+    </div>
+    <div class="account-field">
+        <label for="visit-date">Visit date <span class="trip-optional">(optional)</span></label>
+        <input id="visit-date" name="visit_date" type="date" value="{{ visit_date }}" aria-describedby="trip-date-help{% if message %} trip-form-error{% endif %}">
+        <p class="trip-help" id="trip-date-help">Leave blank if your schedule is still open.</p>
+    </div>
+    <div class="trip-actions">
+        <button class="site-button" type="submit">{{ submit_label }}</button>
+        <a class="site-button site-button-secondary" href="{{ cancel_url }}">Cancel</a>
+    </div>
+</form>
