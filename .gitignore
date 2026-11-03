@@ -14,3 +14,30 @@ __pycache__/
 # Operating system files
 .DS_Store
 Thumbs.db
+# Local database backups
+backups/
+
+# Local MCP configuration
+.mcp.json
+
+# Supabase CLI local temporary state
+supabase/.temp/
+
+# Local documentation screenshots and review evidence
+docs/**/*.png
+docs/**/*.jpg
+
+# Generated documentation/review evidence
+docs/**/*.txt
+docs/**/*.json
+docs/**/*.py
+docs/**/*.sql
+docs/**/*.csv
+docs/**/*.diff
+docs/**/*.html
+
+# Keep documentation reports
+!docs/**/*.md
+
+# Local standalone prototype/reference
+/rosago.html

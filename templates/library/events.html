@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block title %}Events | RosaGo{% endblock %}{% block content %}
+<header class="trip-heading"><p class="eyebrow">Santa Rosa</p><h1>Events &amp; notices</h1><p class="page-subheading">Keep personal reminders alongside sample event and notice entries.</p></header>
+<p class="catalog-disclosure">Sample/static prototype entries, not a live City Tourism feed or verified current advisories. Confirm dates, access and notices with the relevant organizer. Reminders stay on this device; no push, email or SMS is sent.</p>
+<div class="seg" role="group" aria-label="Event category">{% for value,label in [('All','All'),('Event','Events'),('Closure','Closures'),('Road','Road notices')] %}<button type="button" data-event-filter="{{ value }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>{% endfor %}</div>
+<section class="card"><ul class="ledger" data-events></ul></section>
+{% endblock %}

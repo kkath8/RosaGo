@@ -57,7 +57,7 @@ class RecommendationEngineTests(unittest.TestCase):
     def test_multiple_interests_never_inflate_score(self):
         places = [place(n, category) for n, category in enumerate(sorted(CATEGORIES), 1)]
         result = rank_candidates(preferences(interests=sorted(CATEGORIES)), places)
-        self.assertEqual(result.match_count, 6)
+        self.assertEqual(result.match_count, len(CATEGORIES))
         self.assertEqual(result.unmatched, ())
         self.assertTrue(all(candidate.deterministic_score == 1 for candidate in result.ranked))
         self.assertTrue(all(len(candidate.matched_signals) == 1 for candidate in result.ranked))

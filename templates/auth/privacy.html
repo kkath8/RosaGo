@@ -1,0 +1,33 @@
+{% extends 'auth/legal_base.html' %}
+{% block legal_title %}Privacy Policy{% endblock %}
+{% block legal_content %}
+<h1 class="page-heading">Privacy Policy</h1><p>Effective date: October 24, 2026.</p>
+<details class="acc" open><summary><h3>Academic purpose</h3></summary>
+<p>RosaGo is a student-capstone system for tourism discovery and itinerary planning in Santa Rosa, Laguna. This policy describes its current implementation, not a claim of certification or independently established legal compliance.</p>
+</details>
+<details class="acc"><summary><h3>Information you provide</h3></summary>
+<p>Registration uses first and last names, email, password, and required consent. Supabase Auth handles passwords and email verification. Profile names, saved trips and destinations, planning preferences, dates, budgets, companions, transport and pace preferences, and optional planning text are used when you provide them. Optional AI chat processes the messages you intentionally submit.</p>
+</details>
+<details class="acc"><summary><h3>Authentication, sessions and purposes</h3></summary>
+<p>Authentication tokens and server-side session state support sign-in, ownership checks, and password recovery. The browser receives signed session cookies containing opaque handles and non-sensitive preferences; it does not receive server-side API keys. Pending email verification keeps an email address and anti-forgery state temporarily on the server; RosaGo does not store verification codes. Information is used to operate accounts, protect access, build personal plans, show reminders, and provide requested features.</p>
+</details>
+<details class="acc"><summary><h3>Supabase and optional AI</h3></summary>
+<p>Supabase provides authentication and database storage for account, profile, trip, and draft information. When you intentionally request an AI explanation, RosaGo sends selected interests and a bounded list of relevant public destinations to Google Gemini. When using AI chat, your message, bounded conversation history, relevant public catalog context, and available weather context may be sent. The current AI integration does not load your private profile or saved trips into chat. Do not enter sensitive personal information in AI messages or planning text.</p>
+</details>
+<details class="acc"><summary><h3>Location, maps and routes</h3></summary>
+<p>Device location is requested only when you choose the location action and grant browser permission. You can instead enter coordinates or select a map point. A route request sends start and destination coordinates to the configured OSRM or OpenRouteService provider. Device starting coordinates are not saved as profile fields or itinerary preferences. Leaflet runs in the browser; displaying its OpenStreetMap background requests tiles from an external server, which can receive connection information and the requested map area. Opening a Google Maps link sends its destination coordinates to Google and is subject to Google's policies.</p>
+</details>
+<details class="acc"><summary><h3>Weather and technical information</h3></summary>
+<p>Open-Meteo receives a fixed Santa Rosa city coordinate to supply weather; this request does not require your device location or account identity. Weather is cached briefly on the server. Hosting and third-party services may process ordinary connection information, such as IP addresses and request metadata, under their own logging practices.</p>
+</details>
+<details class="acc"><summary><h3>Storage and retention limits</h3></summary>
+<p>Accounts, profiles and saved trips remain in Supabase until removed through supported operations or project administration. Temporary planning drafts have expiry rules; expiry is not a promise that database records are immediately deleted. Authentication, recovery, pending-verification, and chat state use bounded process-local stores and may be lost on restart. Pending email-verification state lasts up to 30 minutes. Chat history has a bounded size and inactivity expiry. There is no universal automatic deletion schedule or permanent backup guarantee for this academic prototype.</p>
+</details>
+<details class="acc"><summary><h3>Security and your choices</h3></summary>
+<p>The implementation uses authentication, owner-scoped reads and writes, anti-forgery checks on protected actions, bounded inputs, escaped output, and server-side provider credentials. These measures do not guarantee absolute security. Keep passwords and email codes private, sign out on shared devices, and save separate copies of important travel plans. You can decline location permission, avoid optional AI and external links, edit supported profile fields, delete supported saved trips, clear chat, and use available session settings. For account or other data requests beyond the current interface, contact the project team; requests require appropriate identity verification and review of implementation limits.</p>
+</details>
+<details class="acc"><summary><h3>Third parties, changes and contact</h3></summary>
+<p>Supabase, Google Gemini and Google Maps, Open-Meteo, OpenStreetMap tile services, and the configured routing provider have their own privacy and retention practices. This policy cannot control their systems. Updates to RosaGo's practices will be reflected here with a revised effective date. Contact the student project team below with privacy questions or requests.</p>
+</details>
+<details class="acc"><summary><h3>Personal browser state and fonts</h3></summary><p>Saved and visited places, private notes, trip bags and checklists, alert read/dismiss state, personal budget estimates, optional profile presentation and display defaults can be stored in this browser. These fields are separate from Supabase account records and real saved trips. Shared devices may expose local information to other device users; browser clearing can erase it. Local backup exports this personal state, including your own notes, and does not export server credentials or real trip records. Keep backups private. The page requests Inter and Sora from Google Fonts; those font services receive ordinary connection information.</p></details>
+{% endblock %}

@@ -1,0 +1,14 @@
+<section class="route-controls" aria-labelledby="route-controls-title">
+<h2 id="route-controls-title">Plan your journey</h2>
+{% if unsupported_route_preference %}<p class="map-notice" role="status">Your preferred transportation mode is not available here. Choose an available mode below.</p>{% endif %}
+{% if routing_modes %}<form id="route-form" method="post" action="{{ url_for('route_api') }}" hidden novalidate>
+<div class="route-section"><label for="route-destination">Destination</label><select id="route-destination" name="destination_slug" required>{% for marker in markers %}<option value="{{ marker.detail_url.rsplit('/',1)[-1] }}">{{ marker.name }}</option>{% endfor %}</select></div>
+<div class="route-section"><label for="route-mode">Transportation Mode</label><select id="route-mode" name="mode" required>{% for mode,label in routing_modes %}<option value="{{ mode }}"{% if selected_routing_mode == mode %} selected{% endif %}>{{ label }}</option>{% endfor %}</select><p class="trip-help">Available modes depend on the routing service.</p></div>
+<div class="route-section"><h3>Starting Point</h3><div class="route-start-actions"><button class="mini-button" id="route-use-location" type="button">Use My Location</button><button class="mini-button" id="route-pick-start" type="button">Select on Map</button></div>
+<details class="manual-coordinates"><summary>Enter coordinates manually</summary><label for="route-start-latitude">Latitude</label><input id="route-start-latitude" name="start_latitude" type="number" min="-90" max="90" step="any" required><label for="route-start-longitude">Longitude</label><input id="route-start-longitude" name="start_longitude" type="number" min="-180" max="180" step="any" required></details></div>
+<button class="site-button route-submit" type="submit">Plan Route</button><p class="trip-help">Planning a route shares its starting point and destination with {{ routing_provider }}. Estimates exclude live traffic and stops.</p></form>
+<p id="route-status" class="map-notice" role="status" aria-live="polite"></p>
+<section id="route-summary" class="route-summary" hidden aria-labelledby="route-result-title"><h3 id="route-result-title">Route Summary</h3><div id="route-summary-body"></div></section>
+{% else %}<p class="map-notice" role="status">Route planning is temporarily unavailable. You can still view destinations and open them in Google Maps.</p>{% endif %}
+<section class="public-transport-note"><h3>Public Transportation</h3><p>Live public transport routing is not currently available. Open the destination in Google Maps for additional transport options. RosaGo does not provide fares or schedules.</p></section>
+</section>

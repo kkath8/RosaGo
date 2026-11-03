@@ -1,31 +1,5 @@
-{% extends 'base.html' %}
-{% block title %}Plan a Trip | RosaGo{% endblock %}
-{% block content %}
-<section class="trip-page" aria-labelledby="trip-title">
-    <header class="trip-heading">
-        <p class="eyebrow">Plan your visit</p>
-        <h1 id="trip-title" class="page-heading">Plan a Trip</h1>
-        <p class="page-subheading">Create a trip to start organizing your Santa Rosa visit.</p>
-    </header>
-    <section class="card" aria-labelledby="personalized-title">
-        <h2 id="personalized-title">Personalized Itinerary</h2>
-        <p>Save your preferences in a temporary draft. Itinerary generation is not implemented yet.</p>
-        <form method="post" action="{{ url_for('itinerary_start') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf }}">
-            <button class="site-button" type="submit">Create Personalized Itinerary</button>
-        </form>
-    </section>
-    <div class="trip-form-layout">
-        {% set form_action = url_for('trips_create') %}
-        {% set cancel_url = url_for('trips_list') %}
-        {% set submit_label = 'Create Trip' %}
-        {% include 'trips/_form.html' %}
-        <aside class="card trip-guidance" aria-labelledby="trip-guidance-title">
-            <span class="coming-soon">Coming Soon</span>
-            <h2 id="trip-guidance-title">Destination planning</h2>
-            <p>Create your trip now. Controls to add, remove, and reorder destinations are coming next.</p>
-            <p class="trip-help">For now, you can save a trip name and date, then return to update them.</p>
-        </aside>
-    </div>
-</section>
-{% endblock %}
+{% extends 'base.html' %}{% block title %}Create Trip | RosaGo{% endblock %}{% block content %}
+<section class="trip-page" aria-labelledby="trip-title"><a class="secondary-button" href="{{ url_for('planner') }}">Back to Planner</a><header class="trip-heading"><p class="eyebrow">Manual planning</p><h1 id="trip-title" class="page-heading">Plan My Own Destinations</h1><p class="page-subheading">Create a trip and save the destinations you choose.</p></header>
+<ol class="itinerary-progress" aria-label="Manual planning progress"><li aria-current="step">1. Trip Information</li><li>2. Select Destinations</li><li>3. Review Selections</li></ol>
+<div class="trip-form-layout">{% set form_action = url_for('trips_create', add_place=add_place_slug) if add_place_slug else url_for('trips_create') %}{% set cancel_url = url_for('trips_add_place', slug=add_place_slug) if add_place_slug else url_for('planner') %}{% set submit_label = 'Create Trip' %}{% include 'trips/_form.html' %}
+<aside class="card trip-guidance"><h2>Your trip, your choices</h2><p>Create your trip, then browse Explore and use Add to Trip to save each destination. Review your selections in My Trips.</p><p>Your chosen destinations are saved in the order you add them, without assigned visit times.</p><p class="trip-help">Your trip is saved to My Trips when you create it. Each destination is saved when you add it.</p></aside></div></section>{% endblock %}

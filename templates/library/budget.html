@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Budget Planner | RosaGo{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/budget-dashboard.css') }}">
+<script src="{{ url_for('static', filename='js/budget-plan.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/budget-ui.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="budget-page">
+<header class="trip-heading"><p class="eyebrow">Budget Planner</p><h1 class="page-heading">Plan your trip budget</h1><p class="page-subheading">Set how much you want to spend. RosaGo will help you divide your budget across common travel expenses.</p></header>
+<noscript><p class="account-status">Enable JavaScript to use the budget planner.</p></noscript>
+<form id="budget-plan-form" novalidate>
+<div class="budget-layout"><div>
+<section class="card" aria-labelledby="budget-step-one"><h2 id="budget-step-one">1. Trip budget</h2>
+<div class="budget-basics"><div class="field"><label for="plan-total">Total budget (PHP)</label><input id="plan-total" type="number" min="0" max="1000000000" step="0.01" value="0" required></div><div class="field"><label for="plan-people">Number of travelers</label><input id="plan-people" type="number" min="1" max="50" step="1" value="1" required></div></div>
+<p class="budget-per-person">Budget per person <strong data-plan-per-person>PHP 0.00</strong></p>
+<div class="field"><label for="plan-trip">Plan for a saved trip (optional)</label><select id="plan-trip"><option value="">Personal budget plan</option></select><p class="field-help" data-plan-trip-status>Loading saved trips&hellip;</p></div><p class="trip-help">Your budget plan is separate from your saved itinerary.</p>
+</section>
+<section class="card" aria-labelledby="budget-step-two"><h2 id="budget-step-two">2. Budget allocation</h2><p class="trip-help">Editable planning suggestions: Food 30%, Transportation 25%, Activities 20%, Shopping 15%, Emergency / Extra 10%. Edit percentages or amounts so the total equals 100%.</p><p class="trip-help">Changing the total budget scales your allocation proportions.</p>
+<div data-plan-allocations></div><p class="allocation-total" data-allocation-total></p><p role="status" data-allocation-error></p><button class="secondary-button" type="button" data-plan-defaults>Use suggested percentages</button>
+<p class="budget-disclosure">These are planning allocations based on the budget you entered, not official destination prices or transportation fares.</p>
+</section>
+<section class="card" aria-labelledby="budget-step-three"><h2 id="budget-step-three">3. Planned expenses <span class="trip-help">(optional)</span></h2><p class="trip-help">Add more detail to see what remains in each category.</p><div data-plan-entries></div><button class="secondary-button" type="button" data-plan-add>+ Add planned expense</button></section>
+</div>
+<aside class="card budget-summary" aria-labelledby="budget-summary-title"><h2 id="budget-summary-title">Budget status</h2><div data-plan-summary aria-live="polite"></div><div data-plan-category-summary></div></aside></div>
+<div class="budget-save"><p role="status" data-plan-error></p><p role="status" data-plan-status>Save your budget plan to remember it on this device.</p><button class="site-button" type="submit">Save budget plan</button></div>
+</form></div>
+{% endblock %}

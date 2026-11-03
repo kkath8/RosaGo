@@ -52,12 +52,14 @@ class AdminBoundaryTests(unittest.TestCase):
         def respond(request):
             self.requests.append(request)
             self.assertIsNotNone(g.auth)
+            if request.url.path.endswith('/rosago_admin_operational_overview'):
+                return httpx.Response(503, json={'message': 'Unavailable'})
             if request.url.path == '/rest/v1/places':
                 self.assertEqual(request.headers['authorization'], 'Bearer fixture-access')
                 if request.method == 'HEAD':
                     return httpx.Response(200, headers={'Content-Range': '*/0', 'Preference-Applied': 'count=exact'})
                 self.assertEqual(request.method, 'GET')
-                return httpx.Response(200, json=[])
+                return httpx.Response(200, json=[], headers={'Content-Range': '*/0'})
             self.assertEqual(request.url.path, '/rest/v1/rpc/rosago_is_admin')
             self.assertEqual(request.method, 'POST')
             self.assertEqual(request.content, b'{}')

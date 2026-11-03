@@ -1,0 +1,10 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin Settings | RosaGo Admin{% endblock %}
+{% block content %}
+<div class="admin-utility-page">
+<header class="utility-heading"><p class="eyebrow">Administration</p><h1>Admin Settings</h1><p class="intro">Choose how the Admin workspace looks on this device.</p></header>
+<section class="panel settings-appearance" aria-labelledby="appearance-heading"><h2 id="appearance-heading">Appearance</h2><p class="muted">Use the same RosaGo theme across Admin and User pages in this browser.</p><div class="admin-theme-controls settings-theme-controls" role="group" aria-label="Appearance"><button type="button" data-set-theme="light" aria-pressed="true">Light</button><button type="button" data-set-theme="dark" aria-pressed="false">Dark</button></div><p class="settings-theme-status" data-theme-status role="status">Theme changes apply immediately and are saved on this device.</p></section>
+<p class="section-note">Appearance changes do not change your account access or destination data.</p>
+<div class="utility-links"><a class="secondary-button" href="{{ url_for('admin.account') }}">Admin Account</a><a class="secondary-button" href="{{ url_for('admin.help_page') }}">Admin Help</a></div>
+</div>
+{% endblock %}

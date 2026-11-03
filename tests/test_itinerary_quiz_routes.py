@@ -1,4 +1,5 @@
 """Offline quiz flow with real authentication scopes and guarded network access."""
+from test_public_layout import Document, assert_shared_scripts
 from dataclasses import replace
 from datetime import datetime, timezone
 import io
@@ -57,7 +58,7 @@ class QuizRouteTests(unittest.TestCase):
         return form(csrf_token=self.csrf, expected_revision='2', **changes)
 
     def test_planner_start_quiz_save_review(self):
-        planner = self.client.get('/user/trips/new')
+        planner = self.client.get('/user/planner')
         self.assertIn(b'action="/user/itinerary/start"', planner.data)
         response = self.client.post(START, data={'csrf_token': self.csrf})
         self.assertEqual((response.status_code, response.location), (303, QUIZ))
@@ -66,7 +67,7 @@ class QuizRouteTests(unittest.TestCase):
         response = self.client.get(QUIZ)
         self.assertIn(b'name="expected_revision" value="2"', response.data)
         self.assertIn(b'value="08:00"', response.data)
-        self.assertIn(b'aria-current="true">Planner', response.data)
+        self.assertTrue(any(n.text.strip() == 'Planner' and n.attrs.get('aria-current') == 'true' for n in Document(response.get_data(as_text=True)).find('a')))
         response = self.client.post(QUIZ, data=self.payload(), headers={'Origin': 'http://localhost'})
         self.assertEqual((response.status_code, response.location), (303, REVIEW))
         self.protected(response)
@@ -133,7 +134,7 @@ class QuizRouteTests(unittest.TestCase):
 
     def test_legacy_review_and_edit_require_explicit_new_choices(self):
         from itinerary_draft_service import EXTENSION_FIELDS
-        from test_public_layout import Document
+        from test_public_layout import Document, assert_shared_scripts
         legacy = {key: value for key, value in self.draft.preferences.items() if key not in EXTENSION_FIELDS}
         read = self.drafts['get_itinerary_draft']
         read.side_effect = None
@@ -186,12 +187,12 @@ class QuizRouteTests(unittest.TestCase):
         self.assertEqual(update.call_args.args[2], 1)
 
     def test_quiz_native_controls_exact_fields_and_selected_form_roundtrip(self):
-        from test_public_layout import Document
+        from test_public_layout import Document, assert_shared_scripts
         from itinerary_quiz_form import FORM_FIELDS
         from itinerary_draft_service import TRANSPORTATION, ACTIVITIES, TRIP_PACES, ENVIRONMENTS
         page = Document(self.client.get(QUIZ).get_data(as_text=True))
         self.assertEqual(page.find('h1')[0].text, 'Plan Your Perfect Santa Rosa Trip')
-        forms = page.find('form')
+        forms = page.find('form', action=QUIZ)
         self.assertEqual(len(forms), 1)
         self.assertEqual((forms[0].attrs['method'], forms[0].attrs['action']), ('post', QUIZ))
         inputs = [node for node in page.elements if node.tag in ('input', 'textarea') and forms[0] in node.ancestors]
@@ -217,12 +218,12 @@ class QuizRouteTests(unittest.TestCase):
         self.assertNotIn('required', page.find('input', name='budget')[0].attrs)
         for field in ('daily_start_time', 'daily_end_time'):
             self.assertEqual(page.find('input', name=field)[0].attrs['step'], '60')
-        self.assertEqual(page.find('script'), [])
+        assert_shared_scripts(self,page)
         self.assertEqual(page.stack, [])
-        self.assertEqual(page.find('button', type='submit')[0].text.strip(), 'Review My Trip →')
+        self.assertEqual([n for n in page.find('button', type='submit') if forms[0] in n.ancestors][0].text.strip(), 'Review My Trip →')
 
     def test_review_display_formats_real_values_and_offers_generation(self):
-        from test_public_layout import Document
+        from test_public_layout import Document, assert_shared_scripts
         read = self.drafts['get_itinerary_draft']
         read.side_effect = None
         for transport, label in (('motorcycle', 'Motorcycle'), ('public_transport', 'Public Transport'),
@@ -238,17 +239,12 @@ class QuizRouteTests(unittest.TestCase):
                              '12:00 AM', '12:01:30 PM', '₱5,000.50'):
                 self.assertIn(expected, main)
             self.assertEqual(page.find('h1')[0].text, 'Review Your Trip')
-            button = page.find('button')[0]
-            self.assertEqual(button.attrs['type'], 'submit')
-            self.assertNotIn('disabled', button.attrs)
-            self.assertEqual(page.find('form')[0].attrs['action'], REVIEW.replace('/review', '/generate'))
-            self.assertIn('Generate Personalized Itinerary', button.text)
-            self.assertEqual(page.find('input', name='expected_revision')[0].attrs['value'], '2')
+            recommendation=page.find('a',href=REVIEW.replace('/review','/recommendations'))[0]
+            self.assertIn('View Personalized Recommendations',recommendation.text)
             self.assertEqual(page.find('input', name='selected_place_ids'), [])
-            self.assertEqual(page.find('input', name='csrf_token')[0].attrs['value'], self.csrf)
             self.assertTrue(page.find('a', href=QUIZ))
-            self.assertTrue(page.find('a', href='/user/trips/new'))
-            self.assertEqual(page.find('script'), [])
+            self.assertTrue(page.find('a', href='/user/planner'))
+            assert_shared_scripts(self,page)
             self.assertEqual(page.stack, [])
         for amount, display in ((None, 'Not provided'), (0, '₱0'), (10000000, '₱100,000'), (1, '₱0.01')):
             read.return_value = replace(self.draft, preferences=self.draft.preferences | {
@@ -259,13 +255,13 @@ class QuizRouteTests(unittest.TestCase):
         self.drafts['update_itinerary_draft_preferences'].assert_not_called()
 
     def test_validation_notice_is_accessible_and_preserves_selection(self):
-        from test_public_layout import Document
+        from test_public_layout import Document, assert_shared_scripts
         response = self.client.post(QUIZ, data=self.payload(budget='100000.01'))
         self.assertEqual(response.status_code, 400)
         page = Document(response.get_data(as_text=True))
         alert = page.find('div', role='alert', id='quiz-error')[0]
         self.assertIn('Check all fields', alert.text)
-        self.assertEqual(page.find('form')[0].attrs['aria-describedby'], 'quiz-error')
+        self.assertEqual(page.find('form', action=QUIZ)[0].attrs['aria-describedby'], 'quiz-error')
         self.assertEqual(page.find('input', name='budget')[0].attrs['value'], '100000.01')
         self.assertIn('checked', page.find('input', name='trip_pace', value='balanced')[0].attrs)
         self.drafts['update_itinerary_draft_preferences'].assert_not_called()
@@ -277,7 +273,8 @@ class QuizRouteTests(unittest.TestCase):
         for draft_id in (trips.TRIP, trips.OWNER):
             for method, path in ROUTES[1:]:
                 response = self.client.open(path.replace(trips.TRIP, draft_id), method=method, data=self.payload())
-                self.assertEqual((response.status_code, response.data), (404, b'Draft not found.'))
+                self.assertEqual(response.status_code, 404)
+                self.assertIn(b'Draft not found.', response.data)
         for draft in [replace(self.draft, state=state) for state in
                       ('generating', 'preview_ready', 'failed', 'saved', 'expired')] + [
                           replace(self.draft, expires_at=datetime(2000, 1, 1, tzinfo=timezone.utc))]:

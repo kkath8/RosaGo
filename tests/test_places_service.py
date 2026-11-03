@@ -16,7 +16,7 @@ from postgrest.exceptions import APIError
 from places_client import PublicPlacesClient
 from places_service import (
     Place, PlacesService, PlacesValidationError, PlacesConsistencyError,
-    PlacesUnavailableError, PROJECTION, CATEGORIES, parse_place_row,
+    PlacesUnavailableError, PROJECTION, TOURISM_FIELDS, CATEGORIES, parse_place_row,
 )
 
 
@@ -73,7 +73,7 @@ class PlacesServiceTests(unittest.TestCase):
         self.assertIsInstance(result, tuple)
         place = result[0]
         self.assertIsInstance(place, Place)
-        self.assertEqual([field.name for field in fields(place)], PROJECTION.split(','))
+        self.assertEqual([field.name for field in fields(place)], PROJECTION.split(',') + list(TOURISM_FIELDS))
         self.assertFalse(hasattr(place, '__dict__'))
         self.assertFalse(hasattr(place, 'status'))
         self.assertFalse(hasattr(place, 'token'))
@@ -132,7 +132,7 @@ class PlacesServiceTests(unittest.TestCase):
             self.service.list_published(order='name')
 
     def test_categories_and_response_mismatch(self):
-        self.assertEqual(CATEGORIES, {'attraction', 'dining', 'shopping', 'accommodation', 'nature', 'heritage'})
+        self.assertEqual(CATEGORIES, {'attraction', 'dining', 'shopping', 'accommodation', 'nature', 'heritage', 'industrial'})
         for category in CATEGORIES:
             self.query.execute.return_value.data = [self.row(category=category)]
             self.assertEqual(self.service.list_published(category=category)[0].category, category)
@@ -167,6 +167,10 @@ class PlacesServiceTests(unittest.TestCase):
             self.inconsistent([self.row(category=invalid)])
 
     def test_coordinate_types_ranges_and_finiteness(self):
+        self.query.execute.return_value.data = [self.row(latitude=None, longitude=None)]
+        place = self.service.list_published()[0]
+        self.assertIsNone(place.latitude)
+        self.assertIsNone(place.longitude)
         for field, maximum in (('latitude', 90), ('longitude', 180)):
             for valid in (-maximum, 0, maximum, 0.5):
                 self.query.execute.return_value.data = [self.row(**{field: valid})]

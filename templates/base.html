@@ -2,30 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    {% include 'partials/theme_head.html' %}
+    {% include 'partials/fonts.html' %}
     <title>{% block title %}RosaGo | Santa Rosa, Laguna{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+    {% if request.endpoint in ('places_list', 'places_detail') %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tourism.css') }}">{% endif %}
+    {% if request.endpoint in ('places_list', 'places_detail', 'trips_add_place') %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/trip-chooser.css') }}">
+    <script src="{{ url_for('static', filename='js/trip-chooser.js') }}" defer></script>
+    {% endif %}
     {% block extra_head %}{% endblock %}
+    <script src="{{ url_for('static', filename='js/personal-state.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/user-ui.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/account-management.js') }}" defer></script>
 </head>
-<body class="public-site">
+<body class="public-site"{% if ui_scope %} data-ui-scope="{{ ui_scope }}"{% endif %} data-personalized="{{ 'true' if website_settings.personalized else 'false' }}" data-location-enabled="{{ 'true' if website_settings.location_enabled else 'false' }}" data-authenticated="{{ 'true' if ui_authenticated or trip_state == 'ready' else 'false' }}">
     <a class="skip-link" href="#main-content">Skip to content</a>
     {% include 'partials/navbar.html' %}
-    <div class="app-content">
-    <header class="site-topbar" aria-label="Application toolbar">
-        <div class="topbar-search">
-            <label class="visually-hidden" for="shell-search">Search places (coming soon)</label>
-            <input id="shell-search" type="search" placeholder="Search places, categories, or keywords..." disabled aria-describedby="search-availability">
-            <span id="search-availability" class="coming-soon">Coming Soon</span>
-        </div>
-        <a class="topbar-profile" href="{{ url_for('user_index') }}" aria-label="Your profile">
-            <span class="user-avatar" aria-hidden="true">{% if user_email is defined and user_email %}{{ user_email[0] | upper }}{% else %}RG{% endif %}</span>
-            <span>Profile</span>
-        </a>
-    </header>
+    <div class="user-workspace">
     <main id="main-content" class="site-main" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
     {% include 'partials/footer.html' %}
     </div>
+    {% if request.endpoint in ('places_list', 'places_detail', 'trips_add_place') %}{% include 'partials/trip_chooser.html' %}{% endif %}
+    {% include 'partials/mobile_navigation.html' %}
 </body>
 </html>

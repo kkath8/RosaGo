@@ -1,0 +1,27 @@
+.public-site #trip-chooser { width: min(540px, calc(100% - 32px)); max-width: 540px; max-height: calc(100dvh - 40px); margin: auto; padding: 20px; border: 1px solid #d8c694; border-radius: 14px; overflow-y: auto; overscroll-behavior: contain; }
+.public-site #trip-chooser::backdrop { background: #24160f80; }
+.public-site .trip-chooser-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; }
+.public-site .trip-chooser-heading h2 { margin: 0; font-size: 1.3rem; }
+.public-site .trip-chooser-heading button { min-width: 36px; }
+.public-site .trip-chooser-destination { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+.public-site .trip-chooser-options { margin: 12px 0; padding: 0; border: 0; min-width: 0; }
+.public-site .trip-chooser-options legend { padding: 0; font-size: .9rem; font-weight: 600; margin-bottom: 10px; }
+.public-site .trip-chooser-list { display: grid; gap: 8px; max-height: 300px; overflow-y: auto; overscroll-behavior: contain; padding: 3px; }
+.public-site .trip-choice { display: flex; align-items: center; gap: 12px; border: 1px solid #e3d3a3; border-radius: 9px; padding: 10px 12px; background: #fffdf8; cursor: pointer; min-width: 0; }
+.public-site .trip-choice:has(input:checked) { background: #fff2ca; border-color: #8e3b2c; }
+.public-site .trip-choice:has(input:focus-visible) { outline: 2px solid #8e3b2c; outline-offset: 1px; }
+.public-site .trip-choice input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: #8e3b2c; }
+.public-site .trip-choice-copy { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.public-site .trip-choice-copy strong { font-size: .9rem; }
+.public-site .trip-choice-date { display: block; font-weight: 400; color: var(--site-muted); font-size: .8rem; }
+.public-site .trip-chooser-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.public-site .trip-chooser-status { padding: 10px 12px; border-radius: 8px; background: #fff5dc; font-size: .85rem; overflow-wrap: anywhere; }
+.public-site .add-place-page { max-width: 700px; margin-inline: auto; }
+.public-site .add-place-page .trip-heading { padding-bottom: 12px; margin-bottom: 16px; }
+.public-site .add-place-page .add-place-summary { margin: 0 0 16px; padding: 0; border: 0; box-shadow: none; background: transparent; }
+.public-site .add-place-page .add-place-summary h2 { margin: 8px 0 4px; font-size: 1.15rem; }
+.public-site .explore-page .destination-card-actions { gap: 8px; }
+.public-site .explore-page .destination-card-actions :is(a,button) { font-size: .72rem; padding: 7px 4px; gap: 3px; }
+.public-site .explore-page .destination-card-actions .destination-details-link { background: #8e3b2c; border-color: #8e3b2c; color: #fff; }
+.public-site .explore-page .destination-card-actions [data-action="save"] { min-width: 48px; }
+@media (max-width: 480px) { .public-site #trip-chooser { padding: 16px; } .public-site .trip-chooser-list { max-height: 35dvh; } }

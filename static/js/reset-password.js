@@ -2,16 +2,17 @@ const resetForm = document.getElementById("reset-password-form");
 const newPassword = document.getElementById("new-password");
 const confirmPassword = document.getElementById("confirm-new-password");
 const resetStatus = document.getElementById("reset-status");
+const passwordPolicy = RosaGoPasswordPolicy.create(newPassword);
 let submitted = false;
 
 function validatePassword(field) {
     let message = "";
     if (!field.value.trim()) {
         message = field === newPassword ? "Please enter a new password." : "Please confirm your new password.";
-    } else if (field === newPassword && field.value.length < 8) {
-        message = "Use at least 8 characters for your password.";
+    } else if (field === newPassword) {
+        message = passwordPolicy.message();
     } else if (field === confirmPassword && field.value !== newPassword.value) {
-        message = "Passwords do not match. Enter the same password in both fields.";
+        message = "Passwords do not match.";
     }
     const error = document.getElementById(`${field.id}-error`);
     error.textContent = message;
@@ -36,15 +37,20 @@ document.querySelectorAll(".password-toggle").forEach((button) => {
     field.addEventListener("input", () => {
         resetStatus.textContent = "";
         delete resetStatus.dataset.state;
-        if (submitted) {
+        if (field === newPassword) passwordPolicy.update();
+        if (submitted || field.getAttribute('aria-invalid') === 'true'
+                || (field === confirmPassword && field.value)) {
             validatePassword(field);
-            if (field === newPassword && confirmPassword.value) validatePassword(confirmPassword);
+        }
+        if (field === newPassword && confirmPassword.value) {
+            validatePassword(confirmPassword);
         }
     });
 });
 
 resetForm.addEventListener("submit", (event) => {
     submitted = true;
+    passwordPolicy.update();
     const invalid = [newPassword, confirmPassword].filter((field) => !validatePassword(field));
     if (invalid.length) {
         event.preventDefault();
@@ -58,3 +64,4 @@ resetForm.addEventListener("submit", (event) => {
 });
 
 document.getElementById("reset-submit").disabled = false;
+passwordPolicy.update();

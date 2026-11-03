@@ -1,0 +1,18 @@
+<dialog id="trip-chooser" aria-labelledby="trip-chooser-title">
+    <header class="trip-chooser-heading"><h2 id="trip-chooser-title">Add to Trip</h2><button class="mini-button" type="button" data-chooser-close aria-label="Close Add to Trip">×</button></header>
+    <p class="trip-chooser-destination" data-chooser-name></p><p class="trip-help" data-chooser-meta></p>
+    <p class="trip-chooser-status" data-chooser-status role="alert" hidden></p>
+    <form data-chooser-form method="post" novalidate>
+        <input name="csrf_token" type="hidden">
+        <fieldset class="trip-chooser-options"><legend>Choose a trip</legend><div class="trip-chooser-list" data-chooser-list></div></fieldset>
+        <button class="mini-button" type="button" data-chooser-more hidden>More trips</button>
+        <button class="mini-button button-tertiary" type="button" data-chooser-create>+ Create New Trip</button>
+        <div class="trip-chooser-actions"><button class="secondary-button" type="button" data-chooser-close>Cancel</button><button class="site-button" type="submit">Add to Trip</button></div>
+    </form>
+    <form data-chooser-create-form method="post" hidden>
+        <h3>Create New Trip</h3><input name="csrf_token" type="hidden">
+        <div class="field"><label for="chooser-trip-name">Trip name</label><input id="chooser-trip-name" name="name" required maxlength="100"></div>
+        <div class="field"><label for="chooser-trip-date">Visit date (optional)</label><input id="chooser-trip-date" name="visit_date" type="date"></div>
+        <div class="trip-chooser-actions"><button class="secondary-button" type="button" data-chooser-back>Cancel</button><button class="site-button" type="submit">Create Trip</button></div>
+    </form>
+</dialog>

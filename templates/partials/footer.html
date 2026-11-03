@@ -1,7 +1,6 @@
-<footer class="site-footer">
-    <div class="footer-inner">
-        <strong>RosaGo</strong>
-        <p>Smart Tourism System for Santa Rosa, Laguna</p>
-        <p class="project-note">A student capstone project for local discovery.</p>
-    </div>
-</footer>
+<footer class="site-footer"><div class="footer-inner footer-grid">
+<div><a class="site-brand footer-brand" href="{{ url_for('index') }}">Rosa<span>Go</span></a><p>Smart Tourism System for Santa Rosa, Laguna. A student capstone project.</p><p>Confirm hours and access with each destination before your visit.</p></div>
+<div><h2>Discover</h2><a href="{{ url_for('index') }}">Dashboard</a><a href="{{ url_for('places_list') }}">Explore</a><a href="{{ url_for('map_index') }}">Map &amp; Transportation</a></div>
+<div><h2>Planner</h2><a href="{{ url_for('planner') }}">Planner</a><a href="{{ url_for('trips_list') }}">My Trips</a><a href="{{ url_for('features.budget') }}">Budget Planner</a></div>
+<div><h2>More</h2>{% for label,endpoint in [('Saved Places','features.saved'),('Visited Places','features.visited'),('AI Assistant','assistant'),('Help','features.help_page'),('Settings','settings'),('Profile','user_index'),('Terms','terms'),('Privacy','privacy')] %}<a href="{{ url_for(endpoint) }}">{{ label }}</a>{% endfor %}</div>
+</div><div class="footer-inner footer-bottom">&copy; 2026 RosaGo &middot; Smart Tourism System for Santa Rosa, Laguna &middot; Student capstone project</div></footer>

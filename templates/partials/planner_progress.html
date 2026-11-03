@@ -1,0 +1,5 @@
+<ol class="itinerary-progress" aria-label="Planning progress">
+{% for key,label in [('preferences','Preferences'),('review','Review'),('recommendations','Recommendations'),('itinerary','Itinerary')] %}
+<li{% if planner_step == key %} aria-current="step"{% endif %}><span aria-hidden="true">{{ loop.index }}</span> {{ label }}</li>
+{% endfor %}
+</ol>

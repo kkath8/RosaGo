@@ -17,7 +17,7 @@ from normal_auth_flask import normal_authenticated
 from normal_auth_store import NormalAuthSession
 from trip_service import (Trip, TripDetail, TripPlace, TripValidationError, TripNotFoundError,
                           TripOperationRejectedError, TripUnavailableError, TripConsistencyError)
-from test_public_layout import Document
+from test_public_layout import Document, assert_shared_scripts
 import test_registration
 
 
@@ -48,7 +48,7 @@ class TripRouteTests(unittest.TestCase):
         self.csrf = self.dependencies.store.resolve(self.handle).csrf
         stamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
         self.trip = Trip(TRIP, 'My <trip>', date(2020, 1, 2), stamp, stamp)
-        self.detail = TripDetail(self.trip, (TripPlace(TRIP, OWNER, 3, stamp, None),), 3)
+        self.detail = TripDetail(self.trip, (TripPlace(TRIP, 'bbbbbbbb-0000-0000-0000-000000000009', 3, stamp, None),), 3)
         self.services = {}
         results = {'list_user_trips': (self.trip,), 'get_user_trip': self.detail,
                    'create_trip': self.trip, 'update_trip': self.trip, 'delete_trip': None, 'add_place': None}
@@ -121,8 +121,8 @@ class TripRouteTests(unittest.TestCase):
             self.protected(response)
             self.assertIn(b'/static/css/site.css', response.data)
             label = 'Planner' if path == ROOT + '/new' else 'My Trips'
-            state = 'page' if path in (ROOT, ROOT + '/new') else 'true'
-            self.assertIn(f'aria-current="{state}">{label}'.encode(), response.data)
+            state = 'page' if path == ROOT else 'true'
+            self.assertTrue(any(n.text.strip() == label and n.attrs.get('aria-current') == state for n in Document(response.get_data(as_text=True)).find('a')))
         self.assertEqual(self.services['list_user_trips'].call_args.kwargs, {'limit': 50, 'offset': 0})
         detail = self.client.get(DETAIL)
         self.assertIn(b'Place unavailable', detail.data)
@@ -133,8 +133,15 @@ class TripRouteTests(unittest.TestCase):
         edit = self.client.get(DETAIL + '/edit')
         self.assertIn(b'value="2020-01-02"', edit.data)
         self.assertIn(self.csrf.encode(), edit.data)
-        source = self.app.jinja_loader.get_source(self.app.jinja_env, 'user/index.html')[0]
-        self.assertIn('My Trips', source)
+        # Profile inherits its navigation. Inspect the real rendered route rather
+        # than requiring the shared link's text in the child template source.
+        namespace = self.app.view_functions['user_index'].__wrapped__.__globals__
+        with patch.dict(namespace, get_own_profile=Mock(return_value=None)):
+            profile = self.client.get('/user')
+        self.assertEqual(profile.status_code, 200)
+        self.assertEqual(profile.headers['Cache-Control'], 'no-store')
+        self.assertTrue(any(node.text.strip() == 'My Trips' and node.attrs.get('href') == ROOT
+                            for node in Document(profile.get_data(as_text=True)).find('a')))
 
     def test_successful_mutations_once_dates_origins_and_redirects(self):
         for path, service_name, target in ((ROOT, 'create_trip', DETAIL),
@@ -228,7 +235,8 @@ class TripRouteTests(unittest.TestCase):
             missing = self.client.get(path)
             service.side_effect = TripNotFoundError()
             foreign = self.client.get(path)
-            self.assertEqual((missing.status_code, missing.data), (404, b'Trip not found.'))
+            self.assertEqual(missing.status_code, 404)
+            self.assertIn(b'Trip not found.', missing.data)
             self.assertEqual((foreign.status_code, foreign.data), (missing.status_code, missing.data))
 
     def test_uuid_method_errors_and_pagination(self):
@@ -288,7 +296,7 @@ class TripRouteTests(unittest.TestCase):
 
     def test_trip_presentation_forms_keep_exact_fields_and_actions(self):
         for path, action, heading, submit in (
-            (ROOT + '/new', ROOT, 'Plan a Trip', 'Create Trip'),
+            (ROOT + '/new', ROOT, 'Plan My Own Destinations', 'Create Trip'),
             (DETAIL + '/edit', DETAIL + '/edit', 'Edit Trip', 'Save Changes'),
         ):
             page = Document(self.client.get(path).get_data(as_text=True))
@@ -301,7 +309,7 @@ class TripRouteTests(unittest.TestCase):
             self.assertIn('required', inputs[1].attrs)
             self.assertNotIn('required', inputs[2].attrs)
             self.assertEqual([node.text for node in page.find('button') if form in node.ancestors], [submit])
-            self.assertEqual(page.find('script'), [])
+            assert_shared_scripts(self,page)
             self.assertEqual(page.find('select'), [])
             self.assertEqual(page.stack, [])
         response = self.client.post(ROOT, data=self.form(ROOT, visit_date='invalid'))
@@ -331,7 +339,7 @@ class TripRouteTests(unittest.TestCase):
         page = Document(self.client.get(DETAIL).get_data(as_text=True))
         membership_list = page.find('ol', **{'class': 'trip-memberships'})[0]
         members = [node for node in page.find('li') if membership_list in node.ancestors]
-        self.assertEqual([(node.attrs['value'], node.text) for node in members], [('3', 'Place unavailable')])
+        self.assertEqual([(node.attrs['value'], node.text) for node in members], [('3', 'Place unavailableMove upMove downRemove destination')])
         self.assertEqual(len(page.find('a', href=DETAIL + '?after_position=3')), 1)
         delete = page.find('form', action=DETAIL + '/delete')[0]
         self.assertEqual(delete.attrs['method'], 'post')
@@ -339,8 +347,11 @@ class TripRouteTests(unittest.TestCase):
         fields = [node for node in page.find('input') if delete in node.ancestors]
         self.assertEqual([(node.attrs['name'], node.attrs['value']) for node in fields], [('csrf_token', self.csrf)])
         section = page.find('section', **{'aria-labelledby': 'trip-destinations-title'})[0]
-        for tag in ('button', 'form', 'input', 'select'):
-            self.assertFalse(any(section in node.ancestors for node in page.find(tag)))
+        mutations = [node for node in page.find('form') if section in node.ancestors]
+        self.assertEqual([node.attrs['action'] for node in mutations], [DETAIL+'/move-place',DETAIL+'/move-place',DETAIL+'/remove-place'])
+        for mutation in mutations:
+            self.assertEqual(mutation.attrs['method'],'post')
+            self.assertEqual([node.attrs['value'] for node in page.find('input',name='csrf_token') if mutation in node.ancestors],[self.csrf])
         service = self.services['get_user_trip']
         service.side_effect = None
         service.return_value = replace(self.detail, memberships=(), next_after_position=None)
@@ -348,7 +359,7 @@ class TripRouteTests(unittest.TestCase):
         later = self.client.get(DETAIL + '?after_position=3').get_data(as_text=True)
         self.assertIn('No more places on this page.', later)
         self.assertNotIn('No destinations added yet.', later)
-        member = replace(self.detail.memberships[0], place=SimpleNamespace(name='<script>Place</script>'))
+        member = replace(self.detail.memberships[0], place=SimpleNamespace(name='<script>Place</script>', slug='synthetic-place'))
         service.return_value = replace(self.detail, memberships=(member,))
         html = self.client.get(DETAIL).get_data(as_text=True)
         self.assertIn('&lt;script&gt;Place&lt;/script&gt;', html)
@@ -384,10 +395,10 @@ class TripRouteTests(unittest.TestCase):
         html = response.get_data(as_text=True)
         page = Document(html)
         self.assertEqual(page.find('h1')[0].text, 'Add to Trip')
-        self.assertEqual(page.find('script'), [])
+        assert_shared_scripts(self,page)
         self.assertIn('&lt;script&gt;Place&lt;/script&gt;', html)
         self.assertIn('My &lt;trip&gt;', html)
-        self.assertIn('aria-current="true">My Trips', html)
+        self.assertTrue(any(n.text.strip() == 'My Trips' and n.attrs.get('aria-current') == 'true' for n in page.find('a')))
         form = page.find('form', action=self.add_path)[0]
         self.assertEqual(form.attrs['method'], 'post')
         inputs = [node for node in page.find('input') if form in node.ancestors]
@@ -412,7 +423,7 @@ class TripRouteTests(unittest.TestCase):
         for method in ('GET', 'POST'):
             response = self.client.open(self.add_path, method=method, data=data)
             self.assertEqual(response.status_code, 302)
-            self.assertEqual(response.headers['Location'], '/login?login_required=1')
+            self.assertEqual(response.headers['Location'], '/login?login_required=1&add_place=synthetic-place')
             self.protected(response)
         self.catalog.get_published_by_slug.assert_not_called()
         self.untouched()
@@ -424,7 +435,7 @@ class TripRouteTests(unittest.TestCase):
         service.return_value = ()
         response = self.client.get(self.add_path)
         self.assertIn(b'Create a trip first', response.data)
-        self.assertIn(b'href="/user/trips/new"', response.data)
+        self.assertIn(b'href="/user/trips/new?add_place=synthetic-place"', response.data)
         self.assertEqual(Document(response.get_data(as_text=True)).find('form', action=self.add_path), [])
         response = self.client.get(self.add_path + '?offset=50')
         self.assertIn(b'No trips on this page', response.data)
@@ -521,7 +532,8 @@ class TripRouteTests(unittest.TestCase):
         for rejected_id in (TRIP, OWNER):
             service.side_effect = TripNotFoundError()
             response = self.client.post(self.add_path, data=data | {'trip_id': rejected_id})
-            self.assertEqual((response.status_code, response.data), (404, b'Trip not found.'))
+            self.assertEqual(response.status_code, 404)
+            self.assertIn(b'Trip not found.', response.data)
 
     def test_trip_templates_compile(self):
         for name in ('trips/list.html', 'trips/new.html', 'trips/detail.html', 'trips/edit.html',

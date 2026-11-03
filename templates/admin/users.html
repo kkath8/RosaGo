@@ -1,0 +1,12 @@
+{% extends 'admin/base.html' %}
+{% block title %}Users | RosaGo Admin{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">Administration</p><h1>Users</h1><p class="intro">Account directory with limited identity information.</p></div></div>
+<form class="panel attention-filter" method="get"><div class="field"><label for="user-query">Search name or email</label><input id="user-query" type="search" name="q" value="{{ q }}" maxlength="150"></div><button class="button" type="submit">Search Users</button><a class="secondary-button" href="{{ url_for('admin.users') }}">Clear Search</a></form>
+<p class="section-note">Account disabling and re-enabling are unavailable. This directory shows basic account identity only.</p>
+{% if data is none %}<p class="notice" role="status">User oversight is unavailable. The restricted operational backend capability requires deployment verification.</p>
+{% elif not data.users %}<p class="panel empty-state">No users found.</p>
+{% else %}<p class="section-note">{{ data.users_matching }} matching users · Page {{ page }} · 25 per page</p>
+<section class="panel catalog-table-panel"><table class="catalog-table"><caption class="visually-hidden">User directory</caption><thead><tr><th>User</th><th>Email</th><th>Name</th><th>Account created</th></tr></thead><tbody>{% for user in data.users %}<tr><th scope="row">{{ user.identifier }}</th><td data-label="Email">{{ user.email or 'Not supplied' }}</td><td data-label="Name">{{ user.name or 'Not supplied' }}</td><td data-label="Account created">{{ user.created_at }}</td></tr>{% endfor %}</tbody></table></section>{% endif %}
+<nav class="catalog-pagination" aria-label="User pages">{% if previous_url %}<a class="secondary-button" href="{{ previous_url }}">Previous page</a>{% endif %}{% if next_url %}<a class="secondary-button" href="{{ next_url }}">Next page</a>{% endif %}</nav>
+{% endblock %}

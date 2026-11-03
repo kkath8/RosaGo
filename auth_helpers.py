@@ -17,6 +17,8 @@ def login_required(view=None, *, login_endpoint='login'):
             except NormalAuthEntryError as error:
                 if error.may_clear_authority:
                     clear_normal_auth_authority()
+                    if view.__name__ == 'trips_add_place':
+                        return redirect(url_for(login_endpoint, login_required="1", add_place=kwargs.get('slug')))
                     return redirect(url_for(login_endpoint, login_required="1"))
                 response = make_response("Authentication is temporarily unavailable. Please try again.", 503)
                 response.headers['Cache-Control'] = 'no-store'

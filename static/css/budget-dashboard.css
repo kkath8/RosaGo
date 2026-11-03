@@ -1,0 +1,39 @@
+/* Local planning and Dashboard overview, using the established theme tokens. */
+.public-site .dashboard-overview { grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr); align-items: start; }
+.public-site .dashboard-trip-list { list-style: none; margin: 0; padding: 0; }
+.public-site .dashboard-trip-list li { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 0; border-top: 1px solid var(--site-border); }
+.public-site .dashboard-trip-list h3 { font-size: 1rem; margin: 0 0 5px; }
+.public-site .dashboard-trip-list p { margin: 0; color: var(--site-muted); font-size: .85rem; }
+.public-site .dashboard-overview :is(a,button) { padding: 6px 12px; min-height: 34px; font-size: .82rem; white-space: nowrap; text-decoration: none; }
+.public-site .dashboard-weather { margin-top: 0; }
+.public-site .dashboard-weather p { margin: 6px 0; }
+.public-site .dashboard-weather .dashboard-temperature { font-size: 2rem; margin: 12px 0 6px; }
+.public-site .budget-page { max-width: 1180px; margin-inline: auto; }
+.public-site .budget-layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.public-site .budget-layout > * { min-width: 0; }
+.public-site .budget-layout h2 { font-size: 1.25rem; }
+.public-site .budget-basics { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+.public-site .budget-per-person { display: flex; gap: 12px; flex-wrap: wrap; }
+.public-site .allocation-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .8fr) minmax(0, 1fr); gap: 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--site-border); }
+.public-site .allocation-row h3, .public-site .category-budget h3 { font-size: .95rem; margin: 0; }
+.public-site .allocation-row .field { margin: 0; }
+.public-site .allocation-row label, .public-site .planned-expense label { font-size: .75rem; }
+.public-site .budget-page input, .public-site .budget-page select { width: 100%; min-width: 0; }
+.public-site .allocation-total { font-weight: 700; }
+.public-site .budget-disclosure { color: var(--site-muted); font-size: .85rem; margin-top: 18px; }
+.public-site .budget-totals { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; }
+.public-site .budget-totals dd { margin: 0; font-weight: 700; }
+.public-site .category-budget { padding-block: 14px; border-top: 1px solid var(--site-border); }
+.public-site .category-budget p { font-size: .85rem; margin: 5px 0; }
+.public-site .budget-status { padding: 10px 12px; border: 1px solid var(--site-border); border-radius: 10px; background: var(--site-tint); font-weight: 600; }
+.public-site .budget-status[data-state="over"] { color: var(--theme-error, #a33220); border-color: currentColor; }
+.public-site :is(.budget-overage,.category-budget.is-over strong,[data-plan-error],[data-allocation-error]) { color: var(--theme-error, #a33220); }
+.public-site .category-budget.is-over { border-left: 3px solid var(--theme-error, #a33220); padding-left: 12px; }
+.public-site .planned-expense { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding-block: 18px; border-bottom: 1px solid var(--site-border); }
+.public-site .planned-expense .field { margin: 0; }
+.public-site .planned-expense button { align-self: end; justify-self: start; }
+.public-site .budget-save { padding-block: 16px; }
+.public-site .budget-summary { margin-top: 0; }
+.public-site .budget-summary p { overflow-wrap: anywhere; }
+@media(max-width: 860px) { .public-site .dashboard-overview, .public-site .budget-layout { grid-template-columns: minmax(0, 1fr); } }
+@media(max-width: 480px) { .public-site .budget-basics { grid-template-columns: minmax(0, 1fr); gap: 0; } .public-site .allocation-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .public-site .allocation-row h3 { grid-column: 1/-1; } .public-site .planned-expense { grid-template-columns: minmax(0, 1fr); } .public-site .dashboard-trip-list li { flex-wrap: wrap; } }

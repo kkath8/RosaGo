@@ -1,59 +1,43 @@
-:root {
-    color-scheme: light;
-    --red: #c0392b;
-    --deep-red: #96281b;
-    --ink: #302822;
-    --muted: #72665e;
-    --border: #ddd4cc;
-}
+@import url("buttons.css");
+@import url("design-tokens.css");
 
 * { box-sizing: border-box; }
 
 body {
     margin: 0;
-    background: #faf7f2;
+    background: var(--site-paper);
     color: var(--ink);
-    font-family: "Segoe UI", Arial, sans-serif;
-    line-height: 1.5;
+    font-family: var(--site-sans);
+    line-height: 1.55;
+    font-size: 17px;
 }
 
 button, input { font: inherit; }
 a { color: var(--deep-red); }
 [hidden] { display: none !important; }
 
-.registration-layout { min-height: 100vh; display: grid; grid-template-columns: 0.95fr 1.05fr; }
+.registration-layout { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
 .welcome {
     position: relative;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     padding: clamp(32px, 5vw, 80px);
-    background: var(--deep-red);
+    background: linear-gradient(180deg, #2b110bcc, #2b110b80, #2b110bcc), url("../img/santa-rosa-arch.jpg") center 22% / cover no-repeat;
     color: #fff7ed;
 }
 
-.welcome::after {
-    content: "";
-    position: absolute;
-    width: 440px;
-    height: 440px;
-    right: -290px;
-    bottom: 60px;
-    border: 1px solid #e67e22;
-    border-radius: 50%;
-    box-shadow: 0 0 0 45px #ffffff06, 0 0 0 90px #ffffff06;
-    pointer-events: none;
-}
+.welcome::after { display: none; }
 
 .welcome > * { position: relative; z-index: 1; }
-.brand { width: fit-content; padding: 2px 10px; border-radius: 6px; background: #fff; color: var(--red); font-size: 36px; font-weight: 750; letter-spacing: -1.5px; text-decoration: none; }
+.brand { width: fit-content; padding: 2px 10px; border-radius: 10px; background: #fff; color: var(--red); font-family: var(--site-logo); font-size: 36px; font-weight: 750; letter-spacing: -1.5px; text-decoration: none; }
 .brand span { color: #f1c40f; }
 .brand .brand-dot { color: #e67e22; }
 .brand-description { max-width: 270px; margin: 8px 0 0; font-size: 14px; color: #f5dcd4; }
 .welcome-copy { margin: auto 0; padding: 72px 0; max-width: 460px; }
 .eyebrow { margin: 0 0 14px; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--deep-red); }
 .welcome .eyebrow { color: #f1c40f; }
-h1 { margin: 0 0 24px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(40px, 4.7vw, 70px); line-height: 1.12; font-weight: 400; letter-spacing: -1.5px; }
+h1 { margin: 0 0 24px; font-family: var(--site-sans); font-size: clamp(40px, 4.7vw, 70px); line-height: 1.12; font-weight: 800; letter-spacing: -1.5px; }
 h1 span { color: #f6ce78; }
 .welcome-copy > p:last-child { max-width: 330px; margin: 0; color: #f5dcd4; font-size: 16px; line-height: 1.8; }
 .destination-note { display: flex; align-items: center; gap: 14px; }
@@ -62,14 +46,14 @@ h1 span { color: #f6ce78; }
 .destination-note strong { font-size: 14px; font-weight: 600; }
 .destination-note div span { color: #f5dcd4; font-size: 12px; margin-top: 3px; }
 .form-panel { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 48px 32px 24px; }
-.registration-card { width: 100%; max-width: 520px; background: white; border: 1px solid #eae1d8; border-radius: 12px; padding: 36px; box-shadow: 0 12px 40px #563a2010; }
+.registration-card { width: 100%; max-width: 480px; background: white; border: 1.5px solid #e3d3a3; border-radius: 16px; padding: 30px; box-shadow: var(--site-shadow); }
 h2 { margin: 0; font-size: clamp(25px, 2.4vw, 32px); line-height: 1.25; letter-spacing: -0.8px; }
 .form-intro { margin: 12px 0 16px; color: var(--muted); font-size: 14px; }
 .preview-note { margin: 0 0 24px; padding: 10px 12px; border-left: 3px solid #e67e22; background: #fff8eb; font-size: 12px; color: #745027; }
 .name-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .field { min-width: 0; margin-bottom: 18px; }
 .field > label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
-.field input { width: 100%; min-width: 0; min-height: 46px; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; background: #fff; color: var(--ink); font-size: 16px; }
+.field input { width: 100%; min-width: 0; min-height: 46px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: #fff; color: var(--ink); font-size: 16px; }
 .field input:hover { border-color: #aa9788; }
 :focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
 .welcome a:focus-visible { outline-color: #f1c40f; }
@@ -82,16 +66,22 @@ h2 { margin: 0; font-size: clamp(25px, 2.4vw, 32px); line-height: 1.25; letter-s
 .field-help { color: var(--muted); }
 .field-error { color: var(--deep-red); }
 .terms-field { margin: 6px 0 22px; }
+#registration-form #terms-error { margin: 8px 0 0 28px; font-weight: 600; }
+:is(#registration-form, #reset-password-form) .password-policy-heading { margin: 0; font-weight: 600; }
+:is(#registration-form, #reset-password-form) .password-requirements { list-style: none; padding: 0; margin: 6px 0 0; }
+:is(#registration-form, #reset-password-form) .password-requirements li { display: flex; align-items: baseline; gap: 6px; margin-top: 4px; }
+:is(#registration-form, #reset-password-form) .password-requirement-state { margin-left: auto; white-space: nowrap; font-weight: 600; }
+:is(#registration-form, #reset-password-form) .password-requirements [data-met="true"] { color: #24563c; }
 .checkbox-label { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; cursor: pointer; }
 .checkbox-label input { flex-shrink: 0; width: 18px; height: 18px; margin: 0; accent-color: var(--red); }
 .checkbox-label strong { font-weight: 600; }
-.submit-button { display: flex; justify-content: center; align-items: center; gap: 18px; width: 100%; min-height: 48px; border: 0; border-radius: 6px; background: var(--red); color: white; font-weight: 600; cursor: pointer; }
+.submit-button { display: flex; justify-content: center; align-items: center; gap: 18px; width: 100%; min-height: 48px; border: 0; border-radius: 10px; background: var(--red); color: white; font-weight: 600; cursor: pointer; }
 .submit-button:hover { background: var(--deep-red); }
 .submit-button:disabled { opacity: 0.6; cursor: not-allowed; }
 .submit-button span { font-size: 20px; }
 a.submit-button { text-decoration: none; }
 .form-status { margin: 0; font-size: 13px; }
-.form-status:not(:empty) { margin-top: 16px; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: #faf7f2; }
+.form-status:not(:empty) { margin-top: 16px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--site-paper); }
 .form-status[data-state="error"] { color: var(--deep-red); }
 .form-status[data-state="success"] { color: #24563c; border-color: #bfd5c6; background: #f1f8f3; }
 .login-prompt { margin: 24px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
@@ -105,14 +95,14 @@ a.submit-button { text-decoration: none; }
 .login-help { margin: 6px 0 0; }
 .footer-note { margin: 20px 0 0; }
 
-@media (max-width: 1000px) {
+@media (max-width: 1060px) {
     .welcome { padding: 36px 28px; }
     .form-panel { padding: 32px 20px 24px; }
     .registration-card { padding: 28px 24px; }
     .name-fields { grid-template-columns: 1fr; gap: 0; }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 860px) {
     .registration-layout { grid-template-columns: 1fr; }
     .welcome { padding: 28px 24px; }
     .brand { font-size: 30px; }
@@ -125,3 +115,33 @@ a.submit-button { text-decoration: none; }
     .form-panel { padding: 24px 16px; }
     .registration-card { padding: 28px 20px; }
 }
+
+.required-mark { color: #b42318; }
+.auth-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+body > .form-panel { min-height: 100vh; max-width: 960px; margin-inline: auto; }
+body > .form-panel .registration-card { max-width: 840px; }
+.registration-card h1 { font-size: clamp(1.8rem, 3vw, 2.4rem); }
+
+/* Final photo-panel structure from rosago.html. */
+.welcome { padding: 40px 44px; justify-content: space-between; gap: 26px; background: linear-gradient(180deg,#2b110bd9 0%,#2b110b40 38%,#2b110b30 62%,#2b110bd9 100%),url("../img/santa-rosa-arch.jpg") center 22%/cover no-repeat; }
+.welcome .brand { padding: 9px 16px; border-radius: 8px; font: 700 2rem/1 var(--site-logo); letter-spacing: -.04em; box-shadow: 0 4px 18px #0006; }
+.welcome .brand span { color: #d6a21c; border-bottom: 3px solid #d6a21c; }
+.welcome-copy { margin: 0; padding: 0; max-width: min(560px,92%); }
+.welcome h1 { font: 800 clamp(2.1rem,4.4vw,3.6rem)/1.08 var(--site-sans); letter-spacing: -.03em; color:#fff; text-shadow:0 2px 18px #000a; margin: 0; }
+.welcome h1 span { color: #f6d37e; }
+@media(max-width:860px) { .welcome { min-height:340px; padding:22px; } .welcome-copy { max-width:100%; } .welcome h1 { font-size:1.9rem; } }
+
+.registration-layout .form-panel{background:#fff}.registration-layout .registration-card{padding:16px;border-top:3px solid #8e3b2c}.registration-layout .registration-card .form-intro{margin:0 0 16px}.registration-layout .registration-card label{font-size:.75rem;text-transform:uppercase;letter-spacing:.035em}.registration-layout .submit-button{border-radius:999px;border-width:1.5px;box-shadow:0 1px 2px #2b110b22}.registration-layout .welcome .brand{background:#fff}
+@media(max-width:860px){.registration-layout .registration-card{padding:16px}.registration-layout .form-panel{padding:24px}}
+
+/* Each desktop column owns its viewport; form errors cannot stretch the photo. */
+@media (min-width: 861px) {
+    .registration-layout { height: 100dvh; min-height: 0; overflow: hidden; }
+    .registration-layout .welcome { height: 100%; min-height: 0; }
+    .registration-layout .welcome-copy { position: absolute; left: 44px; right: 44px; bottom: 40px; max-width: 560px; }
+    .registration-layout .form-panel { min-height: 0; overflow-y: auto; justify-content: flex-start; }
+    .registration-layout .registration-card { flex: none; margin-top: auto; }
+    .registration-layout .footer-note { flex: none; margin-bottom: auto; padding-top: 20px; }
+}
+.auth-site :is(.login-prompt a,.forgot-password) { display: inline-flex; align-items: center; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; text-decoration: none; }

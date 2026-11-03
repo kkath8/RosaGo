@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 from flask import before_render_template, g, session
 import httpx
 from jinja2 import ChoiceLoader, DictLoader, pass_context
-from test_public_layout import Document
+from test_public_layout import Document, NAVIGATION, assert_shared_scripts
 
 from normal_auth_coordinator import AuthenticatedContext, SessionBusy, ClientUnavailable
 from normal_auth_flask import normal_authenticated
@@ -23,15 +23,16 @@ def assert_account_layout(test, response, heading, active):
     test.assertEqual(len(page.find('main')), 1)
     test.assertEqual(page.find('a')[0].attrs['href'], '#main-content')
     test.assertEqual(len(page.find('footer')), 1)
-    test.assertEqual([node.attrs['href'] for node in page.find('link', rel='stylesheet')],
-                     ['/static/css/site.css'])
+    test.assertEqual([node.attrs['href'] for node in page.find('link', rel='stylesheet') if node.attrs['href'].startswith('/static/')],
+                     ['/static/css/theme.css', '/static/css/site.css', '/static/css/account-management.css'])
     nav = page.find('nav', **{'aria-label': 'Main navigation'})[0]
     links = [node for node in page.find('a') if nav in node.ancestors]
     test.assertEqual([(node.text.strip(), node.attrs['href']) for node in links],
-                     [('Dashboard', '/'), ('Explore', '/places'), ('Planner', '/user/trips/new'), ('My Trips', '/user/trips'), ('Map', '/map'), ('Profile', '/user')])
+                     NAVIGATION)
     test.assertEqual([(node.text.strip(), node.attrs['aria-current']) for node in links
                       if 'aria-current' in node.attrs], [('Profile', active)])
-    for tag in ('script', 'img', 'iframe'):
+    assert_shared_scripts(test,page)
+    for tag in ('img', 'iframe'):
         test.assertEqual(page.find(tag), [])
     for value in ('/auth/status', 'fixture-access', 'fixture-refresh', 'fixture-session',
                   'user-123', 'sb_publishable_', 'supabase.co'):
@@ -53,13 +54,13 @@ def install_shared_isolation_probe(test):
         test.assertNotIn('auth', g)
         test.assertFalse(test.owned[-1].is_closed)
         auth = (getattr(test, 'update', None) and test.update.call_args) or test.service.call_args
-        authority = auth.args[0]
+        authority = auth.args[0] if auth else None
         for values in (context.get_all(), vars(g._get_current_object()), dict(session)):
             for key, value in values.items():
                 test.assertNotIn(key, ('auth', 'client', 'access_token', 'refresh_token',
                                        'provider_session', 'claims'))
                 test.assertNotIsInstance(value, AuthenticatedContext)
-                test.assertIsNot(value, authority.client)
+                test.assertTrue(authority is None or value is not authority.client)
                 if isinstance(value, str):
                     test.assertNotIn(value, ('fixture-access', 'fixture-refresh', 'fixture-session'))
         observed.append(name)
@@ -147,15 +148,15 @@ class UserProfileTests(unittest.TestCase):
     def test_greeting_name_combinations_and_verified_email(self):
         self.seed()
         for first, last, greeting in (
-            (' Ana ', ' Cruz ', 'Welcome, Ana Cruz'), ('Ana', None, 'Welcome, Ana'),
-            (None, 'Cruz', 'Welcome, Cruz'), (None, None, 'Welcome to RosaGo'),
+            (' Ana ', ' Cruz ', 'Ana Cruz'), ('Ana', None, 'Ana'),
+            (None, 'Cruz', 'Cruz'), (None, None, 'Your profile'),
         ):
             with self.subTest(first=first, last=last):
                 self.data[0].update(first_name=first, last_name=last, email='untrusted@example.invalid')
                 response = self.client.get('/user')
                 self.assertEqual(response.status_code, 200)
                 self.assertIn(greeting.encode(), response.data)
-                self.assertIn(b'Signed in as verified@example.invalid', response.data)
+                self.assertIn(b'verified@example.invalid', response.data)
                 self.assertNotIn(b'untrusted@example.invalid', response.data)
                 self.assertNotIn(b'2026-10-10', response.data)
                 self.assertNotIn(b'profile information is currently unavailable', response.data)
@@ -166,47 +167,53 @@ class UserProfileTests(unittest.TestCase):
     def test_account_layout_edit_link_and_unchanged_post_logout(self):
         self.seed()
         page = assert_account_layout(self, self.client.get('/user'), 'Profile', 'page')
-        self.assertEqual([node.text for node in page.find('a', href='/user/profile/edit')],
-                         ['Edit Profile'])
-        forms = page.find('form', **{'class': 'account-logout'})
-        self.assertEqual(len(forms), 1)
-        self.assertEqual(forms[0].attrs['method'], 'post')
-        self.assertEqual(forms[0].attrs['action'], '/logout')
-        self.assertEqual(page.find('a', href='/logout'), [])
-        buttons = [node for node in page.find('button') if forms[0] in node.ancestors]
-        self.assertEqual(len(buttons), 1)
-        self.assertEqual(buttons[0].text, 'Logout')
-        self.assertEqual(buttons[0].attrs['type'], 'submit')
-        self.assertNotIn('name', buttons[0].attrs)
-        self.assertIn(forms[0], buttons[0].ancestors)
-        self.assertEqual([node for node in page.find('input') if forms[0] in node.ancestors], [])
-        sidebar_logout = page.find('form', action='/logout')[0]
-        self.assertEqual(sidebar_logout.attrs['method'], 'post')
+        self.assertEqual(len(page.find('form', action='/user/profile/edit')),1)
+        self.assertTrue(page.find('input', name='first_name', required=None))
+        self.assertEqual(len([n for n in page.find('button') if n.text=='Save Changes']),1)
+        self.assertEqual(page.find('form', **{'class':'account-logout'}),[])
+        self.assertEqual(page.find('a',href='/logout'),[])
+        self.assertTrue(page.find('form',action='/logout')) # Existing navigation logout.
         self.service.assert_called_once()
-        self.assertEqual(len(self.requests), 1)
+        self.assertEqual(len(self.requests),1)
 
-    def test_profile_cards_show_only_existing_fields_and_decorative_initials(self):
+    def test_profile_route_rechecks_changed_template_instead_of_cached_welcome(self):
         self.seed()
-        for first, last, initials in (('Ana', 'Cruz', 'AC'), ('Ana', None, 'A'),
-                                      (None, 'Cruz', 'C'), (None, None, 'R')):
-            self.data[0].update(first_name=first, last_name=last)
-            page = Document(self.client.get('/user').get_data(as_text=True))
-            avatar = page.find('span', **{'class': 'profile-avatar'})[0]
-            self.assertEqual(avatar.text, initials)
-            self.assertEqual(avatar.attrs['aria-hidden'], 'true')
-            self.assertEqual([node.text for node in page.find('dt')],
-                             ['First Name', 'Last Name', 'Email'])
-            self.assertEqual([node.text for node in page.find('dd')],
-                             [first or 'Not provided', last or 'Not provided', 'verified@example.invalid'])
-            main = page.find('main')[0]
-            self.assertIn('Read-only account information', main.text)
-            self.assertNotRegex(main.text.lower(),
-                                r'places visited|favorites|achievements|followers|travel points|\d+ trips')
-            self.assertEqual([node for node in page.find('input') if main in node.ancestors], [])
-        self.data = []
-        page = Document(self.client.get('/user').get_data(as_text=True))
-        self.assertEqual([node.text for node in page.find('dd')], ['verified@example.invalid'])
-        self.assertNotIn('Not provided', page.find('main')[0].text)
+        source=self.app.jinja_loader.get_source(self.app.jinja_env,'user/index.html')[0]
+        sources={'user/index.html':source}
+        self.app.jinja_env.loader=ChoiceLoader([DictLoader(sources),self.app.jinja_loader])
+        self.app.jinja_env.cache.clear()
+        first=self.client.get('/user')
+        self.assertIn(b'data-profile-design="preferences-v2"',first.data)
+        sources['user/index.html']=source.replace('preferences-v2','preferences-reloaded')
+        refreshed=self.client.get('/user')
+        self.assertIn(b'data-profile-design="preferences-reloaded"',refreshed.data)
+
+    def test_profile_form_sections_exclude_legacy_actions_and_settings(self):
+        self.seed()
+        page=Document(self.client.get('/user').get_data(as_text=True))
+        main=page.find('main')[0]
+        self.assertEqual([n.text for n in page.find('h2') if main in n.ancestors],
+                         ['Personal Information','Travel Interests','Travel Style','Itinerary Defaults'])
+        for old in ('Welcome,','Signed in as','Account Information','Backup','Notifications','browser-local','localStorage'):
+            self.assertNotIn(old,main.text)
+        self.assertFalse([n for n in page.find('form',action='/logout') if main in n.ancestors])
+        self.assertFalse([n for n in page.find('a',href='/user/trips') if main in n.ancestors])
+        self.assertEqual([n.attrs['value'] for n in page.find('input',name='budget_preference')],['low','mid','high'])
+        self.assertEqual(len(page.find('input',name='transportation')),7)
+        self.assertEqual(len(page.find('input',name='pace')),3)
+
+    def test_profile_shows_only_supported_fields_and_initials_avatar(self):
+        self.seed()
+        for first,last,initials in [('Ana','Cruz','AC'),('Ana',None,'A'),(None,'Cruz','C'),(None,None,'T')]:
+            self.data[0].update(first_name=first,last_name=last)
+            page=Document(self.client.get('/user').get_data(as_text=True))
+            self.assertEqual(page.find('span', **{'class':'profile-avatar user-avatar'})[0].text,initials)
+            self.assertEqual(page.find('input',id='profile-email')[0].attrs['value'],'verified@example.invalid')
+            for name in ('username','contact_number','email'):
+                self.assertFalse(page.find('input',name=name))
+            self.assertFalse(page.find('input',type='file'))
+            self.assertFalse(any('data-device-profile' in form.attrs for form in page.find('form')))
+            self.assertNotIn('Travel statistics',page.find('main')[0].text)
 
     def test_shared_templates_have_no_auth_authority_or_extra_operations(self):
         self.seed()
@@ -225,7 +232,7 @@ class UserProfileTests(unittest.TestCase):
         self.data = []
         response = self.client.get('/user')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Welcome to RosaGo', response.data)
+        self.assertIn(b'Your profile', response.data)
         self.assertIn(b'Your profile information is currently unavailable.', response.data)
         self.assertIn(b'verified@example.invalid', response.data)
         self.assert_authority_preserved(handle)
@@ -241,7 +248,7 @@ class UserProfileTests(unittest.TestCase):
         self.service.assert_called_once()
         context = self.service.call_args.args[0]
         self.assertEqual(context.user_id, 'user-123')
-        self.assertIn(b'Welcome, Ana Cruz', response.data)
+        self.assertIn(b'Ana Cruz', response.data)
         self.assertIn(b'verified@example.invalid', response.data)
         for value in (b'cookie-other', b'cookie@example.invalid', b'query-other', b'form@example.invalid'):
             self.assertNotIn(value, response.data)
@@ -315,7 +322,7 @@ class UserProfileTests(unittest.TestCase):
             self.assertNotIn('auth', g)
             self.assertFalse(self.owned[-1].is_closed)
             self.assertEqual(template, 'user/index.html')
-            self.assertEqual(set(kwargs), {'profile', 'user_email'})
+            self.assertEqual(set(kwargs), {'profile', 'user_email', 'ui_scope', 'ui_authenticated', 'first_name', 'last_name', 'csrf', 'field_errors'})
             self.assertIsInstance(kwargs['profile'], UserProfile)
             self.events.append('render')
             return original(template, **kwargs)
@@ -369,7 +376,7 @@ class UserProfileTests(unittest.TestCase):
         with before_render_template.connected_to(inspect, self.app):
             response = self.client.get('/user')
         self.assertEqual(observed, [True])
-        self.assertIn(b'Welcome, Ana Cruz', response.data)
+        self.assertIn(b'Ana Cruz', response.data)
         self.assertIn(b'verified@example.invalid', response.data)
         self.assertEqual(self.events, ['enter', 'service', 'query', 'jinja', 'close'])
 
@@ -394,7 +401,7 @@ class UserProfileTests(unittest.TestCase):
                     with normal_authenticated() as outer:
                         outer_http = self.owned[-1]
                         if error is None:
-                            self.assertIn('Welcome, Ana Cruz', self.app.view_functions['user_index']())
+                            self.assertIn('Ana Cruz', self.app.view_functions['user_index']())
                         else:
                             with self.assertRaises(RuntimeError) as raised:
                                 self.app.view_functions['user_index']()

@@ -11,6 +11,17 @@ from test_recommendation_engine import place, preferences
 
 
 class SelectionPolicyTests(unittest.TestCase):
+    def test_explicit_total_count_uses_existing_diversity_and_order_with_bounds(self):
+        prefs = preferences(interests=['nature', 'dining'], trip_pace='packed')
+        places = (place(1, 'nature'), place(2, 'nature'), place(3, 'dining'))
+        matched = rank_candidates(prefs, places).matched
+        selected = select_destinations(prefs, matched, place_count=2)
+        self.assertEqual([item.place_id for item in selected], [place(1).id, place(3).id])
+        self.assertEqual(select_destinations(prefs, matched, place_count=100), matched)
+        for count in (0, -1, 101, True, 2.0, '2'):
+            with self.assertRaises(SelectionPolicyError):
+                select_destinations(prefs, matched, place_count=count)
+
     def test_all_day_pace_counts_and_shortfalls(self):
         for days in range(1, 8):
             for pace, per_day in [('relaxed', 2), ('balanced', 3), ('packed', 4)]:

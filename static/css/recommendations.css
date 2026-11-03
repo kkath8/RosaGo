@@ -1,0 +1,38 @@
+/* Personal recommendations use the existing Light/Dark RosaGo palette. */
+.public-site .recommendations-page { max-width: 1100px; margin-inline: auto; }
+.public-site .recommendation-preferences, .public-site .recommendation-summary { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-block: 20px; }
+.public-site .recommendation-preferences p { margin: 8px 0 0; color: var(--site-muted); }
+.public-site .recommendation-summary { padding: 18px; border: 1px solid var(--site-border); border-radius: 14px; background: var(--site-tint); }
+.public-site .recommendation-summary p { margin: 6px 0 0; font-size: .85rem; }
+.public-site [data-selection-status] { min-height: 1.5em; }
+.public-site .recommendation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; list-style: none; margin: 0; padding: 0; }
+.public-site .recommendation-grid > li { min-width: 0; }
+.public-site .recommendation-card { height: 100%; border: 1.5px solid var(--site-border); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; background: var(--site-surface, #fff); }
+.public-site .recommendation-card:has(input:checked) { border-color: #8e3b2c; box-shadow: inset 0 0 0 1px #8e3b2c; background: #fff8e4; }
+html[data-theme="dark"] .public-site .recommendation-card:has(input:checked) { border-color: var(--site-red); box-shadow: inset 0 0 0 1px var(--site-red); background: var(--site-tint); }
+.public-site .recommendation-card-heading { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 16px 18px; }
+.public-site .recommendation-card-heading p { margin: 0; }
+.public-site .recommendation-selected-mark { color: var(--site-deep-red); font-weight: 600; font-size: .78rem; }
+.public-site .recommendation-card:not(:has(input:checked)) .recommendation-selected-mark { visibility: hidden; }
+.public-site .recommendation-card .destination-visual { height: 150px; background: #fbe6a0; overflow: hidden; }
+.public-site .recommendation-card .destination-visual :is(svg,img) { width: 100%; height: 100%; display: block; object-fit: cover; }
+.public-site .recommendation-card-copy { padding: 18px; display: flex; flex: 1; flex-direction: column; gap: 10px; }
+.public-site .recommendation-card h3 { font-size: 1.35rem; line-height: 1.25; margin: 0; }
+.public-site .recommendation-meta { color: var(--site-deep-red); font-size: .88rem; font-weight: 600; margin: 0; }
+.public-site .recommendation-card .place-address { color: var(--site-muted); font-size: .82rem; margin: 0; }
+.public-site .recommendation-description { font-size: .9rem; margin: 0; }
+.public-site .recommendation-reason { padding: 12px 0; border-top: 1px solid var(--site-border); }
+.public-site .recommendation-reason h4 { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 6px; }
+.public-site .recommendation-reason p { font-size: .88rem; margin: 0; }
+.public-site .recommendation-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; margin-top: auto; }
+.public-site .recommendation-card-actions a, .public-site .recommendation-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 7px 13px; border: 1.5px solid var(--site-border); border-radius: 999px; text-decoration: none; font-size: .85rem; font-weight: 600; }
+.public-site .recommendation-toggle { cursor: pointer; background: var(--site-surface, #fff); }
+.public-site .recommendation-toggle input { width: 16px; height: 16px; min-height: 0; margin: 0; }
+.public-site .recommendation-toggle:focus-within { outline: 3px solid var(--site-gold); outline-offset: 3px; }
+.public-site .recommendation-toggle:has(input:checked) { border-color: var(--site-red); }
+.public-site .recommendation-section-title, .public-site .recommendation-alternatives { margin-top: 28px; }
+.public-site .recommendation-alternatives .recommendation-card .destination-visual { height: 100px; }
+.public-site .recommendation-refinements, .public-site .recommendation-limits { margin: 24px 0; color: var(--site-muted); }
+.public-site .recommendation-stop-count { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
+.public-site .recommendation-stop-count input { max-width: 100px; }
+@media(max-width: 700px) { .public-site .recommendation-grid { grid-template-columns: minmax(0, 1fr); } .public-site .recommendation-summary { gap: 14px; } .public-site .recommendation-preferences { gap: 14px; } }

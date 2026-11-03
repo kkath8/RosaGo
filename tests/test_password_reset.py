@@ -27,7 +27,7 @@ class PasswordResetTests(unittest.TestCase):
         replacement = patch.dict(self.globals, create_client=self.factory)
         replacement.start()
         self.addCleanup(replacement.stop)
-        self.data = {'new_password':'private-password-123', 'confirm_password':'private-password-123', 'csrf_token':self.csrf}
+        self.data = {'new_password':'Private-password-123!', 'confirm_password':'Private-password-123!', 'csrf_token':self.csrf}
 
     def submit(self, client=None, **changes):
         return (client or self.client).post('/reset-password', data=self.data | changes)
@@ -37,6 +37,8 @@ class PasswordResetTests(unittest.TestCase):
         self.assertEqual(page.status_code, 200)
         self.assertIn(b'name="new_password"', page.data)
         self.assertIn(b'name="confirm_password"', page.data)
+        self.assertEqual(page.data.count(b'class="required-mark"'), 2)
+        self.assertEqual(page.data.count(b'class="auth-sr-only"'), 2)
         self.assertNotIn(b'private-access', page.data)
         self.assertNotIn(b'Preview only', page.data)
         self.assertEqual(self.app.test_client().get('/reset-password').status_code, 403)
@@ -54,7 +56,7 @@ class PasswordResetTests(unittest.TestCase):
                         {'confirm_password':''}, {'confirm_password':'mismatch'}):
             response = self.submit(**changes)
             self.assertEqual(response.status_code, 400)
-            self.assertNotIn(b'private-password', response.data)
+            self.assertNotIn(self.data['new_password'].encode(), response.data)
             self.assertTrue(self.store.valid(self.handle))
         self.factory.assert_not_called()
 

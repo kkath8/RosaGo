@@ -97,7 +97,7 @@ class DraftServiceTests(unittest.TestCase):
                         {'start_date': '2028-02-29', 'end_date': '2028-03-06'},
                         {'start_date': '9999-12-31', 'end_date': '9999-12-31'},
                         {'daily_end_time': '23:59:59'},
-                        {'interests': sorted(service.CATEGORIES)}):
+                        {'interests': sorted(service.CATEGORIES)[:6]}):
             with self.subTest(changes=changes):
                 self.assertEqual(self.update(preferences=preferences(**changes)).revision, 2)
 
@@ -109,7 +109,7 @@ class DraftServiceTests(unittest.TestCase):
             del value[key]
             invalid.append(value)
         for key, values in {
-            'interests': [None, 'nature', [], ['nature'] * 2, ['nature'] * 7, [None], [1], [{}], ['unknown']],
+            'interests': [None, 'nature', [], ['nature'] * 2, ['nature'] * 7, sorted(service.CATEGORIES), [None], [1], [{}], ['unknown']],
             'companion_type': [None, [], 1, 'Solo', ' solo', 'unknown'],
             'budget_centavos': [-1, 10000001, True, 1.0, '1', {}, float('nan')],
             'timezone': [None, 'UTC', 'Asia/Manila ', 1],
