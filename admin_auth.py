@@ -15,9 +15,11 @@ def admin_required(view):
         try:
             allowed = is_current_admin(g.auth)
         except AdminAuthorizationError:
-            return 'Admin authorization is temporarily unavailable. Please try again.', 503
+            return render_admin_page('admin/access_error.html',
+                message='Admin authorization is temporarily unavailable. Please try again.'), 503
         if not allowed:
-            return 'Admin access required.', 403
+            return render_admin_page('admin/access_error.html',
+                message='Admin access required.'), 403
         return view(*args, **kwargs)
     return authorized
 

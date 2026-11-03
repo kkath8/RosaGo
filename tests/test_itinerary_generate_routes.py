@@ -57,7 +57,7 @@ class GenerateRouteTests(unittest.TestCase):
         self.assertEqual(self.current.preview.source.recommendation_policy_version, 'category-interest-v1')
         response = self.client.get(response.location)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'automatically selects', response.data)
+        self.assertIn(b'Recommended for You', response.data)
         self.assertIn(b'not time feasibility', response.data)
         self.adapter.assert_called_once()
         self.store.assert_called_once()
@@ -79,6 +79,19 @@ class GenerateRouteTests(unittest.TestCase):
         self.assertNotIn(b'<script>', self.client.get(quiz.REVIEW + '?notice=<script>').data)
         self.adapter.assert_not_called()
         self.store.assert_not_called()
+
+    def test_geography_changes_selected_set_in_stored_preview(self):
+        from test_itinerary_geography import located
+        self.current = replace(self.current, preferences=self.current.preferences | {
+            'start_date': '2026-11-01', 'end_date': '2026-11-01',
+            'trip_pace': 'balanced', 'interests': ['shopping']})
+        catalog = (located(1, 14.3), located(2, 14.1), located(3, 14.301), located(4, 14.302))
+        self.catalog.list_published.return_value = catalog
+        response = self.generate()
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(self.current.preview.source.selected_place_ids,
+                         tuple(catalog[n].id for n in (0, 2, 3)))
+        self.store.assert_called_once()
 
     def test_insufficient_matches_excludes_unmatched(self):
         self.generate()

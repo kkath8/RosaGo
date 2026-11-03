@@ -14,6 +14,7 @@ from postgrest.exceptions import APIError
 
 from normal_auth_coordinator import AuthenticatedContext
 from places_service import CATEGORIES
+from transport_modes import TRANSPORTATION
 from itinerary_preview import PreviewContractError, ValidatedPreview, validate_preview
 
 
@@ -22,8 +23,6 @@ DRAFT_PROJECTION = 'id,user_id,state,schema_version,revision,preferences,expires
 PREVIEW_DRAFT_PROJECTION = DRAFT_PROJECTION + ',preview'
 REQUIRED = frozenset(('interests', 'companion_type', 'start_date', 'end_date',
                       'daily_start_time', 'daily_end_time', 'transportation'))
-TRANSPORTATION = ('walking', 'bicycle', 'motorcycle', 'private_car',
-                  'public_transport', 'ride_hailing', 'mixed_transport')
 TRIP_PACES = ('relaxed', 'balanced', 'packed')
 ACTIVITIES = ('sightseeing', 'food_trip', 'shopping', 'outdoor_activities',
               'culture_heritage', 'relaxation')
@@ -331,3 +330,24 @@ def return_itinerary_draft_to_editing(context: AuthenticatedContext, draft_id,
     return _call(context, 'rosago_itinerary_draft_return_to_editing', {
         'p_draft_id': draft_id, 'p_expected_revision': expected_revision,
     }, draft_id, expected_revision + 1)
+
+
+def adjust_itinerary_draft_preview(context: AuthenticatedContext, draft_id,
+                                   expected_revision, preferences, candidate_preview) -> DraftResult:
+    """Single atomic RPC; never split preference and preview writes or retry."""
+    _context(context)
+    draft_id = _uuid(draft_id)
+    if type(expected_revision) is not int or not 1 <= expected_revision < MAX_REVISION:
+        raise DraftValidationError()
+    preferences = validate_complete_preferences(preferences)
+    try:
+        parsed = validate_preview(candidate_preview)
+    except (PreviewContractError, ValueError, TypeError):
+        raise DraftValidationError() from None
+    if (parsed.source.draft_id != draft_id or parsed.source.draft_revision != expected_revision
+            or any(preferences.get(key) != value for key, value in parsed.to_document()['constraints'].items())):
+        raise DraftValidationError()
+    return _call(context, 'rosago_itinerary_draft_adjust_preview', {
+        'p_draft_id': draft_id, 'p_expected_revision': expected_revision,
+        'p_preferences': preferences, 'p_candidate_preview': parsed.to_document(),
+    }, draft_id, expected_revision + 1, expected_state='preview_ready')

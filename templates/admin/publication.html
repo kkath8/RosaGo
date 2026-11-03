@@ -1,0 +1,9 @@
+{% extends 'admin/base.html' %}
+{% set labels = {'publish':'Publish Destination','draft':'Move Destination to Draft','archive':'Archive Destination','restore':'Restore Destination to Draft'} %}
+{% block title %}{{ labels[action] }} | RosaGo Admin{% endblock %}
+{% block content %}
+<div class="admin-utility-page"><p class="eyebrow">Administration · Publication</p>
+<section class="panel"><h1>{{ {'publish':'Publish destination?','archive':'Archive destination?','draft':'Move destination to Draft?','restore':'Restore destination to Draft?'}[action] }}</h1><p><strong>{{ place.name }}</strong></p>
+<p>{{ {'publish':'This destination will become available to RosaGo users.','archive':'This destination will be removed from normal user discovery but retained in Admin.','draft':'This destination will no longer be available in normal user discovery.','restore':'This destination will return to Draft for review. It will remain unavailable in normal user discovery until published.'}[action] }}</p>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><input type="hidden" name="expected_updated_at" value="{{ place.updated_at.isoformat() }}"><div class="form-actions actions"><button type="submit" class="button {{ 'warning-button' if action == 'archive' else '' }}">{{ labels[action] }}</button><a class="secondary-button" href="{{ url_for('admin.place_detail',slug=place.slug) }}">Cancel</a></div></form></section></div>
+{% endblock %}

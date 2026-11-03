@@ -1,0 +1,15 @@
+{% set primary = [('Dashboard','index'),('Explore','places_list'),('Planner','planner'),('My Trips','trips_list'),('Map & Transport','map_index'),('AI Assistant','assistant')] %}
+{% set groups = [
+ ('Library',[('Saved Places','features.saved'),('Visited Places','features.visited'),('Budget Planner','features.budget')]),
+ ('Account',[('Profile','user_index'),('Settings','settings'),('Alerts','alerts'),('Help','features.help_page'),('Terms','terms'),('Privacy','privacy')])] %}
+{% set active = request.endpoint or '' %}
+{% set active_primary = 'planner' if active.startswith('itinerary_') or active in ('trips_new','trips_create','features.save_preview') else 'trips_list' if active.startswith('trips_') or active in ('features.move_destination','features.remove_destination','features.bag','features.save_bag') else 'places_list' if active == 'places_detail' else active %}
+{% macro nav_link(label, endpoint) %}<a href="{{ url_for(endpoint) }}"{% if active_primary == endpoint or (endpoint == 'user_index' and active == 'user_profile_edit') %} aria-current="{{ 'page' if active == endpoint else 'true' }}"{% endif %}>{{ label }}</a>{% endmacro %}
+{% if mobile_more %}
+{{ nav_link('AI Assistant','assistant') }}
+{% for title, links in groups %}<h3 class="fh">{{ title }}</h3><div class="more-links">{% for label, endpoint in links %}{{ nav_link(label,endpoint) }}{% endfor %}</div>{% endfor %}
+<div class="header-account">{% if ui_authenticated or trip_state in ('ready','unavailable') %}<form method="post" action="{{ url_for('logout') }}"><button class="mini-button">Sign out</button></form>{% else %}<a href="{{ url_for('login') }}">Log in</a>{% endif %}</div>
+{% else %}
+{% for label, endpoint in primary %}{{ nav_link(label,endpoint) }}{% endfor %}
+{% for title, links in groups %}<details class="nav-dropdown"><summary{% if active in links | map(attribute=1) | list %} class="on"{% endif %}>{% if title == 'Account' %}<span class="user-avatar" data-avatar>{{ user_email[0]|upper if user_email else 'RG' }}</span><span class="account-nav-label">Account</span>{% else %}{{ title }}{% endif %}</summary><div class="dropdown-links">{% for label,endpoint in links %}{{ nav_link(label,endpoint) }}{% endfor %}{% if title == 'Account' %}<div class="header-account">{% if ui_authenticated or trip_state in ('ready','unavailable') %}<form method="post" action="{{ url_for('logout') }}"><button class="mini-button">Sign out</button></form>{% else %}<a href="{{ url_for('login') }}">Log in</a>{% endif %}</div>{% endif %}</div></details>{% endfor %}
+{% endif %}

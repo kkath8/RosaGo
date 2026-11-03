@@ -14,10 +14,14 @@ from uuid import UUID
 import httpx
 from postgrest.exceptions import APIError
 
-from place_model import CATEGORIES, Place
+from place_model import CATEGORIES, Place, TOURISM_TYPES, TOURISM_HOURS_STATUSES
 
 
 PROJECTION = 'id,name,slug,description,category,address,latitude,longitude,image_url,created_at,updated_at'
+TOURISM_FIELDS = ('tourism_type', 'tourism_category', 'tourism_opening_hours_raw',
+                  'tourism_closing_hours_raw', 'tourism_hours_status',
+                  'tourism_source', 'tourism_source_row')
+TOURISM_PROJECTION = PROJECTION + ',' + ','.join(TOURISM_FIELDS)
 _SLUG = re.compile(r'[a-z0-9]+(?:-[a-z0-9]+)*')
 _FIELDS = frozenset(PROJECTION.split(','))
 
@@ -77,6 +81,26 @@ def _coordinate(value, maximum):
     return float(value)
 
 
+def _tourism_metadata(row):
+    # Missing columns support legacy projections before migration 0011 is applied.
+    # Source text is bounded but never stripped, corrected or parsed as a schedule.
+    values = {field: row.get(field) for field in TOURISM_FIELDS}
+    for field, allowed in (('tourism_type', TOURISM_TYPES),
+                           ('tourism_hours_status', TOURISM_HOURS_STATUSES)):
+        value = values[field]
+        if value is not None and (type(value) is not str or value not in allowed):
+            raise PlacesConsistencyError()
+    for field, maximum in (('tourism_category', 250), ('tourism_opening_hours_raw', 250),
+                           ('tourism_closing_hours_raw', 250), ('tourism_source', 500)):
+        value = values[field]
+        if value is not None and (type(value) is not str or not 1 <= len(value) <= maximum):
+            raise PlacesConsistencyError()
+    source_row = values['tourism_source_row']
+    if source_row is not None and (type(source_row) is not int or not 2 <= source_row <= 1048576):
+        raise PlacesConsistencyError()
+    return values
+
+
 def parse_place_row(row) -> Place:
     """Validate a projected public Place row without I/O or publication checks.
 
@@ -96,13 +120,17 @@ def parse_place_row(row) -> Place:
         _text(image_url, 2048)
         if not image_url.startswith('https://') or len(image_url) <= 8:
             raise PlacesConsistencyError()
+    latitude, longitude = row['latitude'], row['longitude']
+    if (latitude is None) != (longitude is None):
+        raise PlacesConsistencyError()
     return Place(
         id=_uuid(row['id']), name=_text(row['name'], 150), slug=slug,
         description=_text(row['description'], 3000), category=category,
         address=_text(row['address'], 500),
-        latitude=_coordinate(row['latitude'], 90),
-        longitude=_coordinate(row['longitude'], 180), image_url=image_url,
-        created_at=_timestamp(row['created_at']), updated_at=_timestamp(row['updated_at']))
+        latitude=None if latitude is None else _coordinate(latitude, 90),
+        longitude=None if longitude is None else _coordinate(longitude, 180), image_url=image_url,
+        created_at=_timestamp(row['created_at']), updated_at=_timestamp(row['updated_at']),
+        **_tourism_metadata(row))
 
 
 def _rows(response, maximum):
@@ -139,10 +167,14 @@ class PlacesService:
     Programming errors and cancellation signals propagate unchanged.
     """
 
-    def __init__(self, public_client_factory):
+    def __init__(self, public_client_factory, *, tourism_metadata_enabled=False):
         if not callable(public_client_factory):
             raise TypeError('A scoped public client factory is required.')
         self._clients = public_client_factory
+        if type(tourism_metadata_enabled) is not bool:
+            raise TypeError('Tourism metadata enablement must be boolean.')
+        # Explicit rollout switch: never select unapplied database columns.
+        self._projection = TOURISM_PROJECTION if tourism_metadata_enabled else PROJECTION
 
     def list_published(self, *, category: str | None = None,
                        limit: int = 50, offset: int = 0) -> tuple[Place, ...]:
@@ -152,7 +184,7 @@ class PlacesService:
             raise PlacesValidationError()
         try:
             with self._clients() as client:
-                query = client.table('places').select(PROJECTION).eq('status', 'published')
+                query = client.table('places').select(self._projection).eq('status', 'published')
                 if category is not None:
                     query = query.eq('category', category)
                 response = (query.order('slug', desc=False)
@@ -178,7 +210,7 @@ class PlacesService:
         slug = _lookup_slug(slug)
         try:
             with self._clients() as client:
-                response = (client.table('places').select(PROJECTION)
+                response = (client.table('places').select(self._projection)
                             .eq('status', 'published').eq('slug', slug)
                             .limit(2).retry(False).execute())
                 rows = _rows(response, 1)

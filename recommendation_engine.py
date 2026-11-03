@@ -1,9 +1,9 @@
-"""Category-only personalized candidates; no itinerary generation or I/O.
+"""Category-eligible personalized candidates; no itinerary generation or I/O.
 
 Callers supply a validated preference dict and a bounded list/tuple of published
 Places. Publication and full structural validation remain caller responsibilities.
-Only interests, Place identity, and category are checked here. No other preference
-or Place attribute is read, interpreted, or retained in the result.
+Interests establish eligibility. Database tourism_type breaks ties within each
+eligibility partition; it never creates category matches or changes the score.
 """
 from dataclasses import dataclass
 from uuid import UUID
@@ -11,7 +11,8 @@ from uuid import UUID
 from place_model import CATEGORIES, Place
 
 
-POLICY_VERSION = 'category-interest-v1'
+POLICY_VERSION = 'category-interest-tourism-v2'
+TOURISM_PRIORITY = {'Local': 0, None: 1, 'Common': 2}
 # Matches the catalog service's maximum page size; no silent truncation.
 MAX_CANDIDATES = 100
 CATEGORY_INTEREST_MATCH = 'CATEGORY_INTEREST_MATCH'
@@ -39,6 +40,7 @@ class RecommendationCandidate:
     deterministic_score: int
     matched_signals: tuple[MatchedSignal, ...]
     unknown_constraints: tuple[str, ...] = UNKNOWN_CONSTRAINTS
+    tourism_priority: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,7 +63,7 @@ class RecommendationResult:
 
 
 def rank_candidates(preferences: dict, places: list[Place] | tuple[Place, ...]) -> RecommendationResult:
-    """Rank by category match descending, then canonical UUID ascending.
+    """Rank by category match, Local/NULL/Common, then canonical UUID.
 
     Reject invalid interests, noncanonical/missing UUIDs, unsupported categories,
     duplicate identities, and unbounded/oversized collections as one fixed error.
@@ -90,14 +92,18 @@ def rank_candidates(preferences: dict, places: list[Place] | tuple[Place, ...]) 
         except ValueError:
             raise RecommendationInputError() from None
         if (place.id != canonical_id or canonical_id in seen
-                or type(place.category) is not str or place.category not in CATEGORIES):
+                or type(place.category) is not str or place.category not in CATEGORIES
+                or (place.tourism_type is not None and type(place.tourism_type) is not str)
+                or place.tourism_type not in TOURISM_PRIORITY):
             raise RecommendationInputError()
         seen.add(canonical_id)
         match = place.category in interests
         signals = (MatchedSignal(CATEGORY_INTEREST_MATCH, place.category),) if match else ()
-        candidates.append(RecommendationCandidate(canonical_id, place.category, int(match), signals))
+        candidates.append(RecommendationCandidate(canonical_id, place.category, int(match), signals,
+                                                  tourism_priority=TOURISM_PRIORITY[place.tourism_type]))
 
-    candidates.sort(key=lambda candidate: (-candidate.deterministic_score, candidate.place_id))
+    candidates.sort(key=lambda candidate: (-candidate.deterministic_score,
+                                           candidate.tourism_priority, candidate.place_id))
     return RecommendationResult(
         matched=tuple(candidate for candidate in candidates if candidate.deterministic_score == 1),
         unmatched=tuple(candidate for candidate in candidates if candidate.deterministic_score == 0),

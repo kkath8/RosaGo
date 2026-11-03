@@ -2,7 +2,7 @@
 {% block title %}Trip Preferences | RosaGo{% endblock %}
 {% block extra_head %}<meta name="referrer" content="same-origin">{% endblock %}
 {% block content %}
-{% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private Car', 'public_transport': 'Public Transport', 'ride_hailing': 'Ride-Hailing / Taxi', 'mixed_transport': 'Mixed Transport', 'sightseeing': 'Sightseeing', 'food_trip': 'Food Trip', 'outdoor_activities': 'Outdoor Activities', 'culture_heritage': 'Culture & Heritage', 'relaxation': 'Relaxation', 'indoor': 'Mostly Indoor', 'outdoor': 'Mostly Outdoor', 'mixed': 'Mix of Both'} %}
+{% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'industrial': 'Industrial Tourism', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private Car', 'public_transport': 'Public Transport', 'ride_hailing': 'Ride-Hailing / Taxi', 'mixed_transport': 'Mixed Transport', 'sightseeing': 'Sightseeing', 'food_trip': 'Food Trip', 'outdoor_activities': 'Outdoor Activities', 'culture_heritage': 'Culture & Heritage', 'relaxation': 'Relaxation', 'indoor': 'Mostly Indoor', 'outdoor': 'Mostly Outdoor', 'mixed': 'Mix of Both'} %}
 {% set pace_notes = {'relaxed': 'Fewer suggested destinations per day', 'balanced': 'Moderate number of suggested destinations per day', 'packed': 'More suggested destinations per day'} %}
 {% macro choices(name, options, kind, descriptions=none) %}
 <div class="itinerary-choices{% if descriptions %} itinerary-choices-detailed{% endif %}">
@@ -14,6 +14,9 @@
     {% endfor %}
 </div>
 {% endmacro %}
+{% include 'partials/smart_options.html' %}
+<button class="site-button site-button-secondary" type="button" data-apply-profile-defaults{% if not website_settings.personalized %} disabled{% endif %}>Use my travel preferences</button>
+<p class="itinerary-help" data-profile-budget-note hidden></p>
 <section class="itinerary-page" aria-labelledby="quiz-title">
     <header class="itinerary-heading">
         <p class="eyebrow">Personalized itinerary · Santa Rosa, Laguna</p>
@@ -21,11 +24,7 @@
         <p class="page-subheading">Tell us what kind of trip you're looking for and RosaGo will use your preferences to personalize your itinerary.</p>
         <p class="itinerary-help">Start with your preferences. RosaGo will select matching destinations for an untimed itinerary preview.</p>
     </header>
-    <ol class="itinerary-progress" aria-label="Planning progress">
-        <li aria-current="step"><span aria-hidden="true">1</span> Preferences</li>
-        <li><span aria-hidden="true">2</span> Review</li>
-        <li><span aria-hidden="true">3</span> Preview</li>
-    </ol>
+    {% with planner_step='preferences' %}{% include 'partials/planner_progress.html' %}{% endwith %}
     <div class="card itinerary-card">
         <div class="itinerary-card-heading">
             <h2>Trip Preferences</h2>
@@ -37,7 +36,7 @@
             <p>{{ message }}</p>
         </div>
         {% endif %}
-        <form class="itinerary-form" method="post" action="{{ url_for('itinerary_preferences', draft_id=draft_id) }}"{% if message %} aria-describedby="quiz-error"{% endif %}>
+        <form class="itinerary-form" method="post" action="{{ url_for('itinerary_preferences', draft_id=draft_id) }}" data-profile-defaults-eligible="{{ 'true' if profile_defaults_eligible else 'false' }}"{% if message %} aria-describedby="quiz-error"{% endif %}>
             <input type="hidden" name="csrf_token" value="{{ csrf }}">
             <input type="hidden" name="expected_revision" value="{{ revision }}">
             <fieldset class="itinerary-section" aria-describedby="interests-help">
@@ -81,6 +80,7 @@
                 <legend><span class="itinerary-number" aria-hidden="true">06</span> Transportation</legend>
                 <p class="itinerary-help">How would you prefer to get around?</p>
                 {{ choices('transportation', transportation, 'radio') }}
+                <p class="itinerary-help"><a href="{{ url_for('transport', transportation=values.get('transportation', '')) }}">Check available transport routes</a>. Routing modes depend on the provider; your saved preference is preserved.</p>
             </fieldset>
             <fieldset class="itinerary-section">
                 <legend><span class="itinerary-number" aria-hidden="true">07</span> Trip Pace</legend>
@@ -107,7 +107,7 @@
                 </div>
             </fieldset>
             <div class="itinerary-actions">
-                <a class="text-link" href="{{ url_for('trips_new') }}">Back to Planner</a>
+                <a class="secondary-button" href="{{ url_for('planner') }}">Back to Planner</a>
                 <button class="site-button" type="submit">Review My Trip <span aria-hidden="true">→</span></button>
             </div>
         </form>

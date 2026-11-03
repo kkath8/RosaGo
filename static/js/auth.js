@@ -9,6 +9,13 @@ const fields = {
     terms: document.getElementById("terms"),
 };
 let submitted = false;
+let consentInteracted = false;
+
+const passwordPolicy = RosaGoPasswordPolicy.create(fields.password);
+
+function updatePasswordChecklist() {
+    passwordPolicy.update();
+}
 
 function validationMessage(field) {
     if (field === fields.terms) {
@@ -27,11 +34,11 @@ function validationMessage(field) {
     if (field === fields.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value.trim())) {
         return "Enter a valid email address, such as name@example.com.";
     }
-    if (field === fields.password && field.value.length < 8) {
-        return "Use at least 8 characters for your password.";
+    if (field === fields.password) {
+        return passwordPolicy.message();
     }
     if (field === fields.confirmPassword && field.value !== fields.password.value) {
-        return "Passwords do not match. Enter the same password in both fields.";
+        return "Passwords do not match.";
     }
     return "";
 }
@@ -58,25 +65,33 @@ document.querySelectorAll(".password-toggle").forEach((button) => {
 });
 
 Object.values(fields).forEach((field) => {
-    field.addEventListener("input", () => {
+    const onEdit = () => {
         statusMessage.textContent = "";
         delete statusMessage.dataset.state;
-        if (submitted) {
+        if (field === fields.password) updatePasswordChecklist();
+        // Also clear server-rendered errors when editing after a failed POST.
+        if (field === fields.terms) consentInteracted = true;
+        if (submitted || field.getAttribute('aria-invalid') === 'true'
+                || (field === fields.confirmPassword && field.value)
+                || (field === fields.terms && consentInteracted)) {
             validateField(field);
-            if (field === fields.password && fields.confirmPassword.value) {
-                validateField(fields.confirmPassword);
-            }
         }
-    });
+        if (field === fields.password && fields.confirmPassword.value) {
+            validateField(fields.confirmPassword);
+        }
+    };
+    field.addEventListener("input", onEdit);
+    if (field === fields.terms) field.addEventListener("change", onEdit);
 });
 
 form.addEventListener("submit", (event) => {
     submitted = true;
+    passwordPolicy.update();
     const invalidFields = Object.values(fields).filter((field) => !validateField(field));
     if (invalidFields.length) {
         event.preventDefault();
-        statusMessage.dataset.state = "error";
-        statusMessage.textContent = "Please correct the highlighted fields and try again.";
+        statusMessage.textContent = "";
+        delete statusMessage.dataset.state;
         invalidFields[0].focus();
         return;
     }
@@ -85,10 +100,14 @@ form.addEventListener("submit", (event) => {
     statusMessage.textContent = "Creating your account…";
 });
 
+updatePasswordChecklist();
 if (statusMessage.textContent.trim()) {
     statusMessage.focus();
+} else {
+    Object.values(fields).find(field => field.getAttribute('aria-invalid') === 'true')?.focus();
 }
 
 window.addEventListener("pageshow", () => {
     document.getElementById("create-account").disabled = false;
+    updatePasswordChecklist();
 });

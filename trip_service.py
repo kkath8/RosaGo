@@ -205,6 +205,43 @@ def list_user_trips(context: AuthenticatedContext, *, limit=50, offset=0) -> tup
     return trips
 
 
+def list_dashboard_upcoming_trips(context: AuthenticatedContext, *, today: date) -> tuple[Trip, ...]:
+    """The next three dated trips, including plans beyond the reminder window."""
+    owner = _context(context)
+    if type(today) is not date:
+        raise TripValidationError()
+    response = _execute(context.client.table('trips').select(TRIP_PROJECTION)
+        .eq('user_id', owner).gte('visit_date', today.isoformat())
+        .order('visit_date', desc=False).order('id', desc=False).range(0, 2))
+    trips = tuple(_trip(row, owner) for row in _rows(response, 3))
+    if (any(trip.visit_date is None or trip.visit_date < today for trip in trips)
+            or len({trip.id for trip in trips}) != len(trips)
+            or list(trips) != sorted(trips, key=lambda trip: (trip.visit_date, trip.id))):
+        raise TripConsistencyError()
+    return trips
+
+
+def list_upcoming_trips(context: AuthenticatedContext, *, today: date, days=7, limit=51) -> tuple[Trip, ...]:
+    """Read dated reminders by visit date, including plans created long ago.
+
+    The caller may use one extra row to disclose a bounded-page continuation.
+    Ownership is checked in the query, row parser and the existing database RLS.
+    """
+    owner = _context(context)
+    if type(today) is not date or not _integer(days, 0, 7) or not _integer(limit, 1, 100):
+        raise TripValidationError()
+    end = date.fromordinal(min(date.max.toordinal(), today.toordinal() + days))
+    response = _execute(context.client.table('trips').select(TRIP_PROJECTION)
+        .eq('user_id', owner).gte('visit_date', today.isoformat()).lte('visit_date', end.isoformat())
+        .order('visit_date', desc=False).order('id', desc=False).range(0, limit - 1))
+    trips = tuple(_trip(row, owner) for row in _rows(response, limit))
+    if (any(trip.visit_date is None or not today <= trip.visit_date <= end for trip in trips)
+            or len({trip.id for trip in trips}) != len(trips)
+            or list(trips) != sorted(trips, key=lambda trip: (trip.visit_date, trip.id))):
+        raise TripConsistencyError()
+    return trips
+
+
 def get_user_trip(context: AuthenticatedContext, trip_id, *, membership_limit=50,
                   after_position=0) -> TripDetail | None:
     """Read metadata and one membership page, hydrating only published places.

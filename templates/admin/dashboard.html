@@ -1,13 +1,35 @@
 {% extends 'admin/base.html' %}
-{% block title %}Dashboard · RosaGo Admin{% endblock %}
+{% block title %}Dashboard &mdash; RosaGo Admin{% endblock %}
 {% block content %}
-<p class="eyebrow">Overview</p><h1>Admin Dashboard</h1>
-<p class="intro">A dedicated space to oversee RosaGo’s destination catalog.</p>
-<section aria-labelledby="summary-heading"><h2 id="summary-heading">Destination overview</h2>
+<div class="dashboard-heading"><div><p class="eyebrow">Administration</p><h1>Dashboard</h1><p class="intro">Manage RosaGo destinations and monitor system activity.</p></div><span class="workspace-label">Catalog overview</span></div>
 {% if counts is none %}<p class="notice" role="alert">Destination counts are unavailable. Please try again later.</p>{% endif %}
-<div class="metric-grid">{% for key, label in [('total', 'Total Destinations'), ('published', 'Published'), ('draft', 'Draft'), ('archived', 'Archived')] %}
-<article class="metric"><h3>{{ label }}</h3>{% if counts is not none %}<p class="metric-value">{{ counts[key] }}</p>{% else %}<p class="metric-value" aria-label="Unavailable">—</p><p class="muted">Unavailable</p>{% endif %}</article>
-{% endfor %}</div></section>
-<section class="panel management"><div><p class="eyebrow">Catalog workspace</p><h2>Destination Management</h2><p>Browse destination records and their publication status. This workspace is read-only.</p></div><a class="button" href="{{ url_for('admin.places') }}">View destinations <span aria-hidden="true">→</span></a></section>
-<a class="text-link" href="{{ url_for('index') }}">View the User side <span aria-hidden="true">↗</span></a>
+<section aria-label="Destination summary" class="metric-grid">
+{% set summary = [('published', 'Published', 'Available to RosaGo users'), ('draft', 'Draft', 'Not publicly visible'), ('archived', 'Archived', 'Retained but inactive'), ('total', 'Total destinations', 'Across all publication statuses')] %}
+{% for key, label, description in summary %}<article class="metric metric-{{ key }}"><h2>{{ label }}</h2>{% if key in ('local', 'common') %}<p class="metric-value">{{ health[key] }}</p>{% elif counts is not none %}<p class="metric-value">{{ counts[key] }}</p>{% else %}<p class="metric-value" aria-label="Unavailable">&mdash;</p>{% endif %}<p class="muted">{{ description }}</p></article>{% endfor %}
+</section>
+<section class="metric-grid" aria-label="Operational summary">{% for label,value in [('Users',overview.users_total if overview else none),('Saved Trips / Itineraries',overview.trips_total if overview else none),('Destinations Needing Attention',attention)] %}<article class="metric"><h2>{{ label }}</h2><p class="operational-value">{{ value if value is not none else 'Unavailable' }}</p>{% if loop.last %}<a href="{{ url_for('admin.insights',scope='all',_anchor='needs-attention') }}">Review Needs Attention</a>{% endif %}</article>{% endfor %}</section>
+<div class="dashboard-columns">
+<section class="panel health-panel" id="catalog-health" aria-labelledby="health-title"><div class="section-heading"><h2 id="health-title">Catalog Health</h2><span class="scope-label">Published destinations</span></div>
+{% if health is none %}<p class="notice" role="status">Catalog health is temporarily unavailable. Summary counts remain separate.</p>
+{% else %}
+<dl class="health-list">
+<div><dt>Coordinates<span>Recorded destination locations</span></dt><dd><strong>{{ health.with_coordinates }} / {{ health.published }}</strong><span>{{ health.missing_coordinates }} missing coordinates</span></dd></div>
+<div><dt>Tourism Type<span>Local / Common classification</span></dt><dd>{% if health.local is not none %}<strong>{{ health.local }} Local <span class="inline-divider">/</span> {{ health.common }} Common</strong><span>{{ health.unclassified }} not assigned</span>{% else %}<strong class="unavailable-label">Unavailable</strong><span>Tourism data is not enabled</span>{% endif %}</dd></div>
+<div><dt>Weather metadata<span>Curated destination exposure</span></dt><dd>{% if health.weather_classified is not none %}<strong>{{ health.weather_classified }} classified</strong><span>{{ health.weather_unknown }} unknown</span>{% else %}<strong class="unavailable-label">Unavailable</strong><span>Curation file could not be loaded</span>{% endif %}</dd></div>
+</dl>
+{% endif %}
+<p class="section-note">Missing location or exposure data remains unknown.</p></section>
+<section class="panel quick-management" aria-labelledby="quick-title"><h2 id="quick-title">Quick Actions</h2><div class="quick-actions">{% for endpoint,label in [('admin.new_place','Add Destination'),('admin.places','Manage Destinations'),('admin.users','View Users'),('admin.insights','Catalog Insights'),('admin.system','System & Weather')] %}<a class="{{ 'button' if loop.first else 'secondary-button' }}" href="{{ url_for(endpoint) }}">{{ label }}</a>{% endfor %}<a class="secondary-button" href="{{ url_for('admin.places',status='draft') }}">Review Drafts</a></div></section>
+</div>
+<div class="dashboard-columns distribution-columns">
+<section class="panel" aria-labelledby="status-title"><div class="section-heading"><h2 id="status-title">Destination Status</h2><span class="scope-label">All destinations</span></div>
+<table class="distribution-table"><caption class="visually-hidden">Destination publication status distribution</caption><thead><tr><th scope="col">Status</th><th scope="col" class="count-cell">Count</th><th scope="col">Meaning</th></tr></thead><tbody>
+{% for key,label,meaning in [('published','Published','Visible to users'),('draft','Draft','Not publicly visible'),('archived','Archived','Retained but inactive')] %}<tr><th scope="row"><span class="status-badge status-{{ key }}">{{ label }}</span></th><td class="count-cell">{{ counts[key] if counts is not none else '—' }}</td><td>{{ meaning }}</td></tr>{% endfor %}
+</tbody></table></section>
+<section class="panel" aria-labelledby="tourism-title"><div class="section-heading"><h2 id="tourism-title">Tourism Type</h2><span class="scope-label">Published destinations</span></div>
+{% if health is not none and health.local is not none %}<table class="distribution-table"><caption class="visually-hidden">Published destination Tourism Type distribution</caption><thead><tr><th scope="col">Classification</th><th scope="col" class="count-cell">Count</th></tr></thead><tbody>{% for label, value in [('Local',health.local),('Common',health.common),('Not assigned',health.unclassified)] %}<tr><th scope="row">{{ label }}</th><td class="count-cell">{{ value }}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="unavailable-state">Tourism Type counts are unavailable.</p>{% endif %}
+<p class="section-note">Tourism Type and publication status are separate classifications.</p></section>
+</div>
+<p class="dashboard-timestamp">Updated <time datetime="{{ observed_at.isoformat() }}">{{ observed_at.strftime('%d %b %Y, %I:%M %p') }}</time> · Asia/Manila<span>Counts reflect separate catalog reads.</span></p>
 {% endblock %}

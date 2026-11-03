@@ -76,7 +76,8 @@ class DevelopmentPlacesSeedTests(unittest.TestCase):
         published = [r for r in self.seed if r['status'] == 'published']
         self.assertEqual(Counter(r['category'] for r in published),
                          {'attraction': 2, 'dining': 2, 'shopping': 1, 'accommodation': 1, 'nature': 2, 'heritage': 2})
-        self.assertEqual({r['category'] for r in published}, CATEGORIES)
+        # The fixed v1 fixture predates the industrial category.
+        self.assertEqual({r['category'] for r in published}, CATEGORIES - {'industrial'})
         self.assertEqual(Counter(r['category'] for r in self.seed),
                          {'attraction': 3, 'dining': 2, 'shopping': 1, 'accommodation': 1, 'nature': 2, 'heritage': 3})
 

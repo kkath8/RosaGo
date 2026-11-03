@@ -1,68 +1,140 @@
 {% extends 'base.html' %}
-{% block title %}Personalized Itinerary Preview | RosaGo{% endblock %}
+{% block title %}Your Personalized Itinerary | RosaGo{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/itinerary-preview.css') }}">
+<script src="{{ url_for('static', filename='js/itinerary-preview.js') }}" defer></script>
+{% endblock %}
 {% block content %}
-{% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private car', 'public_transport': 'Public transport', 'ride_hailing': 'Ride-hailing / Taxi', 'mixed_transport': 'Mixed transport'} %}
-<section class="itinerary-page preview-page" aria-labelledby="preview-title">
-    <header class="itinerary-heading">
-        <p class="eyebrow">Personalized planning · Santa Rosa, Laguna</p>
-        <h1 id="preview-title" class="page-heading">Personalized Itinerary Preview</h1>
-        <p class="page-subheading">Your personalized destinations, recommended and organized by RosaGo.</p>
+{% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'industrial': 'Industrial Tourism', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private car', 'public_transport': 'Public transport', 'ride_hailing': 'Ride-hailing / Taxi', 'mixed_transport': 'Mixed transport'} %}
+{% macro revision_fields() %}
+<input type="hidden" name="csrf_token" value="{{ csrf }}">
+<input type="hidden" name="expected_revision" value="{{ revision }}">
+{% endmacro %}
+<section class="itinerary-page preview-page" aria-labelledby="preview-title" data-revision="{{ revision }}">
+    {% with planner_step='itinerary' %}{% include 'partials/planner_progress.html' %}{% endwith %}
+    <header class="preview-heading">
+        <p class="eyebrow">Your Santa Rosa trip</p>
+        <h1 id="preview-title" class="page-heading">Your Personalized Itinerary</h1>
+        <p class="page-subheading">Based on your preferences, here is your recommended Santa Rosa itinerary.</p>
     </header>
-    <ol class="itinerary-progress" aria-label="Planning progress">
-        <li class="is-complete"><span aria-hidden="true">✓</span> Preferences</li>
-        <li class="is-complete"><span aria-hidden="true">✓</span> Review</li>
-        <li aria-current="step"><span aria-hidden="true">3</span> Preview</li>
-    </ol>
-    <section class="card itinerary-card preview-summary" aria-label="Trip overview">
-        <div class="preview-overview">
-            <div><p class="eyebrow">Your visit</p><p class="preview-date-range"><time datetime="{{ constraints.start_date.isoformat() }}">{{ constraints.start_date.strftime('%b %d, %Y') }}</time>{% if constraints.end_date != constraints.start_date %} – <time datetime="{{ constraints.end_date.isoformat() }}">{{ constraints.end_date.strftime('%b %d, %Y') }}</time>{% endif %}</p></div>
-            <p class="preview-counts">{{ day_count }} {{ 'day' if day_count == 1 else 'days' }} <span aria-hidden="true">·</span> {{ destination_count }} {{ 'destination' if destination_count == 1 else 'destinations' }}</p>
-        </div>
-        <dl class="itinerary-summary">
-            <div><dt>Requested daily planning window</dt><dd>{{ constraints.daily_start_time }} – {{ constraints.daily_end_time }}<small>{{ constraints.timezone }} · Not assigned visit times</small></dd></div>
-            <div><dt>Transportation preference</dt><dd>{{ labels[constraints.transportation] }}</dd></div>
-            <div><dt>Trip pace preference</dt><dd>{{ constraints.trip_pace | title }}</dd></div>
-            {% if constraints.budget_centavos is not none %}<div><dt>Requested budget per person</dt><dd>PHP {{ '{:,}'.format(constraints.budget_centavos // 100) }}.{{ '%02d' | format(constraints.budget_centavos % 100) }}<small>For the whole itinerary · Costs not evaluated</small></dd></div>{% endif %}
-        </dl>
+    <div class="preview-top-actions">
+        <form method="post" action="{{ url_for('itinerary_preview_edit', draft_id=draft_id) }}">{{ revision_fields() }}<button class="secondary-button" type="submit">Edit Preferences</button></form>
+        {% if not message %}<a class="site-button" href="#preview-save" data-open-save>Save to My Trips</a><small>Preview — not saved yet</small>{% endif %}
+    </div>
+    <section class="card preview-summary" aria-labelledby="preview-summary-title">
+        <h2 id="preview-summary-title" class="eyebrow">Your trip</h2>
+        <ul class="preview-summary-values">
+            <li><strong>{{ destination_count }}</strong> {{ 'destination' if destination_count == 1 else 'destinations' }}</li>
+            {% if constraints.trip_pace %}<li>{{ constraints.trip_pace | title }} pace</li>{% endif %}
+            {% for interest in preview_interests %}<li>{{ labels.get(interest, interest | title) }}</li>{% endfor %}
+            {% if constraints.start_date %}<li><time datetime="{{ constraints.start_date.isoformat() }}">{{ constraints.start_date.strftime('%b %d, %Y') }}</time>{% if constraints.end_date and constraints.end_date != constraints.start_date %} – <time datetime="{{ constraints.end_date.isoformat() }}">{{ constraints.end_date.strftime('%b %d, %Y') }}</time>{% endif %}</li>{% endif %}
+        </ul>
+        <details class="preview-plan-details"><summary>Planning details</summary>
+            <p>{{ day_count }} {{ 'day' if day_count == 1 else 'days' }} · {{ labels.get(constraints.transportation, constraints.transportation) }}</p>
+            <p>Requested daily planning window: {{ constraints.daily_start_time }} – {{ constraints.daily_end_time }} ({{ constraints.timezone }}).</p>
+            {% if constraints.budget_centavos is not none %}<p>Requested budget per person: PHP {{ '{:,}'.format(constraints.budget_centavos // 100) }}.{{ '%02d' | format(constraints.budget_centavos % 100) }}. Costs not evaluated.</p>{% endif %}
+            <p>An untimed plan: exact visit times, travel times, operating hours, costs, weather conditions, and route optimization are not yet applied. Pace controls the suggested count, not time feasibility.</p>
+        </details>
     </section>
-    <aside class="itinerary-notice preview-note" aria-label="About this preview">
-        <div><p>Generate Personalized Itinerary automatically selects an initial set from currently published destinations matching your interests. Planning pace controls the suggested count, not time feasibility. If fewer matches are available, only those matches are included.</p><strong>An untimed plan</strong><p>This preview organizes your selected destinations by day. Exact visit times, travel times, operating hours, costs, weather conditions, and route optimization are not yet applied.</p></div>
-    </aside>
+    {% if not message %}
+    <details class="card preview-save" id="preview-save">
+        <summary>Save to My Trips</summary>
+        <form method="post" action="{{ url_for('features.save_preview', draft_id=draft_id) }}">
+            {{ revision_fields() }}
+            <p class="itinerary-help">Give your trip a name. Saving supports up to 20 destinations.</p>
+            <div class="field"><label for="preview-trip-name">Trip name</label><input id="preview-trip-name" name="name" required maxlength="100" value="Santa Rosa trip"></div>
+            <button class="site-button" type="submit">Save to My Trips</button>
+        </form>
+    </details>
+    {% endif %}
     {% if message %}
     <div class="itinerary-error" role="alert"><strong>Preview unavailable</strong><p>{{ message }}</p></div>
     {% else %}
-    {% if has_test_records %}<p class="catalog-disclosure">Development preview: places marked “Test record” are synthetic examples, not real businesses or attractions. They are not official tourism records or endorsed by the Santa Rosa City Tourism Office.</p>{% endif %}
-    <div class="preview-days">
-        {% for day in days %}
-        <section class="card itinerary-card preview-day" aria-labelledby="preview-day-{{ loop.index }}">
-            <header class="preview-day-heading"><h2 id="preview-day-{{ loop.index }}">Day {{ loop.index }}</h2><time datetime="{{ day.date.isoformat() }}">{{ day.date.strftime('%A, %b %d') }}</time></header>
-            {% if day.stops %}
-            <ol class="preview-stops" start="{{ day.stops[0].order }}">
-                {% for stop in day.stops %}
-                <li value="{{ stop.order }}">
-                    <article class="preview-stop">
-                        <p class="place-category">{{ labels[stop.place.category] }}</p>
-                        <h3>{{ stop.place.name }}</h3>
-                        {% if stop.place.slug.startswith('rosago-test-v1-') %}<span class="badge destination-test-label">Test record</span>{% endif %}
-                        <p class="place-address">{{ stop.place.address }}</p>
-                        <a class="text-link" href="{{ url_for('places_detail', slug=stop.place.slug) }}">View destination details</a>
-                    </article>
-                </li>
-                {% endfor %}
-            </ol>
-            {% else %}<p class="itinerary-muted">No selected destinations are assigned to this day.</p>{% endif %}
-        </section>
-        {% endfor %}
-    </div>
+    <section class="preview-recommendations" aria-labelledby="recommended-title">
+        <header><p class="eyebrow">Made for your visit</p><h2 id="recommended-title">Recommended for You</h2><p class="itinerary-help">Selected based on your travel preferences.</p></header>
+        {% if has_test_records %}<p class="catalog-disclosure">Development data: places marked “Test record” are synthetic examples, not real businesses or attractions. They are not official tourism records or endorsed by the Santa Rosa City Tourism Office.</p>{% endif %}
+        <div class="preview-days" id="preview-days">
+            {% for day in days %}
+            <section class="card itinerary-card preview-day" aria-labelledby="preview-day-{{ loop.index }}">
+                <header class="preview-day-heading"><h3 id="preview-day-{{ loop.index }}">Day {{ loop.index }}</h3><time datetime="{{ day.date.isoformat() }}">{{ day.date.strftime('%A, %b %d') }}</time></header>
+                {% if day.stops %}
+                <ol class="preview-stops" start="{{ day.stops[0].order }}">
+                    {% for stop in day.stops %}
+                    <li value="{{ stop.order }}">
+                        <article class="preview-stop">
+                            <div class="preview-stop-label"><span>Stop {{ stop.order }}</span><span class="preview-recommended-badge">Recommended</span></div>
+                            <div class="preview-stop-content">
+                                {% with place=stop.place %}{% include 'partials/place_visual.html' %}{% endwith %}
+                                <div class="preview-stop-copy">
+                                    <h4>{{ stop.place.name }}</h4>
+                                    <p class="preview-place-meta">{{ labels.get(stop.place.category, stop.place.category | title) }}{% if stop.place.tourism_type %} · {{ stop.place.tourism_type }}{% endif %}</p>
+                                    {% if stop.place.slug.startswith('rosago-test-v1-') %}<span class="badge destination-test-label">Test record</span>{% endif %}
+                                    {% if stop.place.address %}<p class="place-address">{{ stop.place.address }}</p>{% endif %}
+                                    {% if stop.place.description %}<p class="preview-description">{{ stop.place.description | truncate(160, true) }}</p>{% endif %}
+                                    {% if stop.place.category in preview_interests %}<p class="preview-fit"><strong>Why it fits your trip:</strong> Matches your {{ labels.get(stop.place.category, stop.place.category | title) }} interest.</p>{% endif %}
+                                    <div class="preview-card-actions"><a class="secondary-button" href="{{ url_for('places_detail', slug=stop.place.slug) }}">View Details</a><a class="secondary-button" href="{{ url_for('map_index', destination=stop.place.slug) }}">View on Map</a></div>
+                                </div>
+                            </div>
+                        </article>
+                    </li>
+                    {% endfor %}
+                </ol>
+                {% else %}<p class="itinerary-muted">No selected destinations are assigned to this day.</p>{% endif %}
+            </section>
+            {% endfor %}
+        </div>
+    </section>
+    {% if itinerary_weather and itinerary_weather.pretrip and (itinerary_weather.concerns or itinerary_weather.outside_range or itinerary_weather.unavailable_dates) %}
+    <aside class="card preview-weather" aria-labelledby="preview-weather-title">
+        <h2 id="preview-weather-title">Weather advisory</h2>
+        <p>{% if itinerary_weather.concerns %}Weather may affect your itinerary. Review the forecast before you go.{% else %}A forecast is not available for all your trip dates. Check again closer to your visit.{% endif %}</p>
+        {% if weather_proposal_token %}<a class="secondary-button" href="#weather-proposal" data-open-weather>Review Suggested Changes</a>{% else %}<a class="secondary-button" href="#preview-days">Review Itinerary</a>{% endif %}
+        <details><summary>Forecast details</summary>{% with weather_review=itinerary_weather %}{% include 'partials/itinerary_weather_review.html' %}{% endwith %}</details>
+        {% if weather_proposal and weather_proposal.notices %}<details><summary>About suggested changes</summary><ul>{% for notice in weather_proposal.notices %}<li>{{ notice }}</li>{% endfor %}</ul></details>{% endif %}
+        {% if weather_proposal_token %}
+        <details id="weather-proposal">
+            <summary id="weather-proposal-title">Suggested adjustment</summary>
+            <p>Your current itinerary remains unchanged until you choose Use Suggested Itinerary. Alternatives are less weather-exposed according to RosaGo's curated destination metadata. Indoors or covered does not mean safe, open or reachable.</p>
+            {% set new_ids = weather_proposal.replacements | map(attribute='proposed.id') | list %}
+            <ol>{% for place in weather_proposal.places %}<li>{{ place.name }} <span class="badge">{{ 'Proposed new destination' if place.id in new_ids else 'Retained' }}</span></li>{% endfor %}</ol>
+            <ul>{% for change in weather_proposal.replacements %}<li>{{ change.day.strftime('%b %d, %Y') }}: {{ change.previous.name }} ({{ change.previous_exposure }}) → {{ change.proposed.name }} ({{ change.proposed_exposure }}). Rain may affect the original destination's exposed areas.</li>{% endfor %}</ul>
+            <details><summary>Suggestion limits</summary><p>All other destinations are retained in the same positions. Destination count and preferences remain unchanged. Costs, opening hours and travel feasibility have not been evaluated. This suggestion expires after 10 minutes; changed weather, catalog data or itinerary revision requires another review.</p></details>
+            <form method="post" action="{{ url_for('itinerary_preview_weather', draft_id=draft_id) }}">
+                {{ revision_fields() }}<input type="hidden" name="proposal_token" value="{{ weather_proposal_token }}">
+                <div class="preview-weather-actions"><button class="secondary-button" type="submit" name="decision" value="keep">Keep Current Itinerary</button><button class="site-button" type="submit" name="decision" value="accept">Use Suggested Itinerary</button></div>
+            </form>
+        </details>
+        {% endif %}
+        <small>Source: <a href="https://open-meteo.com/" rel="noreferrer">Open-Meteo</a> (CC BY 4.0). City forecast; not an official warning.</small>
+    </aside>
     {% endif %}
-    <footer class="preview-footer">
-        <form method="post" action="{{ url_for('itinerary_preview_edit', draft_id=draft_id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf }}">
-            <input type="hidden" name="expected_revision" value="{{ revision }}">
-            <button class="site-button" type="submit" aria-describedby="preview-edit-help">Edit Preferences</button>
+    <section class="card preview-assistant" id="preview-assistant" aria-labelledby="preview-ai-title">
+        <header><h2 id="preview-ai-title">RosaGo AI</h2><p class="itinerary-help">Ask why these places were recommended or request a change.</p></header>
+        <div class="preview-chat" role="log" aria-label="Itinerary conversation" aria-live="polite" tabindex="0"{% if not adjustment_status and not ai_requested and not ai_error %} hidden{% endif %}>
+            {% if adjustment_status %}
+                {% if request.endpoint == 'itinerary_preview_adjust' %}<div class="preview-bubble preview-bubble-user" data-message-kind="adjustment"><strong>You</strong><p>{{ request.form.get('message', '') }}</p></div>{% endif %}
+                <div class="preview-bubble" data-message-kind="adjustment"><strong>RosaGo</strong><p>{{ adjustment_status }}</p></div>
+            {% endif %}
+            {% if ai_requested %}<div class="preview-bubble preview-bubble-user" data-message-kind="explanation"><strong>You</strong><p>Why these places?</p></div>{% endif %}
+            {% if ai_error %}<div class="preview-bubble" data-message-kind="explanation"><strong>RosaGo</strong><p>{{ ai_error }}</p></div>{% endif %}
+            {% if ai_requested and not ai_error %}<div class="preview-bubble" data-message-kind="explanation"><strong>RosaGo</strong>{% for day in days %}{% for stop in day.stops %}<p><b>{{ stop.place.name }}</b>: {{ ai_explanations.get(stop.place.id, 'AI explanation is unavailable for this destination. Your itinerary remains unchanged and usable.') }}</p>{% endfor %}{% endfor %}</div>{% endif %}
+        </div>
+        {% if ai_available %}
+        <div class="preview-quick-actions">
+            <form method="post" action="{{ url_for('itinerary_preview_explain', draft_id=draft_id) }}" data-ai-form="explanation">{{ revision_fields() }}<button class="secondary-button" type="submit">Why these places?</button></form>
+            <button class="secondary-button" type="button" data-ai-prompt="Make it 2 places">Make it 2 places</button>
+            <button class="secondary-button" type="button" data-ai-prompt="Change my interests to ">Change my interests</button>
+        </div>
+        <form class="preview-composer" method="post" action="{{ url_for('itinerary_preview_adjust', draft_id=draft_id) }}" data-ai-form="adjustment">
+            {{ revision_fields() }}
+            <label class="visually-hidden" for="preview-adjust-message">Ask RosaGo to adjust your itinerary</label>
+            <input id="preview-adjust-message" name="message" maxlength="1000" required placeholder="Ask RosaGo to adjust your itinerary..." autocomplete="off">
+            <button class="site-button" type="submit">Send</button>
         </form>
-        <p id="preview-edit-help" class="itinerary-help">Returning to edit clears this preview and keeps your preferences. Review your preferences, then generate a new preview.</p>
-        <p class="itinerary-help">This is a temporary preview. No trip has been added to My Trips.</p>
-    </footer>
+        {% else %}<p class="itinerary-help">AI assistance is currently unavailable. Your itinerary remains usable. You can still use Edit Preferences.</p>{% endif %}
+        <p class="preview-ai-progress" role="status" hidden>RosaGo is working on your request…</p>
+        <details class="preview-ai-about"><summary>About AI assistance</summary><p>Your message, selected interests and up to 12 public itinerary destinations may be shared with Google Gemini. Do not include private information. RosaGo chooses the destinations; AI interprets changes and explains existing selections. AI may misinterpret requests or give inaccurate explanations. Review changes and destination details. Category matches do not verify costs, hours, travel feasibility, amenities or transportation compatibility. Explanations are cleared after itinerary changes.</p></details>
+    </section>
+    {% endif %}
 </section>
 {% endblock %}

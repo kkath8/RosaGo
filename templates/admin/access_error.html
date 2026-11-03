@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin access · RosaGo</title>{% include 'admin/head_assets.html' %}</head>
+<body class="admin-site login-page"><main class="login-card">
+<a class="wordmark" href="{{ url_for('index') }}" aria-label="RosaGo"><span>Rosa</span><span>Go</span></a>
+<p class="admin-badge">ADMIN</p><h1>Admin workspace</h1><p class="notice" role="alert">{{ message }}</p>
+<p>This workspace is available to authorized administrators.</p>
+<a class="button" href="{{ url_for('admin.login') }}">Admin sign in</a>
+<a class="text-link" href="{{ url_for('index') }}">View User Side</a>
+</main></body></html>

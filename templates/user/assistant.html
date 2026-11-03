@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}AI Assistant | RosaGo{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/assistant-chat.css') }}">
+<script src="{{ url_for('static', filename='js/assistant-chat.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<header class="trip-heading">
+    <p class="eyebrow">Santa Rosa tourism planning</p>
+    <h1 class="page-heading">RosaGo AI Assistant</h1>
+    <p class="page-subheading">Ask about destinations, planning, and your RosaGo trip.</p>
+</header>
+{% if not ai_available %}<p class="account-status" role="status">Gemini is not configured. You can still use Explore and Planner.</p>{% endif %}
+<div class="assistant-workspace chat-workspace"><div><section class="conversation-panel" aria-labelledby="conversation-title" data-chat-panel tabindex="0">
+    <h2 id="conversation-title" class="visually-hidden">Recent conversation</h2>
+    <ol class="chat-history" data-chat-messages>
+        {% for item in history %}
+        <li class="chat-message {{ 'chat-user' if item.role == 'user' else 'chat-assistant' }}"><span class="chat-speaker">{{ 'You' if item.role == 'user' else 'RosaGo' }}</span><p>{{ item.text }}</p>
+            {% if item.sources %}<details class="chat-sources"><summary>Sources</summary><p>Catalog references: {% for name, slug in item.sources %}<a href="{{ url_for('places_detail', slug=slug) }}">{{ name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</p></details>{% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+    {% if error %}<p class="account-status" role="status" data-chat-server-error>{{ error }}</p>{% endif %}
+    {% if not history %}<p data-chat-empty>No recent messages. Try asking which catalog destinations match your interests.</p>{% endif %}
+</section>
+<p class="visually-hidden" data-chat-announcement role="status" aria-live="polite" aria-atomic="true"></p>
+<section class="chat-composer" aria-labelledby="message-title">
+    <h2 id="message-title" class="visually-hidden">Ask a question</h2>
+    <form class="message-form" method="post" action="{{ url_for('assistant') }}" data-chat-send>
+        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+        <div class="field"><label class="visually-hidden" for="assistant-message">Message (up to 1000 characters)</label>
+            <textarea id="assistant-message" name="message" rows="2" placeholder="Ask RosaGo about your trip..." maxlength="1000" required>{{ message }}</textarea>
+        </div>
+        <button class="site-button" type="submit"{% if not ai_available %} disabled{% endif %}>Send</button>
+    </form>
+    <form method="post" action="{{ url_for('assistant_clear') }}" data-chat-clear>
+        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+        <button class="secondary-button" type="submit">Clear Conversation</button>
+    </form>
+</section>
+</div><aside class="assistant-sidebar"><p class="eyebrow">Try one</p><div class="local-actions">{% for prompt in ['Suggest a heritage day in Santa Rosa','What should I prepare for rain?','Help me plan a family day'] %}<button type="button" class="mini-button" data-action="assistant-prompt" data-prompt="{{ prompt }}">{{ prompt }}</button>{% endfor %}</div><details class="acc"><summary>About real AI requests</summary><p class="catalog-disclosure">AI replies are suggestions and may be inaccurate. Check destination details for catalog facts. This assistant cannot change your trips or account, calculate routes, or verify opening hours and fees.</p>
+<p class="trip-help">Sending a message shares your question, recent conversation, destination information and relevant city weather with Google Gemini. Conversation history expires and is not saved to your account.</p>
+</details></aside></div>
+<p><a class="secondary-button" href="{{ url_for('places_list') }}">Explore places</a> · <a class="secondary-button" href="{{ url_for('planner') }}">Plan a trip</a> · <a class="secondary-button" href="{{ url_for('map_index') }}">Map &amp; Transportation</a></p>
+{% endblock %}

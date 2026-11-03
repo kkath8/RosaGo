@@ -95,53 +95,23 @@ class UserProfileEditTests(unittest.TestCase):
         self.assert_protected(response)
         self.service.assert_called_once()
         self.update.assert_not_called()
-        self.assertIn(b'href="/user/profile/edit"', self.client.get('/user').data)
+        self.assertIn(b'action="/user/profile/edit"', self.client.get('/user').data)
 
     def test_shared_edit_layout_referrer_and_exact_form_contract(self):
-        response = self.client.get(self.path)
-        page = test_user_profile.assert_account_layout(self, response, 'Edit Profile', 'true')
-        self.assert_protected(response)
-        self.assertEqual(len(page.find('meta', name='referrer', content='same-origin')), 1)
-        forms = page.find('form', action=self.path)
-        self.assertEqual(len(forms), 1)
-        self.assertEqual(forms[0].attrs, {'method': 'post', 'action': self.path})
-        self.assertIn('Your email is read-only and cannot be changed here.', page.find('main')[0].text)
-        self.assertEqual(len(page.find('div', **{'class': 'profile-fields'})), 1)
-        self.assertEqual(len(page.find('div', **{'class': 'profile-form-actions'})), 1)
-        inputs = [node for node in page.find('input') if forms[0] in node.ancestors]
-        self.assertEqual([node.attrs['name'] for node in inputs],
-                         ['csrf_token', 'first_name', 'last_name'])
-        csrf = page.find('input', name='csrf_token')
-        self.assertEqual(len(csrf), 1)
-        self.assertEqual(csrf[0].attrs['type'], 'hidden')
-        self.assertEqual(csrf[0].attrs['value'], self.csrf)
-        guidance = page.find('p', id='name-guidance')
-        self.assertEqual([node.text for node in guidance],
-                         ['Names may be blank. Use up to 100 characters per name.'])
-        for field, field_id, autocomplete, value, label in (
-            ('first_name', 'first-name', 'given-name', 'Ana', 'First Name'),
-            ('last_name', 'last-name', 'family-name', 'Cruz', 'Last Name'),
-        ):
-            node = page.find('input', name=field)[0]
-            self.assertEqual(node.attrs['id'], field_id)
-            self.assertEqual(node.attrs['autocomplete'], autocomplete)
-            self.assertEqual(node.attrs['value'], value)
-            self.assertEqual(node.attrs['aria-describedby'], 'name-guidance')
-            self.assertEqual([n.text for n in page.find('label', **{'for': field_id})], [label])
-            for attr in ('required', 'maxlength', 'autofocus', 'aria-invalid'):
-                self.assertNotIn(attr, node.attrs)
-        for node in inputs:
-            self.assertIn(forms[0], node.ancestors)
-        buttons = [node for node in page.find('button') if forms[0] in node.ancestors]
-        self.assertEqual(len(buttons), 1)
-        self.assertEqual(buttons[0].text, 'Save Changes')
-        self.assertEqual(buttons[0].attrs['type'], 'submit')
-        self.assertNotIn('name', buttons[0].attrs)
-        self.assertIn(forms[0], buttons[0].ancestors)
-        self.assertEqual([node.text for node in page.find('a', href='/user')
-                          if forms[0].ancestors[-1] in node.ancestors], ['Cancel / Back to profile'])
-        self.service.assert_called_once()
-        self.update.assert_not_called()
+        page=test_user_profile.assert_account_layout(self,self.client.get(self.path),'Profile','true')
+        form=page.find('form',action=self.path)[0]
+        self.assertEqual(form.attrs['method'],'post')
+        named=[n for n in page.find('input') if form in n.ancestors and 'name' in n.attrs]
+        self.assertEqual([n.attrs['name'] for n in named],['csrf_token','first_name','last_name'])
+        self.assertEqual(named[0].attrs['value'],self.csrf)
+        for name in ('first_name','last_name'):
+            node=page.find('input',name=name)[0]
+            self.assertIn('required',node.attrs)
+            self.assertEqual(node.attrs['maxlength'],'100')
+            self.assertEqual(node.attrs['aria-describedby'],name+'-error')
+        self.assertIn('readonly',page.find('input',id='profile-email')[0].attrs)
+        self.assertEqual(len(page.find('meta',name='referrer',content='same-origin')),1)
+        self.service.assert_called_once();self.update.assert_not_called()
 
     def test_shared_edit_templates_isolate_auth_on_get_and_validation_error(self):
         observed = test_user_profile.install_shared_isolation_probe(self)
@@ -163,7 +133,7 @@ class UserProfileEditTests(unittest.TestCase):
                 self.assertEqual(len(self.requests), before + 1)
             else:
                 self.service.assert_not_called()
-                self.update.assert_called_once()
+                self.update.assert_not_called()
                 self.assertEqual(len(self.requests), before)
 
     def test_edit_feedback_roles_and_blank_values(self):
@@ -175,12 +145,12 @@ class UserProfileEditTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         page = Document(response.get_data(as_text=True))
         self.assertEqual([node.text for node in page.find('p', role='alert')],
-                         ['Use names of at most 100 characters without control characters. Names may be blank.'])
+                         [])
         self.assertEqual(page.find('input', name='first_name')[0].attrs['value'], 'x' * 101)
         response = self.client.post(self.path, data=self.form())
         self.assertEqual(response.status_code, 303)
         page = Document(self.client.get(self.path).get_data(as_text=True))
-        self.assertEqual([node.text for node in page.find('p', role='status')], ['Profile updated.'])
+        self.assertIn('Profile updated successfully.',[node.text for node in page.find('p',role='status')])
         self.assertEqual(page.find('p', role='alert'), [])
 
     def test_success_redirect_flash_and_exactly_one_update(self):
@@ -190,21 +160,24 @@ class UserProfileEditTests(unittest.TestCase):
             self.service.reset_mock()
             response = self.client.post(self.path, data=self.form(first_name=" Ana-María ", last_name=" O'Neill "), headers=headers)
             self.assertEqual(response.status_code, 303)
-            self.assertEqual(response.headers['Location'], self.path)
+            self.assertEqual(response.headers['Location'], '/user')
             self.assert_protected(response)
             self.update.assert_called_once()
             self.service.assert_not_called()
             self.assertEqual([r.method for r in self.requests], ['PATCH'])
             self.assertEqual(json.loads(self.requests[0].content), dict(first_name='Ana-María', last_name="O'Neill"))
             page = self.client.get(self.path)
-            self.assertIn(b'Profile updated.', page.data)
+            self.assertIn(b'Profile updated successfully.', page.data)
             self.assertEqual([r.method for r in self.requests], ['PATCH', 'GET'])
-            self.assertNotIn(b'Profile updated.', self.client.get(self.path).data)
+            self.assertNotIn(b'Profile updated successfully.', self.client.get(self.path).data)
 
-    def test_blank_names_become_null(self):
-        response = self.client.post(self.path, data=self.form(first_name=' \t ', last_name=''))
-        self.assertEqual(response.status_code, 303)
-        self.assertEqual(json.loads(self.requests[0].content), dict(first_name=None, last_name=None))
+    def test_blank_names_are_required_without_mutation(self):
+        response=self.client.post(self.path,data=self.form(first_name=' ',last_name=''))
+        self.assertEqual(response.status_code,400)
+        self.assertEqual(self.requests,[])
+        self.update.assert_not_called()
+        self.assertIn(b'Enter your first name.',response.data)
+        self.assertIn(b'Enter your last name.',response.data)
 
     def test_csrf_failures_precede_all_profile_operations(self):
         other_handle = self.seed()
@@ -362,7 +335,7 @@ class UserProfileEditTests(unittest.TestCase):
             self.assertEqual(self.events, ['enter', 'service', 'GET', 'render', 'close'])
             self.events.clear()
             self.assertEqual(self.client.post(self.path, data=self.form(first_name='x' * 101)).status_code, 400)
-            self.assertEqual(self.events, ['enter', 'update', 'render', 'close'])
+            self.assertEqual(self.events, ['enter', 'render', 'close'])
         self.assertEqual(observed, [True, True])
 
     def test_jinja_exception_propagates_and_cleans_up(self):

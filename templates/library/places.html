@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}{{ heading }} | RosaGo{% endblock %}
+{% block content %}
+<header class="trip-heading"><div><p class="eyebrow">Your library</p><h1>{{ heading }}</h1><p class="page-subheading">{% if library_kind == 'saved' %}Places you saved for a future Santa Rosa visit.{% else %}Your Santa Rosa travel history, recorded by you.{% endif %}</p></div></header>
+<p class="trip-help">Saved in this browser. Only currently available destinations are shown. Use a private browser profile on shared devices.</p>
+<div class="trip-actions">{% if library_kind == 'saved' %}<button class="site-button" type="button" data-action="saved-to-bag">Add all to bag</button>{% endif %}<button class="site-button site-button-secondary" type="button" data-action="clear-library" data-kind="{{ library_kind }}">Clear {{ library_kind }}</button><a class="secondary-button" href="{{ url_for('places_list') }}">Explore places</a></div>
+<p role="status" data-library-count></p><div class="g4" data-library="{{ library_kind }}"><p>Loading your library…</p></div>
+<noscript><p>Personal library features require JavaScript. You can still browse <a href="{{ url_for('places_list') }}">Explore</a>.</p></noscript>
+{% endblock %}

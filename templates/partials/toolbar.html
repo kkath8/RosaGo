@@ -1,0 +1,10 @@
+        <form class="topbar-search" role="search" method="get" action="{{ url_for('places_list') }}">
+            <label class="visually-hidden" for="shell-search">Search destinations</label>
+            <input id="shell-search" name="q" type="search" maxlength="200" placeholder="Search places, categories, or keywords..." value="{{ request.args.get('q', '')[:200] if request.endpoint == 'places_list' else '' }}">
+            {% if request.endpoint == 'places_list' and selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+            <button class="site-button" type="submit">Search</button>
+        </form>
+        <a class="topbar-profile" href="{{ url_for('user_index') }}" aria-label="Your profile">
+            <span class="user-avatar" aria-hidden="true">{% if user_email is defined and user_email %}{{ user_email[0] | upper }}{% else %}RG{% endif %}</span>
+            <span>Profile</span>
+        </a>

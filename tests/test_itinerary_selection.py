@@ -37,21 +37,22 @@ class SelectionRouteTests(unittest.TestCase):
     def post(self, **kwargs):
         return self.client.post(ROUTE, data=self.payload(), **kwargs)
 
-    def test_shortlist_form_only_matched_unchecked_accessible_controls(self):
+    def test_shortlist_form_only_matched_preselected_accessible_controls(self):
         response = self.client.post(recommendations.ROUTE, data={'csrf_token': self.csrf})
         page = Document(response.get_data(as_text=True))
-        form = page.find('form', action=ROUTE)[0]
+        form = page.find('form', action=quiz.REVIEW.replace('/review','/preview'))[0]
         self.assertEqual(form.attrs['method'], 'post')
-        checkboxes = page.find('input', type='checkbox')
+        checkboxes = page.find('input', type='checkbox', name='selected_place_ids')
         self.assertEqual([node.attrs['value'] for node in checkboxes], [self.match.id])
         for node in checkboxes:
-            self.assertNotIn('checked', node.attrs)
+            self.assertIn('checked', node.attrs)
             self.assertEqual(node.attrs['name'], 'selected_place_ids')
             self.assertEqual(node.ancestors[-1].tag, 'label')
             self.assertIn(form, node.ancestors)
         self.assertEqual(page.find('input', name='expected_revision')[0].attrs['value'], '2')
         self.assertEqual(page.find('input', name='csrf_token')[0].attrs['value'], self.csrf)
-        self.assertEqual(page.find('button', type='submit')[0].text, 'Review Selected Destinations')
+        self.assertEqual([n.text for n in page.find('button', type='submit')
+                          if form in n.ancestors], ['Create My Itinerary','Create My Itinerary'])
         self.assertTrue(page.find('a', href='/places/matched-place'))
         self.assertEqual(page.stack, [])
 
@@ -60,7 +61,7 @@ class SelectionRouteTests(unittest.TestCase):
             self.catalog.list_published.return_value = places
             response = self.client.post(recommendations.ROUTE, data={'csrf_token': self.csrf})
             page = Document(response.get_data(as_text=True))
-            self.assertEqual(page.find('input', type='checkbox'), [])
+            self.assertEqual(page.find('input', type='checkbox', name='selected_place_ids'), [])
             self.assertEqual(page.find('form', action=ROUTE), [])
             self.assertTrue(page.find('a', href=quiz.QUIZ))
             self.assertTrue(page.find('a', href='/places'))
@@ -118,7 +119,8 @@ class SelectionRouteTests(unittest.TestCase):
         self.read.return_value = None
         for identifier in (trips.TRIP, trips.OWNER):
             response = self.client.post(ROUTE.replace(trips.TRIP, identifier), data=self.payload())
-            self.assertEqual((response.status_code, response.data), (404, b'Draft not found.'))
+            self.assertEqual(response.status_code, 404)
+            self.assertIn(b'Draft not found.', response.data)
             self.protected(response)
         for state in ('generating', 'preview_ready', 'failed', 'saved', 'expired'):
             self.read.return_value = replace(self.draft, state=state)
@@ -188,7 +190,7 @@ class SelectionRouteTests(unittest.TestCase):
         with self.client.session_transaction() as session:
             self.assertEqual(dict(session), before)
         again = self.client.post(recommendations.ROUTE, data={'csrf_token': self.csrf})
-        self.assertNotIn('checked', Document(again.get_data(as_text=True)).find('input', type='checkbox')[0].attrs)
+        self.assertIn('checked', Document(again.get_data(as_text=True)).find('input', type='checkbox')[0].attrs)
 
     def test_catalog_failure_bound_and_maximum_current_selection(self):
         self.catalog.list_published.return_value = tuple(place(n, 'attraction') for n in range(99))

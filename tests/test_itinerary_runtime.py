@@ -6,6 +6,7 @@ or reproduce an unknown running server's state. Socket guards remain enabled.
 from copy import deepcopy
 import json
 import unittest
+from unittest.mock import Mock, patch
 
 import httpx
 from werkzeug.datastructures import MultiDict
@@ -31,6 +32,7 @@ class ItineraryRuntimeTests(unittest.TestCase):
 
     def setUp(self):
         test_registration.RegistrationTests.setUp(self)
+        self.app.extensions['rosago_weather'] = Mock(get_weather=Mock(return_value=None))
         self.dependencies = self.app.extensions['rosago_normal_auth']
         self.handle = self.seed()
         self.csrf = self.dependencies.store.resolve(self.handle).csrf
@@ -45,6 +47,7 @@ class ItineraryRuntimeTests(unittest.TestCase):
                           image_url=None, created_at='2026-10-17T00:00:00Z',
                           updated_at='2026-10-17T00:00:00Z')
         self.calls = []
+        self.additional_places = []
         self.http_clients = []
 
         def http_factory(**kwargs):
@@ -69,12 +72,14 @@ class ItineraryRuntimeTests(unittest.TestCase):
             self.assertEqual(request.method, 'GET')
             self.assertEqual(request.url.params['status'], 'eq.published')
             self.assertNotEqual(request.headers.get('authorization'), 'Bearer private-access')
-            return httpx.Response(200, json=[self.place])
+            return httpx.Response(200, json=[self.place] + self.additional_places)
         self.assertEqual(request.headers['authorization'], 'Bearer private-access')
         if path == '/rest/v1/itinerary_drafts':
             self.assertEqual(request.method, 'GET')
             self.assertEqual(request.url.params['id'], 'eq.' + trips.TRIP)
             self.assertEqual(request.url.params['user_id'], 'eq.' + trips.OWNER)
+            if self.row['user_id'] != trips.OWNER:
+                return httpx.Response(200, json=[])
             keys = request.url.params['select'].split(',')
             return httpx.Response(200, json=[{key: self.row[key] for key in keys}])
         self.assertEqual(request.method, 'POST')
@@ -87,6 +92,11 @@ class ItineraryRuntimeTests(unittest.TestCase):
             self.row.update(preferences=preferences)
         elif path == '/rest/v1/rpc/rosago_itinerary_draft_store_preview':
             self.row.update(state='preview_ready', preview=payload['p_candidate_preview'])
+        elif path == '/rest/v1/rpc/rosago_itinerary_draft_adjust_preview':
+            self.assertEqual(self.row['state'], 'preview_ready')
+            preferences = payload['p_preferences']
+            self.assertEqual(validate_complete_preferences(preferences), preferences)
+            self.row.update(preferences=preferences, state='preview_ready', preview=payload['p_candidate_preview'])
         elif path == '/rest/v1/rpc/rosago_itinerary_draft_return_to_editing':
             self.row.update(state='editing', preview=None)
         else:
@@ -99,7 +109,7 @@ class ItineraryRuntimeTests(unittest.TestCase):
         page = Document(response.get_data(as_text=True))
         target = page.find('form', action=action)[0]
         data = MultiDict((node.attrs['name'], node.attrs['value'])
-                         for node in page.find('input') if target in node.ancestors)
+                         for node in page.find('input') if target in node.ancestors and (node.attrs.get('type')!='checkbox' or 'checked' in node.attrs))
         return self.client.post(action, data=data, headers=ORIGIN)
 
     def test_fresh_quiz_rendered_controls_submit_through_real_parser_and_service(self):
@@ -190,16 +200,12 @@ class ItineraryRuntimeTests(unittest.TestCase):
         self.assertEqual(review.status_code, 200)
         recommendations = self.client.get(ROOT + '/recommendations')
         self.assertEqual(recommendations.status_code, 200)
-        selection = self.submit_form(recommendations, ROOT + '/selection')
-        self.assertEqual(selection.status_code, 200)
-        self.assertIn(b'Selection Ready', selection.data)
-        self.assertIn(b'Synthetic &lt;destination&gt;', selection.data)
         self.assertEqual(self.row, original)
-        build = self.submit_form(selection, ROOT + '/preview')
+        build = self.submit_form(recommendations, ROOT + '/preview')
         self.assertEqual((build.status_code, build.location), (303, ROOT + '/preview'))
         preview = self.client.get(build.location)
         self.assertEqual(preview.status_code, 200)
-        self.assertIn(b'Personalized Itinerary Preview', preview.data)
+        self.assertIn(b'Your Personalized Itinerary', preview.data)
         edited = self.submit_form(preview, ROOT + '/preview/edit')
         self.assertEqual((edited.status_code, edited.location), (303, ROOT + '/preferences'))
         returned = self.client.get(edited.location)
@@ -208,24 +214,39 @@ class ItineraryRuntimeTests(unittest.TestCase):
         self.assertEqual([path for method, path in self.calls if method == 'POST'], [
             '/rest/v1/rpc/rosago_itinerary_draft_store_preview',
             '/rest/v1/rpc/rosago_itinerary_draft_return_to_editing'])
-        for response in (review, recommendations, selection, build, preview, edited, returned):
+        for response in (review, recommendations, build, preview, edited, returned):
             self.protected(response)
             for secret in (trips.OWNER, self.handle, 'private-access', 'private-refresh'):
                 self.assertNotIn(secret.encode(), response.data)
 
     def test_rendered_review_automatic_generation_and_edit_preferences(self):
+        provider = Mock(configured=True)
+        provider.explain.return_value = dict(summary='Explains the existing category match.', explanations=[
+            dict(place_id=self.place['id'], name=self.place['name'], reason='Matches your selected interest.')])
+        self.app.extensions['rosago_gemini'] = provider
         before = deepcopy(self.row)
         review = self.client.get(ROOT + '/review')
         page = Document(review.get_data(as_text=True))
-        target = page.find('form', action=ROOT + '/generate')[0]
-        self.assertEqual({node.attrs['name'] for node in page.find('input') if target in node.ancestors},
-                         {'csrf_token', 'expected_revision'})
-        built = self.submit_form(review, ROOT + '/generate')
+        self.assertTrue(page.find('a',href=ROOT+'/recommendations'))
+        recommendations=self.client.get(ROOT+'/recommendations')
+        built=self.submit_form(recommendations,ROOT+'/preview')
         self.assertEqual((built.status_code, built.location), (303, ROOT + '/preview'))
         self.assertEqual(self.row['preview']['source']['selected_place_ids'], [self.place['id']])
         preview = self.client.get(built.location)
         self.assertEqual(preview.status_code, 200)
-        self.assertIn(b'automatically selects', preview.data)
+        self.assertIn(b'Recommended for You', preview.data)
+        provider.explain.assert_not_called()
+        self.assertIn(b'Why these places?', preview.data)
+        stored = deepcopy(self.row)
+        writes_before = [call for call in self.calls if call[0] == 'POST']
+        explained = self.submit_form(preview, ROOT + '/preview/explain')
+        self.assertEqual(explained.status_code, 200)
+        self.assertIn(b'Matches your selected interest.', explained.data)
+        self.assertNotIn(b'Explains the existing category match.', explained.data)
+        self.assertEqual([p['place_id'] for p in provider.explain.call_args.args[0]['candidates']],
+                         self.row['preview']['source']['selected_place_ids'])
+        self.assertEqual(self.row, stored)
+        self.assertEqual([call for call in self.calls if call[0] == 'POST'], writes_before)
         edited = self.submit_form(preview, ROOT + '/preview/edit')
         self.assertEqual((edited.status_code, edited.location), (303, ROOT + '/preferences'))
         preferences = self.client.get(edited.location)
@@ -234,5 +255,93 @@ class ItineraryRuntimeTests(unittest.TestCase):
         self.assertEqual([path for method, path in self.calls if method == 'POST'], [
             '/rest/v1/rpc/rosago_itinerary_draft_store_preview',
             '/rest/v1/rpc/rosago_itinerary_draft_return_to_editing'])
-        for response in (review, built, preview, edited, preferences):
+        for response in (review, built, preview, explained, edited, preferences):
             self.protected(response)
+
+    def test_adjustment_rendered_form_uses_real_sdk_atomic_rpc_and_new_preview(self):
+        provider = Mock(configured=True)
+        provider.interpret_adjustment.return_value = dict(intent='modify', changes=dict(
+            set_interests=None, add_interests=[], remove_interests=[], pace='relaxed', place_count=1),
+            unsupported_requests=['budget'])
+        self.app.extensions['rosago_gemini'] = provider
+        review = self.client.get(ROOT + '/review')
+        recommendations=self.client.get(ROOT+'/recommendations')
+        built=self.submit_form(recommendations,ROOT+'/preview')
+        response = self.client.get(built.location)
+        page = Document(response.get_data(as_text=True))
+        target = page.find('form', action=ROOT + '/preview/adjust')[0]
+        data = MultiDict((node.attrs['name'], node.attrs.get('value',''))
+                         for node in page.find('input') if target in node.ancestors)
+        message = [node for node in page.find('input',name='message') if target in node.ancestors][0]
+        data[message.attrs['name']] = 'Make it relaxed, only one place, with a 500 peso budget'
+        before = deepcopy(self.row)
+        response = self.client.post(target.attrs['action'], data=data, headers=ORIGIN)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Updated to 1 destination.', response.data)
+        self.assertIn(b'Exact budget planning is not available', response.data)
+        self.assertEqual(self.row['revision'], before['revision'] + 1)
+        self.assertEqual(self.row['preferences'], before['preferences'] | {'trip_pace': 'relaxed'})
+        self.assertEqual(self.row['preview']['source']['draft_revision'], before['revision'])
+        self.assertEqual(self.row['preview']['source']['selected_place_ids'], [self.place['id']])
+        self.assertEqual(self.client.get(ROOT + '/preview').status_code, 200)
+        self.assertEqual([path for method, path in self.calls if method == 'POST'], [
+            '/rest/v1/rpc/rosago_itinerary_draft_store_preview',
+            '/rest/v1/rpc/rosago_itinerary_draft_adjust_preview'])
+        provider.interpret_adjustment.assert_called_once_with(data['message'])
+        provider.explain.assert_not_called()
+        self.protected(response)
+
+    def test_weather_acceptance_uses_real_service_one_atomic_rpc_and_new_revision(self):
+        from datetime import timedelta
+        from destination_weather_metadata import validate_weather_catalog
+        from places_service import parse_place_row
+        from test_weather_proposal import metadata_document
+        from test_weather_service import NOW, weather_payload
+        from weather_service import parse_weather
+
+        day = (NOW.date()+timedelta(days=1)).isoformat()
+        self.row['preferences'].update(start_date=day, end_date=day)
+        review = self.client.get(ROOT+'/review')
+        recommendations=self.client.get(ROOT+'/recommendations')
+        built=self.submit_form(recommendations,ROOT+'/preview')
+        self.assertEqual(built.status_code, 303)
+        alternative = self.place | dict(id='00000000-0000-0000-0000-000000000004',
+                                       name='Synthetic covered destination', slug='synthetic-covered')
+        self.additional_places = [alternative]
+        metadata = validate_weather_catalog(metadata_document(
+            tuple(parse_place_row(row) for row in (self.place, alternative)),
+            {self.place['id']: 'outdoor', alternative['id']: 'covered'}))
+        self.app.extensions['rosago_weather'] = Mock(get_weather=Mock(return_value=parse_weather(weather_payload(), now=NOW)))
+        namespace = self.app.view_functions['itinerary_preview_page'].__wrapped__.__globals__
+        with patch.dict(namespace, manila_now=lambda: NOW, load_weather_catalog=lambda: metadata):
+            page = Document(self.client.get(built.location).get_data(as_text=True))
+            target = page.find('form', action=ROOT+'/preview/weather')[0]
+            data = MultiDict((node.attrs['name'], node.attrs['value'])
+                             for node in page.find('input') if target in node.ancestors)
+            before = deepcopy(self.row)
+            data['decision'] = 'accept'
+            response = self.client.post(target.attrs['action'], headers=ORIGIN, data=data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.row['revision'], before['revision']+1)
+        self.assertEqual(self.row['preview']['source']['selected_place_ids'], [alternative['id']])
+        self.assertEqual(self.row['preferences'], before['preferences'])
+        self.assertEqual([path for method, path in self.calls if method == 'POST'], [
+            '/rest/v1/rpc/rosago_itinerary_draft_store_preview',
+            '/rest/v1/rpc/rosago_itinerary_draft_adjust_preview'])
+        self.protected(response)
+
+    def test_preview_explanation_cannot_read_foreign_owner_draft(self):
+        provider = Mock(configured=True)
+        self.app.extensions['rosago_gemini'] = provider
+        review = self.client.get(ROOT + '/review')
+        recommendations=self.client.get(ROOT+'/recommendations')
+        built=self.submit_form(recommendations,ROOT+'/preview')
+        self.assertEqual(built.status_code, 303)
+        self.row['user_id'] = '00000000-0000-0000-0000-000000000099'
+        stored = deepcopy(self.row)
+        response = self.client.post(ROOT + '/preview/explain', headers=ORIGIN,
+            data={'csrf_token':self.csrf, 'expected_revision':str(self.row['revision'])})
+        self.assertEqual(response.status_code, 404)
+        self.assertNotIn(self.place['name'].encode(), response.data)
+        provider.explain.assert_not_called()
+        self.assertEqual(self.row, stored)

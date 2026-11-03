@@ -1,0 +1,285 @@
+{
+  "schema_version": 1,
+  "destinations": [
+    {
+      "slug": "santa-rosa-arch",
+      "name": "Santa Rosa Arch",
+      "category": "heritage",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "the-city-of-santa-rosa-museum",
+      "name": "The City of Santa Rosa Museum",
+      "category": "heritage",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "santa-rosa-parish-church",
+      "name": "Santa Rosa Parish Church",
+      "category": "heritage",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "cuartel-de-santo-domingo",
+      "name": "Cuartel De Santo Domingo",
+      "category": "heritage",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "arambulo-ancestral-house",
+      "name": "Arambulo Ancestral House",
+      "category": "heritage",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "zavalla-ancestral-house",
+      "name": "Zavalla Ancestral House",
+      "category": "heritage",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "gonzales-ancestral-house",
+      "name": "Gonzales Ancestral House",
+      "category": "heritage",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "tiongco-ancestral-house",
+      "name": "Tiongco Ancestral House",
+      "category": "heritage",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "perlas-ancestral-house",
+      "name": "Perlas Ancestral House",
+      "category": "heritage",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "toyota-santa-rosa",
+      "name": "Toyota Santa Rosa",
+      "category": "industrial",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "coca-cola-santa-rosa",
+      "name": "Coca-Cola Santa Rosa",
+      "category": "industrial",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "monde-nissin-santa-rosa",
+      "name": "Monde Nissin Santa Rosa",
+      "category": "industrial",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "mitsubishi-motors-santa-rosa",
+      "name": "Mitsubishi Motors Santa Rosa",
+      "category": "industrial",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "enchanted-kingdom",
+      "name": "Enchanted Kingdom",
+      "category": "attraction",
+      "address": "San Lorenzo South, RSBS Boulevard, Santa Rosa, Laguna 4026",
+      "exposure": "mixed",
+      "source_url": "https://www.enchantedkingdom.ph/faq/",
+      "source_note": "RosaGo-curated mixed exposure, not a safety rating. The rides list documents varied attractions; the FAQ links park rules allowing weather-related ride/park changes. Additional official sources: https://www.enchantedkingdom.ph/rides-and-attractions/ and https://www.enchantedkingdom.ph/rules/.",
+      "verified_on": "2026-10-26"
+    },
+    {
+      "slug": "nuvali",
+      "name": "Nuvali",
+      "category": "attraction",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "lakeside-activities-nuvali",
+      "name": "Lakeside Activities (Nuvali)",
+      "category": "attraction",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "fun-farm-sta-elena",
+      "name": "Fun Farm Sta. Elena",
+      "category": "attraction",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "city-auditorium",
+      "name": "City Auditorium",
+      "category": "attraction",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "city-of-santa-rosa-multi-purpose-complex",
+      "name": "City of Santa Rosa Multi-Purpose Complex",
+      "category": "attraction",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "sm-city-santa-rosa",
+      "name": "SM City Santa Rosa",
+      "category": "shopping",
+      "address": "Old National Highway, Brgy. Tagapo, Santa Rosa, Laguna",
+      "exposure": "indoor",
+      "source_url": "https://www.smsupermalls.com/maps/sm-city-santa-rosa/",
+      "source_note": "RosaGo-curated indoor exposure for the mall building. The official SM page identifies the shopping mall and describes its facilities. This classification excludes parking and surrounding outdoor property.",
+      "verified_on": "2026-10-26"
+    },
+    {
+      "slug": "robinson-s-santa-rosa",
+      "name": "Robinsons Sta. Rosa",
+      "category": "shopping",
+      "address": "Manila South Road, Brgy. Tagapo, Santa Rosa, Laguna",
+      "exposure": "indoor",
+      "source_url": "https://robinsonsmalls.com/mall-info/robinsons-sta-rosa",
+      "source_note": "RosaGo-curated indoor exposure for the mall building. The official Robinsons page describes a three-level shopping complex and lists open parking separately. Parking and surrounding property are excluded.",
+      "verified_on": "2026-10-26"
+    },
+    {
+      "slug": "target-mall",
+      "name": "Target Mall",
+      "category": "shopping",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "waltermart-santa-rosa",
+      "name": "Waltermart Santa Rosa",
+      "category": "shopping",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "waltermart-bel-air",
+      "name": "Waltermart Bel-Air",
+      "category": "shopping",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "vista-mall-santa-rosa",
+      "name": "Vista Mall Santa Rosa",
+      "category": "shopping",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "paseo-de-santa-rosa",
+      "name": "Paseo de Santa Rosa",
+      "category": "shopping",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "laguna-central",
+      "name": "Laguna Central",
+      "category": "shopping",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    },
+    {
+      "slug": "solenad-1-2-and-3",
+      "name": "Solenad 1, 2 and 3",
+      "category": "shopping",
+      "address": "Santa Rosa, Laguna, Philippines",
+      "exposure": "unknown",
+      "source_url": null,
+      "source_note": null,
+      "verified_on": null
+    }
+  ]
+}

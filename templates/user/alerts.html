@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Alerts | RosaGo{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">{% endblock %}
+{% block content %}
+{# A server started before the notification payload was added can reload this
+   template without that key. Only JSON-native rows may reach the bootstrap. #}
+{% set notification_rows = notifications | default([], true) %}
+<div class="alerts-page">
+<header class="trip-heading"><h1 class="page-heading">Alerts</h1><p class="page-subheading">Trip reminders and weather updates for your RosaGo plans.</p></header>
+<section aria-labelledby="notifications-title">
+<div class="section-header"><h2 id="notifications-title">Notifications</h2><div class="local-actions"><button type="button" class="mini-button" data-action="notices-read-all">Mark all as read</button><button type="button" class="mini-button" data-action="notices-clear-dismissed">Clear dismissed</button></div></div>
+<p class="trip-help">Read and dismissed notifications are remembered on this device.</p>
+<script id="notifications-data" type="application/json">{{ notification_rows | tojson }}</script>
+<ul class="notice-list" data-notices>
+{% for notice in notification_rows %}
+<li class="notification-card" data-notice-id="{{ notice.id }}"><div><span class="notification-kind">{{ 'Trip reminder' if notice.kind == 'trip' else 'Weather' }}</span><h3>{{ notice.title }}</h3>{% if notice.name %}<strong>{{ notice.name }}</strong>{% endif %}<p><time datetime="{{ notice.day }}">{{ notice.date_label }}</time></p><p>{{ notice.message }}</p></div><div class="local-actions">{% if notice.url and notice.action_label %}<a class="site-button" href="{{ notice.url }}" data-notice-read="{{ notice.id }}">{{ notice.action_label }}</a>{% endif %}<button class="mini-button" type="button" data-action="notice-dismiss" data-id="{{ notice.id }}">Dismiss</button></div></li>
+{% else %}<li class="notification-empty">No notifications right now.</li>{% endfor %}
+</ul>
+{% if trips_unavailable %}<p class="account-status" role="status">Trip reminders are temporarily unavailable. Please try again later.</p>{% endif %}
+{% if more_trips %}<p class="trip-help">Showing the first 50 dated trips.</p><a class="secondary-button" href="{{ url_for('trips_list') }}">View My Trips</a>{% endif %}
+</section>
+{% if not show_weather or not show_trip_reminders %}<p class="trip-help">Some updates are hidden by your preferences.</p><a class="secondary-button" href="{{ url_for('settings') }}">Change Settings</a>{% endif %}
+{% if show_weather %}
+<section class="card alerts-weather" id="weather" aria-labelledby="weather-title">
+<h2 id="weather-title">Santa Rosa Weather</h2>
+{% if weather %}
+<div class="weather-today"><p class="eyebrow">Today in Santa Rosa</p><strong class="weather-temperature">{{ weather.temperature_c | round(1) }} °C</strong><p>{{ weather.condition }}</p>
+{% set today = namespace(day=none) %}{% for day in weather.forecast if day.day == reminder_start %}{% set today.day = day %}{% endfor %}
+{% if today.day %}<p>Rain chance: <strong>{{ today.day.precipitation_probability | round(0) | int }}%</strong></p><p>High: {{ today.day.maximum_c | round(1) }} °C <span aria-hidden="true"> · </span> Low: {{ today.day.minimum_c | round(1) }} °C</p>{% endif %}
+</div>
+{% set advisory = namespace(shown=false) %}{% for reminder in weather_reminders if reminder.day == reminder_start and not advisory.shown %}{% set advisory.shown=true %}<p class="weather-practical-advisory">Rain is likely today. Bring rain protection if going out.</p>{% endfor %}
+<h3>3-Day Forecast</h3><ul class="weather-forecast">{% for day in weather.forecast %}<li><time datetime="{{ day.day.isoformat() }}">{{ day.day.strftime('%b %d') }}</time><strong>{{ day.condition }}</strong><span>{{ day.minimum_c | round(1) }}°–{{ day.maximum_c | round(1) }}°</span><span>Rain {{ day.precipitation_probability | round(0) | int }}%</span></li>{% endfor %}</ul>
+{% else %}<p class="account-status" role="status">Weather information is temporarily unavailable.</p>{% endif %}
+{% set trip_weather = namespace(useful=false) %}{% for item in trip_weather_reviews if item.review.concerns or item.review.outside_range or item.review.unavailable_dates %}{% set trip_weather.useful=true %}{% endfor %}
+{% if show_trip_reminders and trip_weather.useful %}
+<h3>Trip weather</h3><div class="trip-weather-cards">{% for item in trip_weather_reviews if item.review.concerns or item.review.outside_range or item.review.unavailable_dates %}<article class="trip-weather-card"><h4>{{ item.trip.name }}</h4><p>{{ item.trip.visit_date.strftime('%B %d, %Y') }}</p>{% if item.review.outside_range %}<strong>Forecast not available yet</strong><p>Weather information will appear closer to your trip date.</p>{% elif item.review.unavailable_dates %}<p>Weather information is temporarily unavailable for this trip. Check again before leaving.</p>{% else %}<p>Rain may affect your trip. Check the forecast and plan for rain protection.</p>{% endif %}<a class="secondary-button" href="{{ url_for('trips_detail', trip_id=item.trip.id) }}">View Trip</a></article>{% endfor %}</div>
+{% endif %}
+<details class="weather-about"><summary>About weather information</summary><p>Source: <a href="https://open-meteo.com/" rel="noreferrer">Open-Meteo</a> · CC BY 4.0. Santa Rosa city forecast; conditions at individual destinations may differ. Forecasts can change. These updates are planning reminders, not official warnings.</p>{% if weather %}<p>Forecast retrieved {{ weather.fetched_at.strftime('%b %d, %Y, %I:%M %p') }} (Asia/Manila). Weather is checked when you open this page.</p>{% endif %}</details>
+</section>
+{% endif %}
+</div>
+{% endblock %}

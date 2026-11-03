@@ -1,0 +1,11 @@
+{% extends 'map.html' %}
+{% block title %}Transport | RosaGo{% endblock %}
+{% block map_heading %}
+<p class="eyebrow">Getting around Santa Rosa</p>
+<h1 class="page-heading">Transport Options</h1>
+<p class="page-subheading">Choose a destination, starting point and supported mode to view a route and estimated travel duration.</p>
+<p class="map-notice">Only destinations with verified coordinates can be routed. Destinations without them remain available in Explore.</p>
+<p>Available routing modes: {% for mode, label in routing_modes %}{{ label }}{% if not loop.last %}, {% endif %}{% else %}unavailable until configured{% endfor %}. Provider: {{ routing_provider }}.</p>
+<p>Public transit routing, fares, schedules, motorcycle routing and ride-hailing bookings are unavailable. Your itinerary transportation preference is preserved.</p>
+<a class="secondary-button" href="{{ url_for('planner') }}">Plan a Trip</a>
+{% endblock %}

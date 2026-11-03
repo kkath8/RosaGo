@@ -1,0 +1,11 @@
+/* The panel owns conversation scrolling; history itself never scrolls. */
+.public-site .chat-workspace .conversation-panel { height: clamp(300px, 55dvh, 560px); min-height: 0; max-height: none; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.public-site .chat-workspace .chat-history { max-height: none; overflow: visible; }
+.public-site .chat-workspace > div { min-width: 0; }
+.public-site .chat-workspace .chat-message { flex-shrink: 0; }
+.public-site .chat-loading p { color: var(--site-muted); font-style: italic; }
+.public-site .chat-error { border: 1px solid #d7b9ae; }
+.public-site .chat-error a { display: inline-block; margin-top: 6px; }
+@media (max-width: 860px) {
+    .public-site .chat-workspace .conversation-panel { height: clamp(220px, 36dvh, 340px); }
+}

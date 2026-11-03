@@ -1,24 +1,35 @@
+{% from 'partials/icons.html' import icon %}
+{% macro admin_links() %}
+<a href="{{ url_for('admin.index') }}" {% if active == 'dashboard' %}aria-current="page"{% endif %}>{{ icon('Dashboard') }} Dashboard</a>
+<a href="{{ url_for('admin.places') }}" {% if active == 'places' %}aria-current="page"{% endif %}>{{ icon('Destinations') }} Destinations</a>
+<a href="{{ url_for('admin.users') }}" {% if active == 'users' %}aria-current="page"{% endif %}>{{ icon('Profile') }} Users</a>
+<a href="{{ url_for('admin.trips') }}" {% if active == 'trips' %}aria-current="page"{% endif %}>{{ icon('My Trips') }} Trips &amp; Itineraries</a>
+<a href="{{ url_for('admin.insights') }}" {% if active == 'insights' %}aria-current="page"{% endif %}>{{ icon('Settings') }} Catalog Insights</a>
+<a href="{{ url_for('admin.system') }}" {% if active == 'system' %}aria-current="page"{% endif %}>{{ icon('Settings') }} System &amp; Weather</a>
+{% endmacro %}
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="same-origin"><title>{% block title %}RosaGo Admin{% endblock %}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}"></head>
+{% include 'admin/head_assets.html' %}
+<script src="{{ url_for('static', filename='js/admin.js') }}" defer></script></head>
 <body class="admin-site">
 <a class="skip-link" href="#main-content">Skip to content</a>
-<aside class="admin-sidebar">
-    <a class="wordmark" href="{{ url_for('admin.index') }}" aria-label="RosaGo Admin"><span>Rosa</span><span>Go</span></a>
-    <span class="admin-badge">ADMIN</span>
-    <p class="sidebar-caption">Tourism administration</p>
-    <nav aria-label="Admin navigation">
-        <a href="{{ url_for('admin.index') }}" {% if active == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
-        <a href="{{ url_for('admin.places') }}" {% if active == 'places' %}aria-current="page"{% endif %}>Destinations</a>
-    </nav>
-    <div class="admin-account"><p>Administrator</p>
-        <a href="{{ url_for('index') }}">View User Side <span aria-hidden="true">↗</span></a>
-        <form method="post" action="{{ url_for('admin.logout') }}"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><button class="logout-button" type="submit">Log out</button></form>
+<header class="admin-header">
+    <div class="admin-brand"><a class="wordmark" href="{{ url_for('admin.index') }}" aria-label="RosaGo Admin"><span>Rosa</span><span>Go</span></a><span class="admin-badge">ADMIN</span></div>
+    <nav class="admin-desktop-nav" aria-label="Admin navigation">{{ admin_links() }}</nav>
+    <div class="admin-header-actions">
+        <details class="admin-dropdown admin-appearance"><summary aria-label="Appearance">{{ icon('Settings') }}<span class="appearance-label">Appearance</span></summary>
+            <div class="admin-dropdown-panel"><p class="dropdown-label">Appearance</p><div class="admin-theme-controls" role="group" aria-label="Color theme"><button type="button" data-set-theme="light" aria-pressed="true">Light</button><button type="button" data-set-theme="dark" aria-pressed="false">Dark</button></div><p class="muted"{% if active != 'settings' %} data-theme-status role="status"{% endif %}>Saved on this device.</p></div>
+        </details>
+        <details class="admin-dropdown admin-account"><summary aria-label="Admin account"><span class="admin-avatar" aria-hidden="true">A</span><span class="account-label">Admin</span><span aria-hidden="true">⌄</span></summary>
+            <div class="admin-dropdown-panel admin-account-menu"><p class="dropdown-label">Admin account</p>
+            {% for endpoint,label,key in [('admin.account','Account','account'),('admin.settings','Settings','settings'),('admin.help_page','Help','help'),('admin.about','About RosaGo','about')] %}<a class="admin-utility-link" href="{{ url_for(endpoint) }}"{% if active == key %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+            <hr><form method="post" action="{{ url_for('admin.logout') }}"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><button class="button logout-button" type="submit">{{ icon('Logout') }} Logout</button></form></div>
+        </details>
+        <details class="admin-mobile-menu"><summary>Menu <span aria-hidden="true">☰</span></summary><nav aria-label="Mobile Admin navigation">{{ admin_links() }}</nav></details>
     </div>
-</aside>
-<div class="admin-workspace"><header class="admin-topbar"><span>Santa Rosa, Laguna</span><span class="verified">Admin access verified</span></header>
-<main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
-<footer>RosaGo · Tourism administration</footer></div>
+</header>
+<div class="admin-workspace"><main id="main-content" tabindex="-1">{% for message in get_flashed_messages() %}<p class="notice" role="status">{{ message }}</p>{% endfor %}{% block content %}{% endblock %}</main>
+<footer><span>RosaGo Admin</span><span>Santa Rosa, Laguna</span></footer></div>
 </body></html>

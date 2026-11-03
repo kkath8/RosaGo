@@ -10,13 +10,15 @@ from normal_auth_flask import normal_authenticated
 from admin_places_service import (
     destination_counts, list_destinations, AdminPlacesError, PROJECTION, MAX_OFFSET,
 )
+from admin_dashboard_service import HEALTH_PROJECTION
 import test_admin_authorization as foundation
 import test_registration
 
 
 def row(status='draft', **changes):
     return dict(name='Fixture <destination>', slug='rosago-test-v1-fixture', category='nature',
-                status=status, address='Fixture address', updated_at='2026-10-20T04:00:00Z') | changes
+                status=status, address='Fixture address', updated_at='2026-10-20T04:00:00Z',
+                latitude=None, longitude=None) | changes
 
 
 class AdminPlacesServiceTests(unittest.TestCase):
@@ -79,6 +81,8 @@ class AdminPlacesRouteTests(unittest.TestCase):
             self.assertEqual(request.headers['authorization'], 'Bearer fixture-access')
             if request.url.path.endswith('/rosago_is_admin'):
                 return httpx.Response(200, json=True)
+            if request.url.path.endswith('/rosago_admin_operational_overview'):
+                return httpx.Response(503, json={'message':'Unavailable'})
             self.assertEqual(request.url.path, '/rest/v1/places')
             if failure:
                 return httpx.Response(503, json={'message': 'private-provider-detail'})
@@ -91,12 +95,18 @@ class AdminPlacesRouteTests(unittest.TestCase):
                     headers['Content-Range'] = content_range
                 return httpx.Response(200, headers=headers)
             self.assertEqual(request.method, 'GET')
-            self.assertEqual(request.url.params['select'], PROJECTION)
-            self.assertEqual(request.url.params['limit'], '25')
+            if request.url.params['select'].startswith(HEALTH_PROJECTION):
+                return httpx.Response(200, json=[], headers={'Content-Range': '*/0'})
+            self.assertIn(request.url.params['select'], (PROJECTION, PROJECTION + ',tourism_type,tourism_category', PROJECTION + ',tourism_type,tourism_category,tourism_hours_status'))
+            self.assertEqual(request.url.params['limit'], '200')
             status = request.url.params.get('status')
             rows = [row(value, slug=f'rosago-test-v1-{value}') for value in ('draft', 'published', 'archived')
                     if status is None or status == 'eq.' + value]
-            return httpx.Response(200, json=rows)
+            if request.url.params['select'] != PROJECTION:
+                rows = [r | dict(tourism_type=None, tourism_category=None) for r in rows]
+            if 'tourism_hours_status' in request.url.params['select']:
+                rows = [r | dict(tourism_hours_status=None) for r in rows]
+            return httpx.Response(200, json=rows, headers={'Content-Range': f'0-2/{len(rows)}'})
         def factory(**kwargs):
             client = httpx.Client(transport=httpx.MockTransport(respond), **kwargs)
             self.clients.append(client)
@@ -118,7 +128,7 @@ class AdminPlacesRouteTests(unittest.TestCase):
         self.assertIn(b'Fixture &lt;destination&gt;', response.data)
         response = self.client.get('/admin/places?status=draft&offset=25')
         self.protected(response, 200)
-        self.assertNotIn(b'>Published</span>', response.data)
+        self.assertNotIn(b'class="status-badge status-published"', response.data)
         self.assertIn(b'Previous page', response.data)
         for query in ('status=bad', 'status=draft&status=published', 'offset=-1', 'offset=01', 'offset=99999999999', 'role=admin'):
             self.protected(self.client.get('/admin/places?' + query), 400)
