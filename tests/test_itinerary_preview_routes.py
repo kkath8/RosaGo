@@ -12,7 +12,7 @@ from werkzeug.datastructures import MultiDict
 import test_itinerary_recommendations as recommendations
 import test_itinerary_quiz_routes as quiz
 import test_trip_routes as trips
-from test_public_layout import Document
+from test_public_layout import Document, assert_shared_scripts
 from test_recommendation_engine import place
 from itinerary_draft_service import (
     ItineraryPreviewDraft, DraftResult, DraftRejectedError, DraftValidationError,
@@ -33,6 +33,7 @@ class PreviewRouteTests(unittest.TestCase):
 
     def setUp(self):
         recommendations.RecommendationRouteTests.setUp(self)
+        self.app.extensions['rosago_weather'] = Mock(get_weather=Mock(return_value=None))
         self.current = ItineraryPreviewDraft(
             self.draft.draft_id, self.draft.state, self.draft.revision,
             self.draft.preferences, self.draft.expires_at, trips.OWNER, 1, None)
@@ -117,6 +118,7 @@ class PreviewRouteTests(unittest.TestCase):
         self.assertEqual((response.status_code, response.location), (303, quiz.QUIZ))
         self.edit.assert_called_once()
         self.assertEqual(self.edit.call_args.args[1:], (trips.TRIP, 3))
+
         self.assertEqual((self.current.state, self.current.revision, self.current.preview), ('editing', 4, None))
         self.assertEqual(self.current.preferences, before.preferences)
         self.assertEqual(self.current.expires_at, before.expires_at)
@@ -125,7 +127,18 @@ class PreviewRouteTests(unittest.TestCase):
         self.assertIn(b'name="expected_revision" value="4"', response.data)
         response = self.client.get(recommendations.ROUTE)
         for node in Document(response.get_data(as_text=True)).find('input', type='checkbox'):
-            self.assertNotIn('checked', node.attrs)
+            if node.attrs.get('name') == 'selected_place_ids':
+                self.assertIn('checked', node.attrs)
+
+    def test_checkbox_selection_gets_geographic_visit_order(self):
+        from test_itinerary_geography import located
+        self.current = replace(self.current, preferences=self.current.preferences | {'interests': ['shopping']})
+        catalog = (located(1, 14.3), located(2, 14.1), located(3, 14.299))
+        self.catalog.list_published.return_value = catalog
+        response = self.client.post(PREVIEW, data=self.payload([p.id for p in catalog]), headers=ORIGIN)
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(self.current.preview.source.selected_place_ids,
+                         tuple(catalog[n].id for n in (0, 2, 1)))
 
     def test_all_routes_require_normal_authentication(self):
         routes = [('GET', PREVIEW), ('POST', PREVIEW), ('POST', EDIT), ('GET', recommendations.ROUTE)]
@@ -184,7 +197,8 @@ class PreviewRouteTests(unittest.TestCase):
             response = self.client.open(path.replace(trips.TRIP, trips.OWNER), method=method,
                 data=self.payload() if path == PREVIEW else {'csrf_token': self.csrf, 'expected_revision': '3'},
                 headers=ORIGIN)
-            self.assertEqual((response.status_code, response.data), (404, b'Draft not found.'))
+            self.assertEqual(response.status_code, 404)
+            self.assertIn(b'Draft not found.', response.data)
             self.protected(response)
         for state in ('generating', 'failed', 'saved', 'expired', 'preview_ready'):
             self.current = replace(self.current, state=state)
@@ -251,7 +265,7 @@ class PreviewRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.protected(response)
         page = Document(response.get_data(as_text=True))
-        self.assertEqual(page.find('h1')[0].text, 'Personalized Itinerary Preview')
+        self.assertEqual(page.find('h1')[0].text, 'Your Personalized Itinerary')
         self.assertLess(response.data.index(b'Second stop'), response.data.index(b'Matched &lt;Place&gt;'))
         self.assertIn(b'Fixture address', response.data)
         self.assertIn(b'Test record', response.data)
@@ -261,13 +275,14 @@ class PreviewRouteTests(unittest.TestCase):
         self.assertIn(b'No selected destinations are assigned to this day.', response.data)
         self.assertIn(b'PHP 5,000.50', response.data)
         self.assertIn(b'Asia/Manila', response.data)
-        self.assertIn(b'No trip has been added to My Trips.', response.data)
+        self.assertIn('Preview — not saved yet'.encode(), response.data)
         self.assertEqual(page.find('input', name='expected_revision')[0].attrs['value'], '3')
         self.assertEqual(len(page.find('section', **{'class': 'card itinerary-card preview-day'})), 7)
         self.assertEqual(page.stack, [])
         for forbidden in (b'forged', b'visit_duration', b'catalog_fingerprint', b'arrival_time',
-                          b'5 stars', b'optimized schedule', b'AI-generated', b'<img', b'<script'):
+                          b'5 stars', b'optimized schedule', b'AI-generated', b'<img'):
             self.assertNotIn(forbidden, response.data)
+        assert_shared_scripts(self,page)
         self.adapter.assert_not_called(); self.store.assert_not_called(); self.edit.assert_not_called()
 
     def test_get_budget_optional_and_zero(self):
@@ -348,7 +363,7 @@ class PreviewRouteTests(unittest.TestCase):
         self.assertEqual(seen, ['itinerary/preview.html'])
         for secret in (trips.OWNER, self.handle, 'private-access', 'private-refresh'):
             self.assertNotIn(secret.encode(), response.data)
-        self.assertIn(b'aria-current="true">Planner', response.data)
+        self.assertTrue(any(n.text.strip() == 'Planner' and n.attrs.get('aria-current') == 'true' for n in Document(response.get_data(as_text=True)).find('a')))
         self.assertEqual(before, self.current)
         self.adapter.assert_not_called(); self.store.assert_not_called(); self.edit.assert_not_called()
 

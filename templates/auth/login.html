@@ -1,40 +1,36 @@
+{% from 'auth/required.html' import required_mark %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    {% include 'partials/theme_head.html' %}
+    {% include 'partials/fonts.html' %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log in | RosaGo</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
     <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
 </head>
-<body>
+<body class="auth-site">
     <main class="registration-layout">
         <section class="welcome" aria-labelledby="welcome-title">
-            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGo home">Rosa<span>Go</span><span class="brand-dot" aria-hidden="true">.</span></a>
-            <p class="brand-description">Smart Tourism System for Santa Rosa, Laguna</p>
-            <div class="welcome-copy">
-                <p class="eyebrow">A little closer to local</p>
-                <h1 id="welcome-title">Your next story<br>starts in<br><span>Santa Rosa.</span></h1>
-                <p>From familiar streets to new discoveries, there’s more to explore in the Lion City of the South.</p>
-            </div>
-            <div class="destination-note">
-                <span class="destination-mark" aria-hidden="true">SR</span>
-                <div><strong>Santa Rosa, Laguna</strong><span>Local places. Lasting memories.</span></div>
-            </div>
+            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGo home">Rosa<span>Go</span></a>
+            <div class="welcome-copy"><h1 id="welcome-title">Welcome back to the <span>Lion City.</span></h1></div>
         </section>
         <section class="form-panel" aria-labelledby="login-title">
             <div class="registration-card">
                 <p class="eyebrow">Welcome back</p>
                 <h2 id="login-title">Log in to RosaGo</h2>
                 <p class="form-intro">Your next Santa Rosa discovery is waiting.</p>
+                {% if request.args.get('login_required') == '1' %}<p class="account-status" role="status">Please sign in to continue. Your session may have expired.</p>{% endif %}
                 <form id="login-form" method="post" action="{{ url_for('login') }}" novalidate>
+                    {% if add_place_slug %}<input type="hidden" name="add_place" value="{{ add_place_slug }}">{% endif %}
                     <div class="field">
-                        <label for="login-email">Email Address</label>
+                        <label for="login-email">Email Address {{ required_mark() }}</label>
                         <input id="login-email" name="email" value="{{ email }}" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" required aria-describedby="login-email-error">
                         <p class="field-error" id="login-email-error" hidden></p>
                     </div>
                     <div class="field">
-                        <label for="login-password">Password</label>
+                        <label for="login-password">Password {{ required_mark() }}</label>
                         <div class="password-input">
                             <input id="login-password" name="password" type="password" autocomplete="current-password" required aria-describedby="login-password-error">
                             <button class="password-toggle" id="login-password-toggle" type="button" aria-controls="login-password" aria-label="Show password" aria-pressed="false">Show</button>
@@ -42,13 +38,8 @@
                         <p class="field-error" id="login-password-error" hidden></p>
                     </div>
                     <div class="login-options">
-                        <label class="checkbox-label" for="remember-me">
-                            <input id="remember-me" type="checkbox" aria-describedby="login-options-help">
-                            <span>Remember me</span>
-                        </label>
                         <a class="forgot-password" href="{{ url_for('forgot_password') }}">Forgot password?</a>
                     </div>
-                    <p class="field-help login-options-help" id="login-options-help">Remember me is not active yet.</p>
                     <button class="submit-button" id="login-submit" type="submit">Log In <span aria-hidden="true">→</span></button>
                     <p class="form-status" id="login-status" data-state="{{ state }}" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">{{ message }}</p>
                 </form>

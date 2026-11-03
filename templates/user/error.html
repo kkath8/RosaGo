@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Unable to continue | RosaGo{% endblock %}
+{% block content %}
+<section class="empty-state" aria-labelledby="error-title">
+<p class="eyebrow">Your RosaGo plans</p><h1 id="error-title" class="page-heading">Unable to continue</h1>
+<p role="alert">{{ message }}</p>
+<div class="trip-actions"><a class="site-button" href="{{ url_for('planner') }}">Back to Planner</a><a class="site-button site-button-secondary" href="{{ url_for('trips_list') }}">My Trips</a></div>
+</section>
+{% endblock %}

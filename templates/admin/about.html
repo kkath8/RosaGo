@@ -1,0 +1,10 @@
+{% extends 'admin/base.html' %}
+{% block title %}About RosaGo | RosaGo Admin{% endblock %}
+{% block content %}
+<div class="admin-utility-page">
+<header class="utility-heading"><p class="eyebrow">Administration</p><h1>About RosaGo</h1><p class="intro">System information and supported capabilities.</p></header>
+<section class="panel" aria-labelledby="system-information"><h2 id="system-information">System information</h2><dl class="record-fields utility-facts"><dt>System</dt><dd>RosaGo</dd><dt>Purpose</dt><dd>Context-aware tourism itinerary recommendation system for Santa Rosa, Laguna.</dd><dt>Destination source</dt><dd>RosaGo catalog with City Tourism metadata where available.</dd><dt>Map</dt><dd>OpenStreetMap / Leaflet</dd><dt>Weather</dt><dd>Open-Meteo</dd><dt>Recommendations</dt><dd>Uses destination metadata and user travel preferences. Available geographic information helps recommend places that can be visited more practically together.</dd><dt>AI assistance</dt><dd>Gemini supports natural-language interpretation and explanations. It does not define destination metadata, coordinates, Tourism Type, publication status or weather exposure.</dd></dl></section>
+<section class="panel utility-section"><h2>Admin workspace</h2><p>Dashboard, Destinations, Users, Trips & Itineraries, Catalog Insights and System & Weather provide catalog management and limited operational oversight. Destination writes and operational summaries require the reviewed backend capability. Weather exposure remains curated separately. Account actions and private trip editing are unavailable. Audit logging requires its separate migration.</p><p class="section-note">Provider names describe the system's integrations, not a claim that every service is currently available.</p></section>
+<div class="utility-links"><a class="secondary-button" href="{{ url_for('admin.help_page') }}">Admin Help</a><a class="secondary-button" href="{{ url_for('admin.index') }}">View Dashboard</a></div>
+</div>
+{% endblock %}

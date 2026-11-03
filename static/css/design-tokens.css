@@ -1,0 +1,20 @@
+/* Final daytime-arch and polish tokens from the supplied TourismUI prototype. */
+:root {
+    color-scheme: light;
+    --site-red: #8e3b2c;
+    --site-deep-red: #6e2a1e;
+    --site-gold: #eec35c;
+    --site-ink: #2e1a14;
+    --site-muted: #6b5a48;
+    --site-border: #efe2bd;
+    --site-tint: #fdf6e3;
+    --site-paper: #fffdf8;
+    --site-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --site-logo: "Sora", system-ui, sans-serif;
+    --site-shadow: 0 1px 2px #6e2a1e0d, 0 8px 24px #6e2a1e0f;
+    --red: var(--site-red);
+    --deep-red: var(--site-deep-red);
+    --ink: var(--site-ink);
+    --muted: var(--site-muted);
+    --border: var(--site-border);
+}

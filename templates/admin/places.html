@@ -1,19 +1,32 @@
 {% extends 'admin/base.html' %}
-{% block title %}Destinations · RosaGo Admin{% endblock %}
+{% block title %}Destinations - RosaGo Admin{% endblock %}
 {% block content %}
-<p class="eyebrow">Read-only catalog</p><h1>Destinations</h1><p class="intro">Review destination information and publication status.</p>
-<nav class="status-filters" aria-label="Filter destinations by status">
-<a href="{{ url_for('admin.places') }}" {% if not selected_status %}aria-current="page"{% endif %}>All statuses</a>
-{% for value in ['published', 'draft', 'archived'] %}<a href="{{ url_for('admin.places', status=value) }}" {% if selected_status == value %}aria-current="page"{% endif %}>{{ value|title }}</a>{% endfor %}</nav>
-{% if rows is none %}<p class="notice" role="alert">Destination information is unavailable. Please try again later.</p>
-{% elif not rows %}<p class="panel">No destinations on this page{% if selected_status %} with status {{ selected_status }}{% endif %}.</p>
-{% else %}<ul class="destination-list">{% for place in rows %}<li class="panel">
-<div class="destination-heading"><h2>{{ place.name }}</h2><span class="status-badge status-{{ place.status }}">{{ place.status|title }}</span></div>
-<p class="muted">{{ place.category|title }}</p><p>{{ place.address }}</p>
-<p class="muted">Last updated: <time datetime="{{ place.updated_at.isoformat() }}">{{ place.updated_at.strftime('%d %b %Y, %H:%M %z') }}</time></p>
-{% if place.is_test_record %}<p class="notice">Development/test record — not an official or endorsed tourism listing.</p>{% endif %}
-</li>{% endfor %}</ul>{% endif %}
-<nav class="status-filters" aria-label="Destination pages">
-{% if offset %}<a href="{{ url_for('admin.places', status=selected_status, offset=previous_offset) }}">Previous page</a>{% endif %}
-{% if next_offset is not none %}<a href="{{ url_for('admin.places', status=selected_status, offset=next_offset) }}">Next page</a>{% endif %}</nav>
+<div class="dashboard-heading"><div><p class="eyebrow">Administration</p><h1>Destinations</h1><p class="intro">Manage the destination information used across RosaGo.</p></div><a class="button" href="{{ url_for('admin.new_place') }}">+ Add Destination</a></div>
+{% if catalog is not none %}
+<section class="catalog-summary" aria-label="Complete catalog summary"><span class="scope-label">All catalog records</span>{% for key,label in [('published','Published'),('draft','Draft'),('archived','Archived'),('local','Local'),('common','Common'),('missing_coordinates','Missing coordinates')] %}<div><span>{{ label }}</span><strong>{{ catalog.summary[key] if catalog.summary[key] is not none else 'Unavailable' }}</strong></div>{% endfor %}</section>
+{% endif %}
+<form class="panel catalog-filters" method="get" action="{{ url_for('admin.places') }}" aria-label="Destination filters">
+<div class="catalog-search field"><label for="catalog-query">Search destinations</label><input id="catalog-query" type="search" name="q" value="{{ filters.q }}" maxlength="150" placeholder="{{ 'Name, address or category' if not tourism_enabled else 'Name, address, RosaGo or Tourism category' }}"></div>
+<div class="field"><label for="catalog-status">Publication status</label><select id="catalog-status" name="status"><option value="">All statuses</option>{% for status in ['published','draft','archived'] %}<option value="{{ status }}"{% if filters.status == status %} selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></div>
+<div class="field"><label for="catalog-category">RosaGo Category</label><select id="catalog-category" name="category"><option value="">All categories</option>{% for category in categories %}<option value="{{ category }}"{% if filters.category == category %} selected{% endif %}>{{ 'Industrial Tourism' if category == 'industrial' else category|title }}</option>{% endfor %}</select></div>
+{% if tourism_enabled %}<div class="field"><label for="catalog-tourism">Tourism Type</label><select id="catalog-tourism" name="tourism_type"><option value="">All types</option>{% for value,label in [('Local','Local'),('Common','Common'),('unclassified','Not classified')] %}<option value="{{ value }}"{% if filters.tourism_type == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>{% endif %}
+<div class="field"><label for="catalog-coordinates">Coordinates</label><select id="catalog-coordinates" name="coordinates"><option value="">All locations</option><option value="with"{% if filters.coordinates == 'with' %} selected{% endif %}>With coordinates</option><option value="missing"{% if filters.coordinates == 'missing' %} selected{% endif %}>Missing coordinates</option></select></div>
+<div class="filter-actions"><button class="button" type="submit">Apply Filters</button><a class="secondary-button" href="{{ url_for('admin.places') }}">Clear Filters</a></div>
+</form>
+<p class="section-note catalog-permission-note">New destinations start as Draft. Publication changes require confirmation; archive retains the record.</p>
+{% if not tourism_enabled %}<p class="notice" role="status">Tourism metadata is not enabled. Tourism Type and category are unavailable, rather than unclassified.</p>{% endif %}
+{% if catalog is none %}<p class="notice" role="alert">Destination information is unavailable. Please try again later.</p>
+{% elif not catalog.rows %}<section class="panel empty-state"><h2>{{ 'No destinations match these filters.' if catalog.total else 'Your catalog is empty' }}</h2><p>No destinations on this page. Adjust your filters or return to the first page.</p><a class="secondary-button" href="{{ url_for('admin.places') }}">View All Destinations</a></section>
+{% else %}
+<div class="catalog-results-heading"><h2>Destination records</h2><p class="muted">{{ offset + 1 }}&ndash;{{ offset + catalog.rows|length }} of {{ catalog.matching }} matching - {{ catalog.total }} total</p></div>
+<div class="panel catalog-table-panel"><table class="catalog-table"><caption class="visually-hidden">Destination catalog management list</caption><thead><tr><th scope="col">Destination</th><th scope="col">RosaGo Category</th><th scope="col">Tourism Type</th><th scope="col">Tourism Category</th><th scope="col">Coordinates</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody>
+{% for place in catalog.rows %}<tr><th scope="row" data-label="Destination"><strong>{{ place.name }}</strong><span class="catalog-address">{{ place.address }}</span>{% if place.is_test_record %}<span class="catalog-test-label">Development/test record - not an official or endorsed tourism listing.</span>{% endif %}</th>
+<td data-label="RosaGo Category">{{ 'Industrial Tourism' if place.category == 'industrial' else place.category|title }}</td>
+<td data-label="Tourism Type">{% if place.tourism_metadata_available %}<span class="tourism-badge tourism-{{ place.tourism_type|lower if place.tourism_type else 'unset' }}">{{ place.tourism_type or 'Not classified' }}</span>{% else %}<span class="muted">Unavailable</span>{% endif %}</td>
+<td data-label="Tourism Category">{{ (place.tourism_category or 'Not supplied') if place.tourism_metadata_available else 'Unavailable' }}</td>
+<td data-label="Coordinates"><span class="coordinate-state {{ 'coordinate-present' if place.has_coordinates else 'coordinate-missing' }}">{{ 'Available' if place.has_coordinates else 'Missing' }}</span></td>
+<td data-label="Status"><span class="status-badge status-{{ place.status }}">{{ place.status|title }}</span></td>
+<td data-label="Actions"><div class="catalog-row-actions"><a class="secondary-button" href="{{ url_for('admin.place_detail', slug=place.slug) }}" aria-label="View Destination: {{ place.name }}">View Destination</a><a class="secondary-button" href="{{ url_for('admin.edit_place', slug=place.slug) }}" aria-label="Edit Destination: {{ place.name }}">Edit Destination</a></div></td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+<nav class="catalog-pagination" aria-label="Destination pages">{% if previous_url %}<a class="secondary-button" href="{{ previous_url }}">Previous page</a>{% endif %}{% if next_url %}<a class="secondary-button" href="{{ next_url }}">Next page</a>{% endif %}</nav>
 {% endblock %}

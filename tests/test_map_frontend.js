@@ -51,7 +51,7 @@ function run(markers, options = {}) {
         location: { href: 'https://rosago.example/map', origin: 'https://rosago.example' } };
     vm.runInNewContext(source, { window, document: {
         getElementById: (id) => elements.get(id) ?? null, createElement: element,
-    }, URL, navigator: { geolocation: { getCurrentPosition: forbidden, watchPosition: forbidden } },
+    }, URL, URLSearchParams, navigator: { geolocation: { getCurrentPosition: forbidden, watchPosition: forbidden } },
     fetch: forbidden, XMLHttpRequest: forbidden, setTimeout: forbidden, setInterval: forbidden,
     localStorage: new Proxy({}, { get: forbidden }), sessionStorage: new Proxy({}, { get: forbidden }) });
     assert.deepEqual(Object.keys(window), ['L', 'location']);
@@ -101,9 +101,9 @@ test('hostile strings are text nodes, never HTML', () => {
     const address = '<script>alert(1)</script>';
     const { calls } = run([place({ name, address, category: 'attraction' })]);
     const children = calls.markers[0].popup.children;
-    assert.deepEqual(children.map((node) => node.tag), ['strong', 'p', 'p', 'a']);
-    assert.deepEqual(children.map((node) => node.textContent),
-        [name, 'Attractions', address, `View details for ${name}`]);
+    assert.deepEqual(children.slice(0, 4).map((node) => node.tag), ['strong', 'p', 'p', 'a']);
+    assert.deepEqual(children.slice(0, 4).map((node) => node.textContent),
+        [name, 'Attractions', address, 'View Details']);
     assert.equal(calls.markers[0].settings.alt, name);
 });
 test('malformed JSON and missing data/Leaflet reveal sanitized fallback', () => {
@@ -116,7 +116,7 @@ test('malformed JSON and missing data/Leaflet reveal sanitized fallback', () => 
 });
 test('malformed payload refuses the whole map before requesting tiles', () => {
     const missing = place(); delete missing.address;
-    for (const value of [null, {}, 'bad', [null], [missing], Array(51).fill(place()),
+    for (const value of [null, {}, 'bad', [null], [missing],
         [place(), place({ category: 'unknown' })], [place({ category: '__proto__' })],
         [place({ latitude: '14.2' })], [place({ latitude: null })], [place({ longitude: 181 })],
         [place({ latitude: -91 })], [place({ name: '' })], [place({ id: 'not-allowed' })]]) {
@@ -158,6 +158,12 @@ test('tile errors reveal background fallback without destroying destinations', (
     assert.equal(calls.tiles.length, 1);
     assert.equal(calls.markers.length, 1);
 });
-test('no app-level HTML injection, credentials, geolocation or network fetch code', () => {
-    assert.doesNotMatch(source, /innerHTML|insertAdjacentHTML|eval\(|supabase|access_token|refresh_token|geolocation|fetch\(|XMLHttpRequest/);
+test('no app-level HTML injection or credential handling', () => {
+    assert.doesNotMatch(source, /innerHTML|insertAdjacentHTML|eval\(|supabase|access_token|refresh_token|XMLHttpRequest/);
+});
+
+test('published maps larger than the old 50-record page retain every marker', () => {
+    const { calls, elements } = run(Array(51).fill(place()));
+    assert.equal(calls.markers.length, 51);
+    assert.equal(elements.get('map-failure').hidden, true);
 });

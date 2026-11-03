@@ -10,7 +10,7 @@ from werkzeug.datastructures import MultiDict
 
 import test_itinerary_quiz_routes as quiz
 import test_trip_routes as trips
-from test_public_layout import Document
+from test_public_layout import Document, assert_shared_scripts
 from test_recommendation_engine import place
 from itinerary_draft_service import EXTENSION_FIELDS, DraftUnavailableError, DraftConsistencyError
 from normal_auth_coordinator import AuthenticatedContext, SessionBusy, ClientUnavailable
@@ -53,15 +53,15 @@ class RecommendationRouteTests(unittest.TestCase):
         response = self.post(headers={'Origin': 'http://localhost'})
         self.assertEqual(response.status_code, 200)
         self.protected(response)
-        self.assertIn(b'aria-current="true">Planner', response.data)
+        self.assertTrue(any(n.text.strip() == 'Planner' and n.attrs.get('aria-current') == 'true' for n in Document(response.get_data(as_text=True)).find('a')))
         self.read.assert_called_once()
         self.assertEqual(self.read.call_args.args[1], trips.TRIP)
         self.catalog.list_published.assert_called_once_with(limit=100, offset=0)
         self.engine.assert_called_once_with(self.draft.preferences, (self.other, self.match))
         page = Document(response.get_data(as_text=True))
-        self.assertEqual(page.find('h1')[0].text, 'Recommended Places')
+        self.assertEqual(page.find('h1')[0].text, 'Personalized recommendations')
         heading = page.find('header', **{'class': 'itinerary-heading'})[0]
-        self.assertIn('Choose destinations, review your selection, then build an untimed itinerary preview.', heading.text)
+        self.assertIn('RosaGo recommends these places', heading.text)
         self.assertIn(b'Matched &lt;Place&gt;', response.data)
         self.assertNotIn(b'Unmatched dining', response.data)
         self.assertIn(b'Matches your Attractions interest.', response.data)
@@ -73,10 +73,22 @@ class RecommendationRouteTests(unittest.TestCase):
         for label in ('Edit Preferences', 'Back to Review', 'Explore More Places'):
             self.assertIn(label, actions.text)
         self.assertEqual(page.stack, [])
-        self.assertEqual(page.find('script'), [])
+        assert_shared_scripts(self,page)
         for unsupported in (b'Affordable', b'Open now', b'5 stars', b'Day 1', b'Save Itinerary', b'Add to Trip'):
             self.assertNotIn(unsupported, response.data)
         self.assertIn(b'have not been evaluated', response.data)
+
+    def test_suggested_cards_use_geographic_set_and_sequence(self):
+        from test_itinerary_geography import located
+        catalog = tuple(located(n, lat, 'attraction') for n, lat in
+                        ((1, 14.3), (2, 14.1), (3, 14.301), (4, 14.302)))
+        self.catalog.list_published.return_value = catalog
+        response = self.client.get(ROUTE + '?stops=3')
+        self.assertEqual(response.status_code, 200)
+        page = Document(response.get_data(as_text=True))
+        selected = [node.attrs['value'] for node in page.find('input')
+                    if node.attrs.get('name') == 'selected_place_ids' and 'checked' in node.attrs]
+        self.assertEqual(selected, [catalog[n].id for n in (0, 2, 3)])
 
     def test_authentication_and_unavailability_before_any_reads(self):
         for error in (SessionBusy(), ClientUnavailable()):
@@ -124,7 +136,8 @@ class RecommendationRouteTests(unittest.TestCase):
                                      data={'csrf_token': self.csrf})
                      for identifier in (trips.TRIP, trips.OWNER)]
         for response in responses:
-            self.assertEqual((response.status_code, response.data), (404, b'Draft not found.'))
+            self.assertEqual(response.status_code, 404)
+            self.assertIn(b'Draft not found.', response.data)
             self.protected(response)
         for state in ('generating', 'preview_ready', 'failed', 'saved', 'expired'):
             self.read.return_value = replace(self.draft, state=state)
@@ -206,10 +219,10 @@ class RecommendationRouteTests(unittest.TestCase):
                 self.assertNotIn(secret.encode(), output.data)
 
     def test_test_record_disclosure_only_when_displaying_test_records(self):
-        self.assertNotIn(b'Development preview:', self.post().data)
+        self.assertNotIn(b'Development data:', self.post().data)
         self.catalog.list_published.return_value = (replace(self.match, slug='rosago-test-v1-attraction-01'),)
         response = self.post()
-        self.assertIn(b'Development preview:', response.data)
+        self.assertIn(b'Development data:', response.data)
         self.assertIn(b'not real businesses or attractions', response.data)
         self.assertIn(b'Test record', response.data)
 

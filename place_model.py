@@ -3,7 +3,9 @@ from dataclasses import dataclass
 from datetime import datetime
 
 
-CATEGORIES = frozenset(('attraction', 'dining', 'shopping', 'accommodation', 'nature', 'heritage'))
+CATEGORIES = frozenset(('attraction', 'dining', 'shopping', 'accommodation', 'nature', 'heritage', 'industrial'))
+TOURISM_TYPES = frozenset(('Local', 'Common'))
+TOURISM_HOURS_STATUSES = frozenset(('unverified', 'verify_required', 'not_supplied'))
 
 
 @dataclass(frozen=True, slots=True, repr=False)
@@ -14,11 +16,18 @@ class Place:
     description: str
     category: str
     address: str
-    latitude: float
-    longitude: float
+    latitude: float | None
+    longitude: float | None
     image_url: str | None
     created_at: datetime
     updated_at: datetime
+    tourism_type: str | None = None
+    tourism_category: str | None = None
+    tourism_opening_hours_raw: str | None = None
+    tourism_closing_hours_raw: str | None = None
+    tourism_hours_status: str | None = None
+    tourism_source: str | None = None
+    tourism_source_row: int | None = None
 
     def __repr__(self):
         return '<Place redacted>'

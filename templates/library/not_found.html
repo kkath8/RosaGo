@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block title %}Page not found | RosaGo{% endblock %}{% block content %}
+<section class="card"><p class="eyebrow">404</p><h1>Page not found</h1><p class="page-subheading">That page does not exist. Try one of these.</p><div class="trip-actions"><a class="site-button" href="{{ url_for('index') }}">Dashboard</a><a class="site-button site-button-secondary" href="{{ url_for('places_list') }}">Explore</a><a class="site-button site-button-secondary" href="{{ url_for('features.help_page') }}">Help</a></div></section>
+{% endblock %}

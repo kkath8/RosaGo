@@ -1,0 +1,17 @@
+{% if weather %}
+<p><strong>{{ weather.temperature_c | round(1) }} °C</strong> &mdash; {{ weather.condition }}</p>
+{% if weather.apparent_c is not none %}<p>Feels like {{ weather.apparent_c | round(1) }} °C.</p>{% endif %}
+<p>Modelled precipitation: {{ weather.precipitation_mm | round(1) }} mm for the reported {{ (weather.interval_seconds / 60) | round(0) | int }}-minute interval. Wind: {{ weather.wind_kmh | round(1) }} km/h.</p>
+<p class="trip-help">Current model time: <time datetime="{{ weather.reported_at.isoformat() }}">{{ weather.reported_at.strftime('%b %d, %Y, %I:%M %p') }}</time> (Asia/Manila). Retrieved {{ weather.fetched_at.strftime('%I:%M %p') }}. Model data may differ from conditions at a particular destination.</p>
+<h3>Three-day forecast</h3>
+<ul class="trip-list">
+    {% for day in weather.forecast %}
+    <li><time datetime="{{ day.day.isoformat() }}">{{ day.day.strftime('%a, %b %d') }}</time>: {{ day.condition }}.
+        Low {{ day.minimum_c | round(1) }} °C; high {{ day.maximum_c | round(1) }} °C.
+        Maximum precipitation probability: {{ day.precipitation_probability | round(0) | int }}%.</li>
+    {% endfor %}
+</ul>
+<p class="trip-help">Forecasts can change. Source: <a href="https://open-meteo.com/" rel="noreferrer">Open-Meteo</a>. Forecast data: CC BY 4.0.</p>
+{% else %}
+<p class="account-status" role="status">Weather is temporarily unavailable. Weather reminders cannot be generated right now. You can still review trip reminders below.</p>
+{% endif %}

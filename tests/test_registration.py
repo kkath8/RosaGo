@@ -105,7 +105,8 @@ class RegistrationTests(unittest.TestCase):
             "role": "admin", "is_admin": "true", "first_name": " Ana ",
             "email_redirect_to": "https://example.com/untrusted",
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(response.location, '/verify-email')
         self.supabase.auth.sign_up.assert_called_once_with({
             "email": "ana@example.com", "password": self.valid["password"],
             "options": {
@@ -113,9 +114,12 @@ class RegistrationTests(unittest.TestCase):
                 "email_redirect_to": "http://127.0.0.1:5000/auth/callback",
             },
         })
-        self.assertIn(b"Account created!", response.data)
         self.assertNotIn(self.valid["password"].encode(), response.data)
-        self.assertFalse(response.headers.getlist("Set-Cookie"))
+        with self.client.session_transaction() as current:
+            self.assertEqual(set(current), {'pending_email_verification'})
+            pending = self.app.extensions['rosago_email_pending'].get(current['pending_email_verification'])
+            self.assertEqual(pending.email, self.valid['email'])
+        self.assertIn(b'Verification Code', self.client.get(response.location).data)
 
     def test_errors_are_safe_and_passwords_are_not_repopulated(self):
         cases = [

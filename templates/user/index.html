@@ -1,44 +1,32 @@
 {% extends 'base.html' %}
 {% block title %}Profile | RosaGo{% endblock %}
+{% block extra_head %}<meta name="referrer" content="same-origin"><link rel="stylesheet" href="{{ url_for('static', filename='css/account-management.css') }}">{% endblock %}
 {% block content %}
-<section class="profile-page" aria-labelledby="account-title">
-    <header class="profile-heading">
-        <p class="eyebrow">Your RosaGo account</p>
-        <h1 id="account-title" class="page-heading">Profile</h1>
-        <p class="page-subheading">Manage your personal information.</p>
-    </header>
-    <div class="profile-layout">
-        <section class="card profile-summary" aria-labelledby="profile-summary-title">
-            <span class="profile-avatar" aria-hidden="true">{% if profile and (profile.first_name or profile.last_name) %}{{ ((profile.first_name or '')[:1] ~ (profile.last_name or '')[:1]) | upper }}{% else %}R{% endif %}</span>
-            <h2 id="profile-summary-title">{% if profile and (profile.first_name or profile.last_name) %}Welcome, {{ [profile.first_name, profile.last_name] | select | join(' ') }}{% else %}Welcome to RosaGo{% endif %}</h2>
-            <p class="account-identity">Signed in as {{ user_email }}</p>
-            <a class="text-link" href="{{ url_for('trips_list') }}">My Trips</a>
-            <form class="account-logout" method="post" action="{{ url_for('logout') }}">
-                <button class="account-logout-button" type="submit">Logout</button>
-            </form>
-        </section>
-        <div class="profile-details">
-            <section class="card profile-information" aria-labelledby="personal-title">
-                <h2 id="personal-title">Personal Information</h2>
-                <p class="profile-note">Your name as it appears on your profile.</p>
-                {% if profile is none %}
-                <p class="account-status">Your profile information is currently unavailable.</p>
-                {% else %}
-                <dl class="profile-info-grid">
-                    <div><dt>First Name</dt><dd>{{ profile.first_name or 'Not provided' }}</dd></div>
-                    <div><dt>Last Name</dt><dd>{{ profile.last_name or 'Not provided' }}</dd></div>
-                </dl>
-                {% endif %}
-                <a class="site-button" href="{{ url_for('user_profile_edit') }}">Edit Profile</a>
-            </section>
-            <section class="card profile-account" aria-labelledby="account-info-title">
-                <h2 id="account-info-title">Account Information</h2>
-                <p class="profile-note">Read-only account information. Editing your profile changes your name only.</p>
-                <dl class="profile-info-grid">
-                    <div><dt>Email</dt><dd>{{ user_email }}</dd></div>
-                </dl>
-            </section>
-        </div>
-    </div>
-</section>
+{% set interests = [('dining','Dining'),('nature','Nature'),('shopping','Shopping'),('attraction','Attractions'),('heritage','Heritage'),('industrial','Industrial Tourism'),('accommodation','Accommodation')] %}
+<section class="management-page profile-page" aria-labelledby="profile-title" data-profile-design="preferences-v2">
+<header class="management-heading"><h1 id="profile-title">Profile</h1><p>Manage your personal information and travel preferences.</p></header>
+<div data-profile-management><div data-travel-profile>
+<div class="identity-summary"><span class="profile-avatar user-avatar" data-avatar>{{ (first_name[:1] ~ last_name[:1]) | upper or 'T' }}</span><div class="identity-details"><strong data-profile-full-name>{{ [first_name, last_name] | select | join(' ') or 'Your profile' }}</strong><p>{{ user_email }}</p><fieldset class="identity-colors"><legend>Profile Avatar</legend><div class="preference-chips avatar-choices">{% for color,label in [('', 'Default'),('#8e3b2c','Brick'),('#c99a1c','Gold'),('#3b6ea5','Blue'),('#2f6b4f','Green'),('#6b3a6b','Purple')] %}<label class="preference-chip"><input type="radio" name="avatar_color" value="{{ color }}">{{ label }}</label>{% endfor %}</div></fieldset></div></div>
+{% if profile is defined and profile is none %}<p class="account-status" role="status">Your profile information is currently unavailable.</p>{% endif %}
+{% for success in get_flashed_messages(category_filter=['profile_success']) %}<p class="account-status" role="status">{{ success }}</p>{% endfor %}
+<div class="profile-form-surface">
+<form id="profile-account-form" method="post" action="{{ url_for('user_profile_edit') }}" data-profile-account novalidate>
+<input name="csrf_token" type="hidden" value="{{ csrf }}">
+<section class="management-section"><h2>Personal Information</h2><div class="management-fields">
+{% for key,label,autocomplete,value in [('first_name','First Name','given-name',first_name),('last_name','Last Name','family-name',last_name)] %}
+<div class="field"><label for="profile-{{ key }}">{{ label }} <span aria-hidden="true">*</span></label><input id="profile-{{ key }}" name="{{ key }}" autocomplete="{{ autocomplete }}" maxlength="100" required value="{{ value }}" aria-describedby="{{ key }}-error"{% if field_errors.get(key) %} aria-invalid="true"{% endif %}><p id="{{ key }}-error" class="field-error" data-name-error="{{ key }}"{% if not field_errors.get(key) %} hidden{% endif %}>{{ field_errors.get(key, '') }}</p></div>
+{% endfor %}
+<div class="field full-field"><label for="profile-email">Email Address</label><input id="profile-email" type="email" readonly value="{{ user_email }}"><small>Registered email — cannot be changed here.</small></div>
+</div></section></form>
+<section class="management-section"><h2>Travel Interests</h2><p>Choose up to six types of destinations you enjoy.</p><div class="preference-chips">{% for value,label in interests %}<label class="preference-chip"><input type="checkbox" name="travel_interests" value="{{ value }}">{{ label }}</label>{% endfor %}</div><p class="field-error" data-interests-error hidden></p></section>
+<section class="management-section"><h2>Travel Style</h2>
+<fieldset><legend>Preferred Budget</legend><div class="preference-chips">{% for value,label in [('low','Low'),('mid','Mid-range'),('high','High')] %}<label class="preference-chip"><input type="radio" name="budget_preference" value="{{ value }}">{{ label }}</label>{% endfor %}</div><p class="management-note">Used as a planning preference when destination pricing is available. Prices are not currently verified; set your trip budget in Planner.</p></fieldset>
+<fieldset><legend>Traveler Type</legend><div class="preference-chips">{% for value,label in [('solo','Solo'),('couple','Couple'),('family','Family'),('friends','Barkada / Friends'),('group','Group')] %}<label class="preference-chip"><input type="radio" name="traveler_type" value="{{ value }}">{{ label }}</label>{% endfor %}</div></fieldset>
+<fieldset><legend>Preferred Transportation</legend><div class="preference-chips">{% for value,label in [('private_car','Driving'),('walking','Walking'),('bicycle','Cycling'),('public_transport','Commute'),('motorcycle','Motorcycle'),('ride_hailing','Ride-hailing / Taxi'),('mixed_transport','Mixed transport')] %}<label class="preference-chip"><input type="radio" name="transportation" value="{{ value }}">{{ label }}</label>{% endfor %}</div><p class="management-note">A planning preference. Available routing modes depend on the route provider.</p></fieldset></section>
+<section class="management-section"><h2>Itinerary Defaults</h2><fieldset><legend>Preferred Pace</legend><div class="preference-chips">{% for value,label in [('relaxed','Relaxed'),('balanced','Balanced'),('packed','Packed')] %}<label class="preference-chip"><input type="radio" name="pace" value="{{ value }}">{{ label }}</label>{% endfor %}</div></fieldset>
+<div class="field stops-field"><label for="profile-stops">Preferred Number of Stops</label><select id="profile-stops" name="stops">{% for n in [0,2,3,4,5,6,10,20] %}<option value="{{ n }}">{{ (n|string)+' stops' if n else 'Use trip pace' }}</option>{% endfor %}</select></div>
+<div class="preference-toggles">{% for key,label in [('indoor','Prefer indoor-friendly destinations'),('skipVisited','Skip visited places'),('savedFirst','Prioritize saved places')] %}<label class="management-toggle"><span>{{ label }}</span><input type="checkbox" name="{{ key }}" role="switch"></label>{% endfor %}</div><p class="management-note">Indoor preferences use verified indoor or covered places.</p></section>
+<p class="management-note profile-device-note">These travel preferences are used as defaults when you start a new plan on this device.</p>
+<div class="management-save"><p role="status" data-profile-status></p><button class="site-button" type="submit" form="profile-account-form">Save Changes</button></div>
+</div></div></div></section>
 {% endblock %}

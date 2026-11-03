@@ -1,0 +1,49 @@
+{% from 'auth/required.html' import required_mark %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include 'partials/theme_head.html' %}
+    {% include 'partials/fonts.html' %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="same-origin">
+    <title>Verify your email | RosaGo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+    <script src="{{ url_for('static', filename='js/verification.js') }}" defer></script>
+</head>
+<body class="auth-site">
+<main class="registration-layout">
+    <section class="welcome"><a class="brand" href="{{ url_for('index') }}">Rosa<span>Go</span></a><p class="brand-description">Smart Tourism System for Santa Rosa, Laguna</p></section>
+    <section class="form-panel" aria-labelledby="verification-title">
+    <div class="registration-card">
+        {% if verified %}
+        <h1 id="verification-title">Email verified</h1>
+        <p>Your email address has been successfully verified. You can now sign in to your RosaGo account.</p>
+        <a class="submit-button" href="{{ url_for('login') }}">Continue to Login</a>
+        {% elif pending %}
+        <h1 id="verification-title">Verify your email</h1>
+        <p>We sent a verification code to your email address. Enter the code below to verify your RosaGo account.</p>
+        {% if message %}<p class="form-status" data-state="error" role="alert">{{ message }}</p>{% endif %}
+        <form method="post" action="{{ url_for('verify_email') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <div class="field"><label for="verification-code">Verification Code {{ required_mark() }}</label>
+            <input id="verification-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10" required></div>
+            <button class="submit-button" type="submit">Verify Email</button>
+        </form>
+        <p>Didn't receive the code?</p>
+        <form method="post" action="{{ url_for('resend_verification') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <button class="secondary-button" id="verification-resend" type="submit" data-cooldown="{{ cooldown }}"{% if cooldown %} disabled{% endif %}>{% if cooldown %}Resend code in {{ '%02d:%02d'|format(cooldown // 60, cooldown % 60) }}{% else %}Resend verification code{% endif %}</button>
+        </form>
+        <p class="field-help">This timer controls when you may request another email. It does not indicate when your code expires. Supabase validates code expiry.</p>
+        <noscript><p>Reload this page after the countdown period to enable resend.</p></noscript>
+        {% else %}
+        <h1 id="verification-title">Verify your email</h1>
+        <p role="status">{{ message or 'There is no pending verification in this browser. Return to registration to begin. Verification sessions also end after a server restart or inactivity period.' }}</p>
+        {% endif %}
+        {% if not verified %}<p><a class="secondary-button" href="{{ url_for('register') }}">Back to registration</a> · <a class="secondary-button" href="{{ url_for('login') }}">Continue to Login</a></p>{% endif %}
+    </div>
+    </section>
+</main>
+</body>
+</html>

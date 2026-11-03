@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% block title %}Trip Bag | RosaGo{% endblock %}{% block content %}
+<header class="trip-heading"><p class="eyebrow">Collected destinations</p><h1>Save your trip bag</h1><p class="page-subheading">Create a real saved trip from your collected published destinations.</p></header>
+<p class="catalog-disclosure">Save up to 20 destinations at once. Each destination is added through the existing trip service. If an addition fails, the saved trip shows the actual completed additions so you can review it.</p>
+<form class="card" method="post" action="{{ url_for('features.save_bag') }}" data-bag-form>
+<input type="hidden" name="csrf_token" value="{{ csrf }}"><div data-bag-list></div><div data-bag-inputs></div>
+<div class="field"><label for="bag-name">Trip name (required)</label><input id="bag-name" name="name" required maxlength="100"></div><div class="field"><label for="bag-date">Visit date (optional)</label><input id="bag-date" name="visit_date" type="date"></div>
+<button class="site-button" type="submit" disabled data-bag-submit>Save to My Trips</button><a class="secondary-button" href="{{ url_for('places_list') }}">Add destinations from Explore</a></form>
+{% endblock %}

@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    {% include 'partials/theme_head.html' %}
+    {% include 'partials/fonts.html' %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <title>Password recovery | RosaGo</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
 </head>
-<body>
+<body class="auth-site">
     <main class="registration-layout">
         <section class="welcome" aria-labelledby="welcome-title">
-            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGo home">Rosa<span>Go</span><span class="brand-dot" aria-hidden="true">.</span></a>
+            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGo home">Rosa<span>Go</span></a>
             <p class="brand-description">Smart Tourism System for Santa Rosa, Laguna</p>
             <div class="welcome-copy">
                 <p class="eyebrow">A little closer to local</p>
@@ -29,7 +31,7 @@
                     <h2 id="recovery-heading">Recovery link unavailable</h2>
                     <p class="form-intro" id="recovery-message">{{ message }}</p>
                 </div>
-                <p class="login-prompt"><a href="{{ url_for('forgot_password') }}">Back to Forgot Password</a></p>
+                <p class="login-prompt"><a class="secondary-button" href="{{ url_for('forgot_password') }}">Back to Forgot Password</a></p>
             </div>
             <p class="footer-note">Made for discovering Santa Rosa.</p>
         </section>

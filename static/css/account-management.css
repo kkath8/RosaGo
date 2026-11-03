@@ -1,0 +1,52 @@
+.public-site .management-page { max-width: 900px; margin: 0 auto; }
+.public-site .management-heading { margin-bottom: 22px; }
+.public-site .management-heading p { color: var(--site-muted); }
+.public-site .identity-summary { display: flex; align-items: center; gap: 16px; padding: 18px; background: #fff8e9; border: 1.5px solid #e3d3a3; border-radius: 16px; margin-bottom: 20px; }
+.public-site .identity-summary strong { font-size: 1.2rem; }
+.public-site .identity-summary p { margin: 3px 0 0; overflow-wrap: anywhere; color: var(--site-muted); }
+.public-site .profile-avatar { width: 60px; height: 60px; min-width: 60px; border-radius: 50%; font-size: 1.2rem; }
+.public-site .management-section { padding: 22px; margin-bottom: 18px; background: #fff; border: 1.5px solid #e3d3a3; border-radius: 16px; }
+.public-site .management-section h2 { font-size: 1.2rem; margin-bottom: 12px; }
+.public-site .management-section > p { font-size: .95rem; color: var(--site-muted); }
+.public-site .management-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px 20px; }
+.public-site .management-fields .field { min-width: 0; margin: 10px 0; }
+.public-site .management-fields .full-field { grid-column: 1 / -1; }
+.public-site .management-fields small { display: block; margin-top: 5px; font-size: .85rem; }
+.public-site .management-section fieldset { min-width: 0; border: 0; padding: 0; margin: 16px 0; }
+.public-site .management-section legend { font-weight: 600; margin-bottom: 10px; }
+.public-site .preference-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.public-site .preference-chip { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid #dfd0ac; border-radius: 9px; padding: 9px 12px; background: #fffdf8; cursor: pointer; font-size: .9rem; }
+.public-site .preference-chip:has(input:checked) { background: #fff0bf; border-color: #8e3b2c; }
+.public-site .preference-chip input { width: 16px; height: 16px; margin: 0; accent-color: #8e3b2c; }
+.public-site .management-toggle, .public-site .management-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 13px 0; border-bottom: 1px solid #efe2bd; font-weight: 400; }
+.public-site .management-row strong { font-weight: 600; text-align: right; }
+.public-site .management-toggle input { appearance: none; width: 42px; height: 24px; border: 1.5px solid #a0927d; border-radius: 20px; background: #ded8cb; cursor: pointer; flex: none; position: relative; }
+.public-site .management-toggle input::after { content: ''; position: absolute; width: 16px; height: 16px; top: 2.5px; left: 3px; background: #fff; border-radius: 50%; }
+.public-site .management-toggle input:checked { background: #8e3b2c; border-color: #8e3b2c; }
+.public-site .management-toggle input:checked::after { left: 20px; }
+.public-site .management-toggle input:disabled { opacity: .5; cursor: default; }
+.public-site .management-note { color: var(--site-muted); font-size: .85rem; margin: 10px 0 0; }
+.public-site .management-storage { margin: 16px 0; font-size: .85rem; color: var(--site-muted); }
+.public-site .management-storage summary { cursor: pointer; min-height: 36px; padding-block: 7px; }
+.public-site .management-save { display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin: 18px 0 26px; }
+.public-site .management-save [role=status] { margin: 0; }
+.public-site .management-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.public-site .management-actions form { margin: 0; }
+.public-site .management-links { display: grid; }
+.public-site .management-links a { display: flex; justify-content: space-between; align-items: center; min-height: 46px; color: var(--site-ink); text-decoration: none; border-bottom: 1px solid #efe2bd; }
+.public-site .management-links a:hover { color: var(--site-red); }
+.public-site .field-error { color: #9f291f; font-size: .85rem; margin: 5px 0 0; }
+.public-site .management-page input[readonly] { background: #f8f5ee; }
+.public-site .management-page [aria-invalid=true] { border-color: #9f291f; }
+.public-site .profile-page .identity-summary { align-items: flex-start; padding: 16px 18px; }
+.public-site .identity-details { min-width: 0; }
+.public-site .identity-colors { border: 0; margin: 10px 0 0; padding: 0; min-width: 0; }
+.public-site .identity-colors legend { font-size: .8rem; margin-bottom: 5px; color: var(--site-muted); }
+.public-site .identity-colors .preference-chip { font-size: .75rem; padding: 5px 7px; gap: 4px; }
+.public-site .profile-form-surface { padding: 4px 22px 0; background: #fff; border: 1.5px solid #e3d3a3; border-radius: 16px; }
+.public-site .profile-page .management-section { border: 0; border-bottom: 1px solid #e3d3a3; border-radius: 0; padding: 20px 0; margin: 0; }
+.public-site .profile-page .management-section h2 { font-size: 1.05rem; }
+.public-site .profile-page .stops-field { max-width: 340px; margin-block: 16px; }
+.public-site .profile-device-note { padding-top: 16px; }
+@media(max-width:600px) { .public-site .profile-form-surface { padding-inline: 16px; } .public-site .profile-page .identity-summary { gap: 12px; padding: 14px; } .public-site .profile-page .profile-avatar { width: 44px; height: 44px; min-width: 44px; font-size: 1rem; } .public-site .identity-summary strong { overflow-wrap: anywhere; } }
+@media(max-width:600px) { .public-site .management-fields { grid-template-columns: minmax(0,1fr); } .public-site .management-section { padding: 16px; } .public-site .management-save { align-items: stretch; flex-direction: column; } .public-site .management-row { flex-wrap: wrap; gap: 8px; } }

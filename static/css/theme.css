@@ -1,0 +1,107 @@
+/* Theme tokens are scoped to public/auth shells; Admin does not load this file.
+   Artwork, photo overlays and map tiles retain their original colors. */
+.theme-selector { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.public-site .theme-selector button { min-width: 110px; min-height: 44px; justify-content: center; font: inherit; font-weight: 600; }
+.public-site .theme-selector [aria-pressed="true"] { background: #fff0bf; border-color: #8e3b2c; box-shadow: inset 0 0 0 1px #8e3b2c; }
+.public-site .theme-label { font-size: 1rem; margin-bottom: 6px; }
+html[data-theme="dark"] {
+    color-scheme: dark;
+    --site-paper: #1d1714;
+    --site-surface: #2b221d;
+    --site-raised: #362a23;
+    --site-ink: #f7eddf;
+    --site-muted: #cbbba7;
+    --site-border: #8b715a;
+    --site-tint: #3b2d21;
+    --site-red: #f0a28b;
+    --site-deep-red: #ffd2b7;
+    --site-gold: #eec35c;
+    --site-shadow: 0 2px 16px #0004;
+    --theme-primary: #a74a37;
+    --theme-primary-hover: #923e2e;
+    --theme-selected: #57402a;
+    --theme-error: #ffb8a7;
+    --theme-success: #b7ddb2;
+    --red: var(--site-red);
+    --deep-red: var(--site-deep-red);
+    --ink: var(--site-ink);
+    --muted: var(--site-muted);
+    --border: var(--site-border);
+    background: var(--site-paper);
+}
+html[data-theme="dark"] :is(.public-site,.auth-site) { background: var(--site-paper); color: var(--site-ink); }
+html[data-theme="dark"] :is(.public-site,.auth-site) :focus-visible { outline: 3px solid var(--site-gold); outline-offset: 3px; }
+/* Shared surfaces, including late-loaded per-page styles. */
+html[data-theme="dark"] .public-site :is(.site-header,.dropdown-links,.shell-page-matches,.mobile-tabs,.card,.place-card,.empty-state,.account-panel,.local-place-card,.explore-filters,.management-section,.profile-form-surface,.chat-composer,.conversation-panel,.route-controls,.route-summary,.map-destination-panel,.map-canvas-panel,.preview-stop,dialog,.trip-choice,.planning-mode,.trip-card,.skip-link) {
+    background-color: var(--site-surface); color: var(--site-ink); border-color: var(--site-border);
+}
+html[data-theme="dark"] .public-site :is(.site-nav a,.nav-dropdown>summary,.management-links a,.mobile-tabs a,.mobile-tabs button) { color: var(--site-ink); border-color: var(--site-border); }
+html[data-theme="dark"] .public-site :is(.site-nav a,.nav-dropdown>summary,.dropdown-links a):hover { background: var(--site-raised); color: var(--site-ink); }
+html[data-theme="dark"] .public-site :is(.site-nav a[aria-current],.nav-dropdown>summary.on,.nav-dropdown[open]>summary,.mobile-tabs [aria-current]) { color: var(--site-gold); background: var(--site-tint); border-color: var(--site-gold); }
+html[data-theme="dark"] .public-site .site-brand { color: var(--site-red); }
+html[data-theme="dark"] .public-site .site-brand span { color: var(--site-gold); border-color: var(--site-gold); }
+html[data-theme="dark"] .public-site :is(.user-avatar,.planning-mode .mode-icon) { background: var(--theme-selected); color: var(--site-ink); border-color: var(--site-border); }
+html[data-theme="dark"] .public-site :is(.header-icon,.header-bell) { color: var(--site-red); background: var(--site-surface); border-color: var(--site-border); }
+html[data-theme="dark"] .public-site .site-footer { background: #251c17; color: var(--site-ink); }
+html[data-theme="dark"] .public-site :is(.footer-inner,.footer-grid a) { color: var(--site-ink); }
+html[data-theme="dark"] .public-site .footer-grid .footer-brand { background: var(--site-raised); color: var(--site-red); }
+/* Form controls, native checks and browser autofill. */
+html[data-theme="dark"] :is(.public-site,.auth-site) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea) {
+    background: var(--site-paper); color: var(--site-ink); border-color: var(--site-border); caret-color: var(--site-gold);
+}
+html[data-theme="dark"] :is(.public-site,.auth-site) :is(input,textarea)::placeholder { color: #b6a591; opacity: 1; }
+html[data-theme="dark"] :is(.public-site,.auth-site) input:autofill { box-shadow: 0 0 0 1000px var(--site-raised) inset; -webkit-text-fill-color: var(--site-ink); caret-color: var(--site-gold); }
+html[data-theme="dark"] :is(.public-site,.auth-site) :is(input[type="checkbox"],input[type="radio"]) { accent-color: var(--site-gold); }
+html[data-theme="dark"] .public-site input[readonly] { background: var(--site-raised); color: var(--site-muted); }
+html[data-theme="dark"] .public-site fieldset { border-color: var(--site-border); }
+html[data-theme="dark"] .public-site :is(.management-row,.management-toggle,.management-section,.section-heading,.bag-place-row,.chat-sources,.weather-day,.preview-stops,.acc,.destination-detail-grid>.destination-visual) { border-color: var(--site-border); }
+/* Buttons retain readable white-on-brick primaries and warm secondary surfaces. */
+html[data-theme="dark"] .public-site .site-button,
+html[data-theme="dark"] .auth-site :is(.primary-button,.submit-button,button[type="submit"]) { background: var(--theme-primary); color: #fff; border-color: var(--theme-primary); }
+html[data-theme="dark"] .public-site .site-button:hover { background: var(--theme-primary-hover); border-color: var(--site-red); }
+html[data-theme="dark"] .public-site :is(.secondary-button,.site-button-secondary,.site-button-outline,.mini-button,.account-logout-button,.trip-delete-button,.destination-details-link,.seg button,.preference-chip,.wl-chips a,.wl-tag),
+html[data-theme="dark"] .auth-site :is(.secondary-button,.mini-button,.password-toggle) { background: var(--site-raised); color: var(--site-ink); border-color: var(--site-border); }
+html[data-theme="dark"] .public-site :is(.secondary-button,.site-button-secondary,.mini-button,.preference-chip,.wl-chips a):hover { background: var(--site-tint); color: var(--site-ink); border-color: var(--site-gold); }
+html[data-theme="dark"] .public-site :is(.site-button-gold,.landmark-copy .site-button,.arch-cta .site-button) { background: var(--site-gold); color: #2e1a14; border-color: var(--site-gold); }
+html[data-theme="dark"] .public-site :is(.preference-chip:has(input:checked),.trip-choice:has(input:checked),.itinerary-choice:has(input:checked),.mini-button[aria-pressed="true"],.seg button[aria-pressed="true"],.theme-selector [aria-pressed="true"]) { background: var(--theme-selected); color: var(--site-ink); border-color: var(--site-gold); box-shadow: inset 0 0 0 1px var(--site-gold); }
+html[data-theme="dark"] .public-site .category-nav a { color: var(--site-ink); border-color: var(--site-border); }
+html[data-theme="dark"] .public-site .category-nav a:hover { background: var(--site-raised); }
+html[data-theme="dark"] .public-site .category-nav a[aria-current] { background: var(--theme-primary); color: #fff; border-color: var(--site-red); }
+html[data-theme="dark"] .public-site :is(.mini-button.button-danger,.acc[open]>summary) { color: var(--site-red); }
+/* Hero images/overlays are intentionally untouched; only their controls adapt. */
+html[data-theme="dark"] .public-site .wl-search { background: var(--site-surface); border-color: var(--site-border); }
+html[data-theme="dark"] .public-site .arch-card { background: var(--site-surface); color: var(--site-ink); border-color: var(--site-border); box-shadow: inset 0 0 0 5px var(--site-paper),inset 0 0 0 6.5px var(--site-border); }
+html[data-theme="dark"] .public-site .arch-card:hover { background: var(--site-raised); border-color: var(--site-gold); }
+html[data-theme="dark"] .public-site .category-arches img { background-color: #fbe9b4; border-radius: 50%; }
+html[data-theme="dark"] .public-site .preview-stop .destination-visual { background-color: #fbe6a0; }
+html[data-theme="dark"] .public-site :is(.identity-summary,.catalog-disclosure,.account-status,.itinerary-notice,.itinerary-error,.trip-chooser-status,.preview-summary,.preview-fit,.preview-stop-label,.badge,.place-category,.map-category-badge,.preview-recommended-badge,.weather-notice,.weather-alert,.route-error) { background: var(--site-tint); color: var(--site-ink); border-color: var(--site-border); }
+html[data-theme="dark"] .public-site :is(.field-error,.chat-error,.account-status[role="alert"],.itinerary-error,.route-error) { color: var(--theme-error); }
+html[data-theme="dark"] .public-site :is(.mini-button.button-tertiary,.chat-composer .secondary-button,.preview-day-heading time,.tourism-type-badge) { color: var(--site-muted); }
+html[data-theme="dark"] .public-site :is(.place-card h2 a,.local-place-card h2 a,.trip-card h2 a,.trip-memberships>li>a,.map-place-list h3 a,.itinerary-page h3 a,.bag-place-row h3,.map-popup>strong) { color: var(--site-ink); }
+html[data-theme="dark"] .public-site :is(.manual-coordinates summary,.map-popup>p:last-child,.bag-place-row p,.dialog-close) { color: var(--site-muted); }
+html[data-theme="dark"] .public-site :is(.popup-more a,.local-card-category) { color: var(--site-red); }
+html[data-theme="dark"] .public-site .local-card-category { background: var(--site-surface); }
+html[data-theme="dark"] .public-site :is(button:disabled,select:disabled,input:disabled) { color: var(--site-muted); background: var(--site-raised); border-color: var(--site-border); opacity: .75; cursor: not-allowed; }
+html[data-theme="dark"] .public-site :is(.management-toggle input) { background: #675848; border-color: #c1a889; }
+html[data-theme="dark"] .public-site .management-toggle input:checked { background: var(--theme-primary); border-color: var(--site-red); }
+html[data-theme="dark"] .public-site .management-toggle input::after { background: #fff7eb; }
+/* AI sides remain distinct. No geometry/scroll rules change. */
+html[data-theme="dark"] .public-site :is(.chat-message,.chat-assistant,.preview-bubble) { background: var(--site-raised); color: var(--site-ink); }
+html[data-theme="dark"] .public-site :is(.chat-user,.preview-bubble-user) { background: #743b2c; color: #fff3e5; }
+html[data-theme="dark"] .public-site :is(.chat-user,.preview-bubble-user) :is(p,strong,.chat-speaker) { color: inherit; }
+html[data-theme="dark"] .public-site dialog::backdrop { background: #100b09b8; }
+html[data-theme="dark"] .public-site #ui-toast { background: var(--site-raised); color: var(--site-ink); border: 1px solid var(--site-gold); }
+/* Leaflet tiles stay normal. Popups/attribution are app-facing text surfaces. */
+html[data-theme="dark"] .public-site :is(.leaflet-popup-content-wrapper,.leaflet-popup-tip,.leaflet-control-attribution) { background: var(--site-surface); color: var(--site-ink); }
+html[data-theme="dark"] .public-site .leaflet-container a { color: var(--site-red); }
+html[data-theme="dark"] .public-site .leaflet-bar a { background: var(--site-surface); color: var(--site-ink); }
+/* Auth shares tokens but keeps its photo and existing validation behavior. */
+html[data-theme="dark"] .auth-site :is(.form-panel,.registration-card,.reset-card,.auth-card) { background: var(--site-surface); color: var(--site-ink); border-color: var(--site-border); }
+html[data-theme="dark"] .auth-site :is(.brand,.password-toggle) { background: var(--site-raised); color: var(--site-red); }
+html[data-theme="dark"] .auth-site :is(.field-error,.error,.error-message,.password-rule[data-met="false"],.password-rule.unmet,.required-mark) { color: var(--theme-error); }
+html[data-theme="dark"] .auth-site :is(.success,.success-message,.password-rule[data-met="true"],.password-rule.met) { color: var(--theme-success); }
+html[data-theme="dark"] .auth-site :is(.notice,.form-error,.form-success,.account-status,.password-rules,.verification-notice) { background: var(--site-tint); color: var(--site-ink); border-color: var(--site-border); }
+html[data-theme="dark"] .auth-site :is(#registration-form,#reset-password-form) .password-requirements [data-met="true"] { color: var(--theme-success); }
+html[data-theme="dark"] .auth-site .form-status[data-state="success"] { color: var(--theme-success); background: var(--site-tint); border-color: var(--site-border); }
+html[data-theme="dark"] .auth-site .preview-note { color: var(--site-ink); background: var(--site-tint); }
+@media (forced-colors: active) { .public-site .theme-selector [aria-pressed="true"] { outline: 2px solid Highlight; } }

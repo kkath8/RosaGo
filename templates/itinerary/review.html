@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Review Your Trip | RosaGo{% endblock %}
 {% block content %}
-{% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private Car', 'public_transport': 'Public Transport', 'ride_hailing': 'Ride-Hailing / Taxi', 'mixed_transport': 'Mixed Transport', 'sightseeing': 'Sightseeing', 'food_trip': 'Food Trip', 'outdoor_activities': 'Outdoor Activities', 'culture_heritage': 'Culture & Heritage', 'relaxation': 'Relaxation', 'indoor': 'Mostly Indoor', 'outdoor': 'Mostly Outdoor', 'mixed': 'Mix of Both'} %}
+{% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'industrial': 'Industrial Tourism', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private Car', 'public_transport': 'Public Transport', 'ride_hailing': 'Ride-Hailing / Taxi', 'mixed_transport': 'Mixed Transport', 'sightseeing': 'Sightseeing', 'food_trip': 'Food Trip', 'outdoor_activities': 'Outdoor Activities', 'culture_heritage': 'Culture & Heritage', 'relaxation': 'Relaxation', 'indoor': 'Mostly Indoor', 'outdoor': 'Mostly Outdoor', 'mixed': 'Mix of Both'} %}
 {% macro display_date(value) -%}
 <time datetime="{{ value }}">{{ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][(value[5:7] | int) - 1] }} {{ value[8:10] | int }}, {{ value[:4] }}</time>
 {%- endmacro %}
@@ -14,11 +14,7 @@
         <h1 id="review-title" class="page-heading">Review Your Trip</h1>
         <p class="page-subheading">Make sure your preferences look right before continuing.</p>
     </header>
-    <ol class="itinerary-progress" aria-label="Planning progress">
-        <li class="is-complete"><span aria-hidden="true">✓</span> Preferences <small>Saved</small></li>
-        <li aria-current="step"><span aria-hidden="true">2</span> Review</li>
-        <li><span aria-hidden="true">3</span> Preview</li>
-    </ol>
+    {% with planner_step='review' %}{% include 'partials/planner_progress.html' %}{% endwith %}
     <div class="itinerary-notice" role="status">
         <span class="itinerary-notice-icon" aria-hidden="true">✓</span>
         <div><strong>Preferences saved</strong><p>Your selections are stored in this temporary planning draft. RosaGo will select matching destinations next. No trip has been created.</p></div>
@@ -27,7 +23,7 @@
     <section class="card itinerary-card" aria-labelledby="summary-title">
         <div class="itinerary-card-heading itinerary-summary-heading">
             <div><p class="eyebrow">Your visit, your way</p><h2 id="summary-title">Your Trip Preferences</h2></div>
-            <a class="text-link" href="{{ url_for('itinerary_preferences', draft_id=draft_id) }}">Edit Preferences <span aria-hidden="true">→</span></a>
+            <a class="secondary-button" href="{{ url_for('itinerary_preferences', draft_id=draft_id) }}">Edit Preferences <span aria-hidden="true">→</span></a>
         </div>
         <dl class="itinerary-summary">
             <div class="itinerary-summary-wide">
@@ -51,16 +47,11 @@
             <div class="itinerary-summary-wide"><dt>Additional Preferences</dt><dd class="itinerary-prose{% if not values.additional_preferences %} itinerary-muted{% endif %}">{{ values.additional_preferences or 'Not provided' }}</dd></div>
             <div><dt>Timezone</dt><dd>Asia/Manila</dd></div>
         </dl>
-        <div class="itinerary-saved">Draft saved · Revision {{ revision }}</div>
+        <div class="itinerary-saved">Preferences saved</div>
     </section>
     <div class="itinerary-review-actions">
-        <a class="text-link" href="{{ url_for('trips_new') }}">Back to Planner</a>
-        <form class="itinerary-future-action" method="post" action="{{ url_for('itinerary_generate', draft_id=draft_id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf }}">
-            <input type="hidden" name="expected_revision" value="{{ revision }}">
-            <button class="site-button" type="submit" aria-describedby="generation-note">Generate Personalized Itinerary <span aria-hidden="true">→</span></button>
-            <p id="generation-note" class="itinerary-help">RosaGo will select destinations matching your interests and organize an initial untimed itinerary. Pace controls the suggested count, not whether visits fit the requested hours.</p>
-        </form>
+        <a class="secondary-button" href="{{ url_for('planner') }}">Back to Planner</a>
+        <a class="site-button" data-recommendations-link href="{{ url_for('itinerary_recommendations', draft_id=draft_id) }}">View Personalized Recommendations</a>
     </div>
 </section>
 {% endblock %}

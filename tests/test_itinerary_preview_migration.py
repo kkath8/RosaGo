@@ -12,7 +12,7 @@ import unittest
 
 import itinerary_builder as builder
 import itinerary_preview as preview
-from recommendation_engine import POLICY_VERSION
+from itinerary_preview import RECOMMENDATION_POLICY_VERSION
 from test_itinerary_preview import (
     CANONICAL_VECTOR, VECTOR_HASHES, CATALOG_VECTOR, CATALOG_VECTOR_HASH,
     SOURCE_VECTOR, SOURCE_VECTOR_HASH,
@@ -134,7 +134,9 @@ class PreviewMigrationTests(unittest.TestCase):
                                ('day_doc', {'date', 'stops'})):
             found = re.search(r'rosago_preview_json_keys\(' + document + r', ARRAY\[(.*?)\]', body, re.S)
             self.assertEqual(set(re.findall(r"'([^']*)'", found.group(1))), set(keys))
-        for constant in (builder.POLICY_VERSION, POLICY_VERSION, 'personalized', 'rosago:source:v1:'):
+        # SQL checks the persisted preview contract, independently of revisions
+        # to ranking and geographic selection policy.
+        for constant in (builder.POLICY_VERSION, RECOMMENDATION_POLICY_VERSION, 'personalized', 'rosago:source:v1:'):
             self.assertIn(constant, body)
         self.assertIn('public.rosago_validate_draft_preferences(p_preferences)', body)
         self.assertIn('validated_preferences IS DISTINCT FROM p_preferences', body)

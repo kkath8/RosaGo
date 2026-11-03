@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% block title %}Help | RosaGo{% endblock %}{% block content %}
+<header class="trip-heading"><p class="eyebrow">RosaGo support</p><h1>Help &amp; feedback</h1><p class="page-subheading">Answers to common questions and a place to keep feedback for the project team.</p></header>
+<div class="two"><section>
+{% for question,answer in [
+('Do I need an account?','You can browse published destinations and use personal device utilities without signing in. Saved trips, itinerary drafts, account changes and AI Assistant require your real RosaGo account.'),
+('Where is my data kept?','Trips and account information use the real backend. Saved/visited places, notes, bag, checklist, budget and extra display preferences stay on this browser. They are not account backups.'),
+('How does planning work?','Choose your interests and pace, review preferences, then generate an untimed preview or choose from eligible recommendations. Gemini explains and interprets supported changes; deterministic code selects destinations.'),
+('Are hours, prices and map routes guaranteed?','Check destination hours with the venue. Budget amounts are your own estimates. Map routes depend on provider coverage and existing coordinates; Street View coverage is not guaranteed.'),
+('Are alerts continuously monitored?','Weather and trip reminders update on requests. Device event reminders do not send push notifications, email or SMS.'),
+('How do I reset my password?','Use Forgot Password and the real recovery email. The link grants a short-lived one-use password reset. Never share passwords, verification codes or recovery links.')]
+%}<details class="acc"{% if loop.first %} open{% endif %}><summary>{{ question }}</summary><p>{{ answer }}</p></details>{% endfor %}
+</section><form class="card" data-feedback-form><h2>Keep feedback</h2><p class="trip-help">Saved on this device for you to show or copy to the project team. This form does not send a message.</p><div class="field"><label for="feedback-topic">Topic</label><select id="feedback-topic"><option>Something is not working</option><option>Idea for a feature</option><option>Wrong place information</option><option>Other</option></select></div><div class="field"><label for="feedback-message">Message (required)</label><textarea id="feedback-message" maxlength="500" rows="4" required></textarea></div><button class="site-button" type="submit">Save feedback on device</button><ul data-feedback-list></ul></form></div>
+{% endblock %}

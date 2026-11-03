@@ -1,0 +1,16 @@
+{% if not weather_review.pretrip %}
+<p>The requested start time has passed. This pre-trip weather check is no longer active. RosaGo does not track whether you have actually started your trip.</p>
+{% else %}
+{% if weather_review.concerns %}
+<ul class="trip-list">
+    {% for concern in weather_review.concerns %}
+    <li><strong>{{ concern.title }}</strong><p><time datetime="{{ concern.day.isoformat() }}">{{ concern.day.strftime('%b %d, %Y') }}</time>: {{ concern.condition }} (weather code {{ concern.weather_code }}); maximum precipitation probability {{ concern.probability | round(0) | int }}%. Review your itinerary before going out.</p></li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% if weather_review.outside_range %}<p>Forecast unavailable for {% for day in weather_review.outside_range %}{{ day.strftime('%b %d, %Y') }}{{ ', ' if not loop.last else '' }}{% endfor %}: outside RosaGo's current three-day forecast range. Check again closer to the planned date.</p>{% endif %}
+{% if weather_review.unavailable_dates %}<p>Weather is temporarily unavailable for {% for day in weather_review.unavailable_dates %}{{ day.strftime('%b %d, %Y') }}{{ ', ' if not loop.last else '' }}{% endfor %}. RosaGo cannot assess those dates right now. Your itinerary remains unchanged and usable.</p>{% endif %}
+{% if not weather_review.concerns and not weather_review.outside_range and not weather_review.unavailable_dates %}<p>No meaningful weather concern detected for the itinerary dates checked. This does not guarantee conditions at a destination.</p>{% endif %}
+{% if weather_review.checked_at %}<p class="itinerary-help">Forecast retrieved {{ weather_review.checked_at.strftime('%b %d, %Y, %I:%M %p') }} (Asia/Manila).</p>{% endif %}
+<p class="itinerary-help">Source: <a href="https://open-meteo.com/" rel="noreferrer">Open-Meteo</a> (CC BY 4.0). This is a Santa Rosa city forecast, not a destination observation or official warning. {% if weather_metadata_verified %}RosaGo uses curated exposure metadata only where verified; unknown destinations cannot be assumed less exposed. Indoor or covered does not guarantee safety.{% else %}RosaGo has no verified destination weather-suitability metadata available here and cannot choose weather-safe replacements.{% endif %} No itinerary changes were made by this check.</p>
+{% endif %}

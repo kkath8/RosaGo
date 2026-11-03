@@ -1,0 +1,7 @@
+<p>Curated weather exposure: <strong>{{ destination_weather.exposure | title }}</strong>.</p>
+{% if destination_weather.exposure == 'unknown' %}
+<p class="itinerary-help">Weather exposure has not been verified for this destination. RosaGo does not infer indoor/outdoor conditions from names or categories.</p>
+{% else %}
+<p>{{ destination_weather.source_note }}</p>
+<p class="itinerary-help">Verified {{ destination_weather.verified_on }} using <a href="{{ destination_weather.source_url }}" rel="noreferrer">the documented source</a>. This describes exposure, not safety, current opening hours or travel feasibility.</p>
+{% endif %}

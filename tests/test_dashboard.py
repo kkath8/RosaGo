@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 from flask import before_render_template, g
 from normal_auth_coordinator import SessionBusy, ClientUnavailable
 from trip_service import TripUnavailableError, TripConsistencyError
-from test_public_layout import Document
+from test_public_layout import Document, assert_shared_scripts
 import test_registration
 
 
@@ -33,11 +33,13 @@ class DashboardTests(unittest.TestCase):
         def read(auth, **kwargs):
             self.assertIs(g.auth, auth)
             self.assertEqual(auth.user_id, 'user-123')
-            self.assertEqual(kwargs, dict(limit=3, offset=0))
+            self.assertEqual(kwargs, dict(today=date(2026,11,1)))
             self.assertEqual(self.closed, [])
             return (self.trip,)
         self.reader = Mock(side_effect=read)
-        guard = patch.dict(self.app.view_functions['index'].__globals__, list_user_trips=self.reader)
+        from datetime import datetime
+        guard = patch.dict(self.app.view_functions['index'].__globals__, list_dashboard_upcoming_trips=self.reader,
+                           manila_now=lambda:datetime(2026,11,1))
         guard.start()
         self.addCleanup(guard.stop)
 
@@ -65,9 +67,10 @@ class DashboardTests(unittest.TestCase):
             page = self.page()
         self.reader.assert_called_once()
         self.assertEqual(observed, ['index.html'])
-        self.assertEqual(page.find('script'), [])
+        assert_shared_scripts(self,page)
         self.assertEqual(page.find('time')[0].attrs['datetime'], '2026-12-05')
-        self.assertEqual(page.find('a', href='/user/trips/' + self.trip.id)[0].text, self.trip.name)
+        self.assertEqual(page.find('a', href='/user/trips/' + self.trip.id)[0].text, 'View Trip')
+        self.assertIn(self.trip.name,page.find('main')[0].text)
         self.assertNotIn('Sign in to view your trips', page.find('main')[0].text)
 
     def test_missing_date_and_empty_trips(self):
@@ -76,7 +79,15 @@ class DashboardTests(unittest.TestCase):
         self.assertIn('Date not set', self.page().find('main')[0].text)
         self.reader.side_effect = None
         self.reader.return_value = ()
-        self.assertIn('You have no trips yet', self.page().find('main')[0].text)
+        self.assertIn('No upcoming trips yet.', self.page().find('main')[0].text)
+
+    def test_compact_preview_never_renders_more_than_three(self):
+        test_registration.seed_normal_session(self)
+        self.reader.side_effect=None
+        self.reader.return_value=tuple(SimpleNamespace(**(vars(self.trip)|{'name':f'Trip {n}'})) for n in range(4))
+        page=self.page()
+        row=page.find('ul',**{'class':'dashboard-trip-list'})[0]
+        self.assertEqual(len([n for n in page.find('li') if row in n.ancestors]),3)
 
     def test_anonymous_legacy_and_stale_sessions_do_not_read_trips(self):
         for state in ({}, {'user_id': 'user-123', 'user_email': 'fake@example.invalid'},
@@ -100,7 +111,7 @@ class DashboardTests(unittest.TestCase):
             self.reader.side_effect = error
             text = self.page().find('main')[0].text
             self.assertIn('Trips are temporarily unavailable', text)
-            self.assertNotIn('You have no trips yet', text)
+            self.assertNotIn('No upcoming trips yet.', text)
 
 
 if __name__ == '__main__':

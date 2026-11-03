@@ -1,0 +1,37 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ 'Edit' if place else 'Add' }} Destination | RosaGo Admin{% endblock %}
+{% macro field(key,label,maximum=250,required=false,type='text',minimum='',maximum_number='') %}
+<div class="field"><label for="{{ key }}">{{ label }}{{ ' *' if required else '' }}</label><input id="{{ key }}" name="{{ key }}" type="{{ type }}" value="{{ values.get(key) if values.get(key) is not none else '' }}" {% if type == 'number' %}step="any" min="{{ minimum }}" max="{{ maximum_number }}"{% else %}maxlength="{{ maximum }}"{% endif %}{% if required %} required{% endif %}></div>
+{% endmacro %}
+{% block content %}
+{% set back = url_for('admin.place_detail',slug=place.slug) if place else url_for('admin.places') %}
+<a class="text-link" href="{{ back }}">&larr; Back to {{ 'Destination' if place else 'Destinations' }}</a>
+<div class="page-heading"><div><p class="eyebrow">Administration</p><h1>{{ 'Edit Destination' if place else 'Add Destination' }}</h1><p class="intro">{{ 'Update the shared destination catalog.' if place else 'Create a Draft for review before publishing.' }}</p></div></div>
+{% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}
+{% if place and place.is_test_record %}<p class="notice">Development/test record - not an official or endorsed tourism listing.</p>{% endif %}
+<form class="panel" method="post">
+<input type="hidden" name="csrf_token" value="{{ logout_csrf }}">
+{% if place %}<input type="hidden" name="expected_updated_at" value="{{ form_version }}">{% endif %}
+<div class="form-grid">
+<h2 class="full-width form-section-title">Basic Information</h2>
+{{ field('name','Destination Name',150,true) }}
+<div class="field"><label for="category">RosaGo Category *</label><select id="category" name="category" required><option value="">Choose category</option>{% for category in categories %}<option value="{{ category }}"{% if values.category == category %} selected{% endif %}>{{ 'Industrial Tourism' if category == 'industrial' else category|title }}</option>{% endfor %}</select></div>
+<div class="field full-width"><label for="description">Description *</label><textarea id="description" name="description" required rows="4" maxlength="3000">{{ values.description or '' }}</textarea></div>
+<div class="full-width">{{ field('address','Address',500,true) }}</div>
+<h2 class="full-width form-section-title">Tourism Information</h2>
+{% if tourism_enabled %}
+<div class="field"><label for="tourism_type">Tourism Type</label><select id="tourism_type" name="tourism_type">{% for value,label in [('','Not classified'),('Local','Local'),('Common','Common')] %}<option value="{{ value }}"{% if (values.tourism_type or '') == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+{{ field('tourism_category','Tourism Category') }}{{ field('tourism_opening_hours_raw','Opening Hours - raw value') }}{{ field('tourism_closing_hours_raw','Closing Hours - raw value') }}
+<div class="field"><label for="tourism_hours_status">Hours Status</label><select id="tourism_hours_status" name="tourism_hours_status">{% for value,label in [('','Not assigned'),('unverified','Unverified'),('verify_required','Verification required'),('not_supplied','Not supplied')] %}<option value="{{ value }}"{% if (values.tourism_hours_status or '') == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+<p class="section-note full-width">Optional fields may remain blank. Raw hours are not a verified schedule. Source provenance is preserved separately.</p>
+{% else %}<p class="notice full-width">Tourism metadata is not enabled. Existing values are preserved without inference.</p>{% endif %}
+<h2 class="full-width form-section-title">Location</h2>
+{{ field('latitude','Latitude',type='number',minimum='-90',maximum_number='90') }}{{ field('longitude','Longitude',type='number',minimum='-180',maximum_number='180') }}
+<p class="section-note full-width">Provide both coordinates or leave both blank. No geocoding is performed.</p>
+<h2 class="full-width form-section-title">Publication</h2>
+<p class="full-width"><span class="status-badge status-{{ place.status if place else 'draft' }}">{{ place.status|title if place else 'Draft' }}</span> {{ 'Use the confirmation actions on Destination Details to change publication.' if place else 'New destinations are always created as Draft.' }}</p>
+<p class="section-note full-width">Weather exposure is curated separately and remains read-only. Identity changes may require renewed weather review.</p>
+</div><div class="form-actions actions"><button class="button" type="submit">{{ 'Save Changes' if place else 'Create Draft Destination' }}</button><a class="secondary-button" href="{{ back }}">Cancel</a></div>
+</form>
+{% include 'admin/lifecycle.html' %}
+{% endblock %}

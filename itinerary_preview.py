@@ -19,7 +19,10 @@ from itinerary_builder import (
     ItineraryStop, PlanningConstraints, SelectedDestination, SourceVersion,
     MAX_DESTINATIONS, build_itinerary,
 )
-from recommendation_engine import POLICY_VERSION as RECOMMENDATION_POLICY_VERSION
+# This identifier is pinned by the deployed v1 preview RPC contract. Ranking
+# revisions are tracked separately by recommendation_engine.POLICY_VERSION;
+# changing that algorithm must not silently change the stored wire format.
+RECOMMENDATION_POLICY_VERSION = 'category-interest-v1'
 
 
 PREVIEW_SCHEMA_VERSION = 1

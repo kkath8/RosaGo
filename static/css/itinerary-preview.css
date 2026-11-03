@@ -1,0 +1,77 @@
+.public-site .preview-page { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px 24px; max-width: 1020px; margin-inline: auto; }
+.public-site .preview-page > * { grid-column: 1 / -1; min-width: 0; margin: 0; }
+.public-site .preview-heading { grid-column: 1; align-self: center; }
+.public-site .preview-heading h1 { font-size: clamp(1.8rem, 3vw, 2.5rem); }
+.public-site .preview-heading .page-subheading { max-width: 56ch; font-size: .95rem; }
+.public-site .preview-top-actions { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; align-self: center; max-width: 355px; }
+.public-site .preview-top-actions form { margin: 0; }
+.public-site .preview-top-actions small { width: 100%; text-align: right; font-size: .75rem; }
+.public-site .preview-top-actions :is(.site-button,.secondary-button) { font-size: .85rem; padding-inline: 14px; }
+.public-site .preview-summary { padding: 18px 22px; background: #fffaf0; box-shadow: none; }
+.public-site .preview-summary-values { display: flex; flex-wrap: wrap; gap: 8px 22px; list-style: none; padding: 0; margin: 8px 0 0; font-size: .95rem; }
+.public-site .preview-summary-values li { min-width: 0; }
+.public-site .preview-page details summary { cursor: pointer; min-height: 36px; padding-block: 7px; font-weight: 600; font-size: .85rem; }
+.public-site .preview-plan-details { margin-top: 8px; color: var(--site-muted); font-size: .85rem; }
+.public-site .preview-save { padding: 10px 20px; box-shadow: none; }
+.public-site .preview-save:not([open]) { display: none; }
+.public-site .preview-save:target { display: block; }
+.public-site .preview-recommendations > header { margin: 8px 0 20px; }
+.public-site .preview-recommendations h2 { margin-bottom: 6px; font-size: 1.55rem; }
+.public-site .preview-day.card { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; margin-bottom: 0; }
+.public-site .preview-day-heading { margin-bottom: 14px; padding-bottom: 10px; }
+.public-site .preview-day-heading :is(h3,time) { margin: 0; font-size: .9rem; }
+.public-site .preview-day-heading time { color: var(--site-muted); }
+.public-site .preview-stops { list-style: none; margin: 0; padding: 0 0 0 22px; border-left: 2px solid #e5c981; }
+.public-site .preview-stops > li { position: relative; padding: 0 0 18px; border: 0; }
+.public-site .preview-stops > li::before { content: ''; position: absolute; left: -28px; top: 24px; width: 10px; height: 10px; background: var(--site-red); border: 2px solid #fff8e6; border-radius: 50%; }
+.public-site .preview-stop { background: #fff; border: 1.5px solid #d6b665; border-radius: 14px; overflow: hidden; margin: 0; }
+.public-site .preview-stop-label { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #fff8e6; padding: 10px 18px; color: var(--site-deep-red); font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.public-site .preview-recommended-badge { background: #f4dfa1; border: 1px solid #dbc17b; border-radius: 20px; padding: 3px 9px; font-size: .65rem; }
+.public-site .preview-stop-content { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 20px; padding: 20px; }
+.public-site .preview-stop .destination-visual { width: 100%; height: 130px; border-radius: 10px; overflow: hidden; align-self: start; }
+.public-site .preview-stop .destination-visual :is(img,svg) { width: 100%; height: 100%; object-fit: cover; }
+.public-site .preview-stop h4 { font-size: 1.3rem; line-height: 1.25; margin: 0 0 6px; }
+.public-site .preview-stop p { margin-bottom: 8px; font-size: .9rem; }
+.public-site .preview-place-meta { color: var(--site-red); font-weight: 600; }
+.public-site .preview-fit { padding: 8px 10px; background: #fffaf0; border-radius: 6px; }
+.public-site .preview-fit strong { font-weight: 600; }
+.public-site .preview-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 12px; font-size: .85rem; }
+.public-site .preview-card-actions .secondary-button { min-height: 40px; padding: 8px 12px; }
+.public-site .preview-weather { border-left: 4px solid var(--site-gold); padding: 18px 22px; box-shadow: none; }
+.public-site .preview-weather :is(p,li) { font-size: .9rem; }
+.public-site .preview-weather small { display: block; margin-top: 10px; font-size: .75rem; }
+.public-site .preview-weather-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.public-site .preview-assistant { padding: 18px 22px; box-shadow: none; border-color: #e6dcc4; }
+.public-site .preview-assistant h2 { font-size: 1.1rem; margin-bottom: 4px; }
+.public-site .preview-assistant .itinerary-help { margin-bottom: 12px; font-size: .85rem; }
+.public-site .preview-quick-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.public-site .preview-quick-actions form { margin: 0; }
+.public-site .preview-quick-actions .secondary-button { font-size: .75rem; min-height: 36px; padding: 6px 10px; border-radius: 20px; }
+.public-site .preview-composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.public-site .preview-composer #preview-adjust-message { margin: 0; font-size: .9rem; }
+.public-site .preview-ai-about { margin-top: 8px; color: var(--site-muted); font-size: .8rem; }
+.public-site .preview-ai-about p { margin: 5px 0; }
+.public-site .preview-chat { display: flex; flex-direction: column; gap: 10px; max-height: 330px; overflow-y: auto; overscroll-behavior: contain; padding: 8px 4px; margin-block: 12px; }
+.public-site .preview-bubble { align-self: flex-start; max-width: 88%; padding: 10px 14px; background: #faf4e8; border-radius: 12px 12px 12px 3px; overflow-wrap: anywhere; }
+.public-site .preview-bubble-user { align-self: flex-end; background: #f7e4ba; color: #65221c; border-radius: 12px 12px 3px 12px; }
+.public-site .preview-bubble > strong { display: block; margin-bottom: 3px; font-size: .7rem; color: var(--site-red); }
+.public-site .preview-bubble p { margin: 0 0 6px; font-size: .85rem; }
+.public-site .preview-bubble p:last-child { margin-bottom: 0; }
+.public-site .preview-ai-progress { margin: 10px 0 0; font-size: .8rem; color: var(--site-muted); }
+@media (max-width: 800px) {
+    .public-site .preview-page { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .public-site .preview-heading { grid-row: 1; }
+    .public-site .preview-summary { grid-row: 2; }
+    .public-site .preview-top-actions { grid-column: 1; grid-row: 3; justify-content: flex-start; max-width: none; }
+    .public-site .preview-top-actions small { text-align: left; }
+}
+@media (max-width: 480px) {
+    .public-site .preview-stop-content { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; }
+    .public-site .preview-stop .destination-visual { height: 110px; }
+    .public-site .preview-stops { padding-left: 14px; }
+    .public-site .preview-stops > li::before { left: -20px; }
+    .public-site .preview-stop-label { padding-inline: 14px; }
+    .public-site .preview-assistant { padding: 16px; }
+    .public-site .preview-composer { grid-template-columns: minmax(0, 1fr); }
+    .public-site .preview-bubble { max-width: 94%; }
+}

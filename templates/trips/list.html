@@ -13,8 +13,9 @@
             <h2>{{ trip.name }}</h2>
             <p class="trip-date">{% if trip.visit_date %}Visit date: <time datetime="{{ trip.visit_date.isoformat() }}">{{ trip.visit_date.strftime('%b %d, %Y') }}</time>{% else %}Date not set{% endif %}</p>
             <div class="trip-actions">
-                <a class="site-button site-button-secondary" href="{{ url_for('trips_detail', trip_id=trip.id) }}" aria-label="View trip: {{ trip.name }}">View Trip</a>
-                <a class="text-link" href="{{ url_for('trips_edit', trip_id=trip.id) }}" aria-label="Edit trip: {{ trip.name }}">Edit</a>
+                <a class="site-button" href="{{ url_for('trips_detail', trip_id=trip.id) }}" aria-label="View trip: {{ trip.name }}">View Trip</a>
+                <a class="secondary-button" href="{{ url_for('trips_edit', trip_id=trip.id) }}" aria-label="Edit trip: {{ trip.name }}">Edit</a>
+                <form method="post" action="{{ url_for('trips_delete',trip_id=trip.id) }}" data-confirm-delete><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="mini-button button-danger">Delete</button></form>
             </div>
         </article></li>
         {% endfor %}
@@ -27,10 +28,10 @@
     {% endif %}
     {% if offset or next_offset is not none %}
     <nav class="trip-pagination" aria-label="Trip pages">
-        {% if offset %}<a class="text-link" href="{{ url_for('trips_list', offset=[0, offset - 50] | max) }}">Previous page</a>{% endif %}
-        {% if next_offset is not none %}<a class="text-link" href="{{ url_for('trips_list', offset=next_offset) }}">Next page</a>{% endif %}
+        {% if offset %}<a class="secondary-button" href="{{ url_for('trips_list', offset=[0, offset - 50] | max) }}">Previous page</a>{% endif %}
+        {% if next_offset is not none %}<a class="secondary-button" href="{{ url_for('trips_list', offset=next_offset) }}">Next page</a>{% endif %}
     </nav>
     {% endif %}
-    <a class="text-link trip-back" href="{{ url_for('user_index') }}">Back to Account</a>
+    <a class="secondary-button trip-back" href="{{ url_for('user_index') }}">Back to Account</a>
 </section>
 {% endblock %}

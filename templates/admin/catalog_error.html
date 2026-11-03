@@ -1,0 +1,3 @@
+{% extends 'admin/base.html' %}
+{% block title %}Destination unavailable ? RosaGo Admin{% endblock %}
+{% block content %}<p class="eyebrow">Destination Management</p><section class="panel empty-state"><h1>{{ 'Admin data temporarily unavailable' if unavailable else 'Destination unavailable' }}</h1><p>{{ 'Destination information could not be loaded. Please try again later.' if unavailable else 'This destination could not be found. Return to the catalog to choose an available record.' }}</p><a class="button" href="{{ url_for('admin.places') }}">Back to Destinations</a></section>{% endblock %}
