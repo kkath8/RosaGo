@@ -1,0 +1,38 @@
+{% extends 'admin/base.html' %}
+{% block title %}Audit Logs | RosaGo Admin{% endblock %}
+{% block content %}
+<div class="admin-audit-page">
+    <header class="page-heading">
+        <div><p class="eyebrow">Administration</p><h1>Audit Logs</h1><p class="intro">Review recorded administrative activity and destination changes.</p></div>
+        <span class="admin-audit-readonly">Read-only history</span>
+    </header>
+    <form class="admin-audit-filters" method="get" action="{{ url_for('admin.audit_logs') }}">
+        <div class="field"><label for="audit-action">Recorded action</label><select id="audit-action" name="action"><option value="">All actions</option>{% for value,label in actions.items() %}<option value="{{ value }}"{% if action == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <button class="admin-ui-button admin-ui-primary" type="submit">Apply filter</button>
+        {% if action %}<a class="admin-ui-text" href="{{ url_for('admin.audit_logs') }}">Clear filter</a>{% endif %}
+    </form>
+    <p class="section-note">Destination changes only. Names and emails are resolved from current account information; the recorded Actor ID remains the historical identifier. Times are shown in Asia/Manila.</p>
+    {% if data is none %}
+    <p class="notice" role="alert">Audit history is temporarily unavailable. Please try again later.</p>
+    {% elif not data.rows %}
+    <section class="panel empty-state"><h2>No audit records{% if action %} match this action{% endif %}.</h2><p>{% if action %}Choose another action or clear the filter.{% else %}Recorded destination changes will appear here.{% endif %}</p></section>
+    {% else %}
+    {% if not data.actor_lookup_complete %}<p class="notice" role="status">Some account details could not be resolved. Audit records remain available with their recorded Actor IDs.</p>{% endif %}
+    <p class="section-note">Page {{ page }} &middot; {{ data.rows|length }} record{{ '' if data.rows|length == 1 else 's' }} &middot; Newest first</p>
+    <div class="panel admin-audit-table-wrap" tabindex="0" role="region" aria-label="Scrollable destination audit history">
+        <table class="admin-audit-table">
+            <caption class="visually-hidden">Recorded destination changes, newest first</caption>
+            <thead><tr><th scope="col">Date / Time</th><th scope="col">Performed by</th><th scope="col">Action</th><th scope="col">Destination</th><th scope="col">Recorded details</th></tr></thead>
+            <tbody>{% for entry in data.rows %}<tr>
+                <td><time datetime="{{ entry.occurred_at.isoformat() }}">{{ entry.occurred_at.strftime('%d %b %Y') }}<span class="admin-audit-subline">{{ entry.occurred_at.strftime('%I:%M:%S %p') }}</span></time></td>
+                <td>{% if entry.actor_name %}<strong>{{ entry.actor_name }}</strong>{% if entry.actor_email %}<span class="admin-audit-subline">{{ entry.actor_email }}</span>{% endif %}{% elif entry.actor_email %}<strong>{{ entry.actor_email }}</strong>{% else %}<strong>Unknown / Former Admin</strong>{% endif %}<code class="admin-audit-id admin-audit-subline">Actor ID: {{ entry.actor_id }}</code></td>
+                <td><span class="admin-audit-action admin-audit-action-{{ entry.action }}">{{ actions[entry.action] }}</span></td>
+                <th scope="row">{% if entry.destination_slug %}<a href="{{ url_for('admin.place_detail', slug=entry.destination_slug) }}">{{ entry.destination_name }}</a>{% endif %}<code class="admin-audit-id admin-audit-subline">{{ entry.destination_id }}</code></th>
+                <td><span class="status-badge status-{{ entry.resulting_status }}">{{ entry.resulting_status|title }}</span>{% if entry.submitted_fields %}<span class="admin-audit-subline">Submitted fields: {{ entry.submitted_fields|join(', ')|replace('_', ' ') }}</span>{% else %}<span class="admin-audit-subline">Publication status change</span>{% endif %}</td>
+            </tr>{% endfor %}</tbody>
+        </table>
+    </div>
+    {% endif %}
+    <nav class="catalog-pagination" aria-label="Audit log pages">{% if previous_url %}<a class="admin-ui-button" href="{{ previous_url }}">Previous page</a>{% endif %}{% if next_url %}<a class="admin-ui-button" href="{{ next_url }}">Next page</a>{% endif %}</nav>
+</div>
+{% endblock %}

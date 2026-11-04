@@ -4,8 +4,11 @@
 <a href="{{ url_for('admin.places') }}" {% if active == 'places' %}aria-current="page"{% endif %}>{{ icon('Destinations') }} Destinations</a>
 <a href="{{ url_for('admin.users') }}" {% if active == 'users' %}aria-current="page"{% endif %}>{{ icon('Profile') }} Users</a>
 <a href="{{ url_for('admin.trips') }}" {% if active == 'trips' %}aria-current="page"{% endif %}>{{ icon('My Trips') }} Trips &amp; Itineraries</a>
-<a href="{{ url_for('admin.insights') }}" {% if active == 'insights' %}aria-current="page"{% endif %}>{{ icon('Settings') }} Catalog Insights</a>
+<a href="{{ url_for('admin.insights') }}" {% if active == 'insights' %}aria-current="page"{% endif %}>{{ icon('Dashboard') }} Catalog Insights</a>
 <a href="{{ url_for('admin.system') }}" {% if active == 'system' %}aria-current="page"{% endif %}>{{ icon('Settings') }} System &amp; Weather</a>
+{% endmacro %}
+{% macro admin_utility_links() %}
+{% for endpoint,label,key in [('admin.audit_logs','Audit Logs','audit'),('admin.account','Account','account'),('admin.settings','Settings','settings'),('admin.help_page','Help','help'),('admin.about','About RosaGo','about')] %}<a class="admin-utility-link" href="{{ url_for(endpoint) }}"{% if active == key %} aria-current="page"{% endif %}><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ {'audit': 'M5 3h14v18H5z M9 7h6 M9 11h6 M9 15h4', 'account': 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M4 21v-3a8 8 0 0 1 16 0v3', 'settings': 'M4 6h16 M4 12h16 M4 18h16 M8 3v6 M16 9v6 M10 15v6', 'help': 'M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3 M12 17h.01 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0', 'about': 'M12 11v6 M12 7h.01 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0'}[key] }}"/></svg><span>{{ label }}</span></a>{% endfor %}
 {% endmacro %}
 <!doctype html>
 <html lang="en">
@@ -13,21 +16,38 @@
 <meta name="referrer" content="same-origin"><title>{% block title %}RosaGo Admin{% endblock %}</title>
 {% include 'admin/head_assets.html' %}
 <script src="{{ url_for('static', filename='js/admin.js') }}" defer></script></head>
-<body class="admin-site">
+<body class="admin-site admin-shell">
 <a class="skip-link" href="#main-content">Skip to content</a>
-<header class="admin-header">
+<aside class="admin-sidebar" aria-label="Administration sidebar">
     <div class="admin-brand"><a class="wordmark" href="{{ url_for('admin.index') }}" aria-label="RosaGo Admin"><span>Rosa</span><span>Go</span></a><span class="admin-badge">ADMIN</span></div>
-    <nav class="admin-desktop-nav" aria-label="Admin navigation">{{ admin_links() }}</nav>
+    <p class="admin-nav-label" id="admin-primary-label">Workspace</p>
+    <nav class="admin-desktop-nav" aria-label="Admin navigation" aria-describedby="admin-primary-label">{{ admin_links() }}</nav>
+    <div class="admin-sidebar-bottom">
+        <p class="admin-nav-label" id="admin-utility-label">Administration</p>
+        <nav class="admin-secondary-nav" aria-label="Admin utilities" aria-describedby="admin-utility-label">{{ admin_utility_links() }}</nav>
+        <p class="admin-sidebar-caption">RosaGo Administration<span>Santa Rosa, Laguna</span></p>
+    </div>
+</aside>
+<header class="admin-header">
+    <div class="admin-topbar-title"><span class="admin-console-mark" aria-hidden="true">{{ icon('Dashboard') }}</span><span>Administration workspace</span></div>
+
     <div class="admin-header-actions">
         <details class="admin-dropdown admin-appearance"><summary aria-label="Appearance">{{ icon('Settings') }}<span class="appearance-label">Appearance</span></summary>
             <div class="admin-dropdown-panel"><p class="dropdown-label">Appearance</p><div class="admin-theme-controls" role="group" aria-label="Color theme"><button type="button" data-set-theme="light" aria-pressed="true">Light</button><button type="button" data-set-theme="dark" aria-pressed="false">Dark</button></div><p class="muted"{% if active != 'settings' %} data-theme-status role="status"{% endif %}>Saved on this device.</p></div>
         </details>
-        <details class="admin-dropdown admin-account"><summary aria-label="Admin account"><span class="admin-avatar" aria-hidden="true">A</span><span class="account-label">Admin</span><span aria-hidden="true">⌄</span></summary>
+        <details class="admin-dropdown admin-account"><summary aria-label="Admin account"><span class="admin-avatar" aria-hidden="true">A</span><span class="account-label">Admin</span><span class="admin-chevron" aria-hidden="true"></span></summary>
             <div class="admin-dropdown-panel admin-account-menu"><p class="dropdown-label">Admin account</p>
-            {% for endpoint,label,key in [('admin.account','Account','account'),('admin.settings','Settings','settings'),('admin.help_page','Help','help'),('admin.about','About RosaGo','about')] %}<a class="admin-utility-link" href="{{ url_for(endpoint) }}"{% if active == key %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+            {{ admin_utility_links() }}
             <hr><form method="post" action="{{ url_for('admin.logout') }}"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><button class="button logout-button" type="submit">{{ icon('Logout') }} Logout</button></form></div>
         </details>
-        <details class="admin-mobile-menu"><summary>Menu <span aria-hidden="true">☰</span></summary><nav aria-label="Mobile Admin navigation">{{ admin_links() }}</nav></details>
+        <details class="admin-mobile-menu">
+            <summary>Menu <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 6h16 M4 12h16 M4 18h16"/></svg></summary>
+            <div class="admin-mobile-panel">
+                <div class="admin-brand"><a class="wordmark" href="{{ url_for('admin.index') }}" aria-label="RosaGo Admin"><span>Rosa</span><span>Go</span></a><span class="admin-badge">ADMIN</span></div>
+                <nav aria-label="Mobile Admin navigation">{{ admin_links() }}</nav>
+                <nav class="admin-secondary-nav" aria-label="Mobile Admin utilities">{{ admin_utility_links() }}</nav>
+            </div>
+        </details>
     </div>
 </header>
 <div class="admin-workspace"><main id="main-content" tabindex="-1">{% for message in get_flashed_messages() %}<p class="notice" role="status">{{ message }}</p>{% endfor %}{% block content %}{% endblock %}</main>

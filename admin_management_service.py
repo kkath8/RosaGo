@@ -5,11 +5,13 @@ from datetime import datetime
 
 from admin_places_service import _context, _execute, AdminPlacesError
 from place_model import CATEGORIES, TOURISM_TYPES, TOURISM_HOURS_STATUSES
+from admin_photo_service import valid_photo_url
 
 BASIC_FIELDS = ('name', 'category', 'description', 'address', 'latitude', 'longitude')
 TOURISM_FIELDS = ('tourism_type', 'tourism_category', 'tourism_opening_hours_raw',
                   'tourism_closing_hours_raw', 'tourism_hours_status')
 ACTIONS = ('publish', 'draft', 'archive', 'restore')
+PHOTO_FIELDS = ('image_url',)
 
 
 class DestinationValidationError(ValueError):
@@ -19,9 +21,14 @@ class DestinationValidationError(ValueError):
 def validate_destination(values, *, tourism_enabled):
     """Validate an exact allowlist; absent optional metadata stays NULL."""
     allowed = set(BASIC_FIELDS + (TOURISM_FIELDS if tourism_enabled else ()))
-    if set(values) != allowed or any(type(v) is not str for v in values.values()):
+    if (set(values) - set(PHOTO_FIELDS) != allowed
+            or any(type(value) is not str for key, value in values.items() if key != 'image_url')):
         raise DestinationValidationError('Invalid destination fields. Reload the form.')
     result = {}
+    if 'image_url' in values:
+        if values['image_url'] is not None and not valid_photo_url(values['image_url']):
+            raise DestinationValidationError('The destination photo URL is invalid.')
+        result['image_url'] = values['image_url']
     for field, maximum in (('name', 150), ('description', 3000), ('address', 500)):
         value = values[field].strip()
         if not 1 <= len(value) <= maximum or any(ord(c) < 32 and c not in '\n\r\t' for c in value):

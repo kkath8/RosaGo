@@ -7,10 +7,12 @@ import secrets
 import time
 
 from flask import Blueprint, current_app, flash, g, redirect, request, session, url_for
+from werkzeug.exceptions import RequestEntityTooLarge
 
 from admin_auth import admin_required, render_admin_page
 from admin_authorization_service import AdminAuthorizationError, is_current_admin
 from admin_dashboard_service import published_catalog_health
+from admin_audit_service import audit_page, ACTION_LABELS as AUDIT_ACTIONS, MAX_PAGE as AUDIT_MAX_PAGE
 from admin_insights_service import catalog_insights, ISSUES, SCOPES, ATTENTION_PAGE_SIZE
 from admin_places_service import (
     destination_counts, catalog_page, validate_catalog_filters, AdminPlacesFilterError,
@@ -18,7 +20,8 @@ from admin_places_service import (
 )
 from place_model import CATEGORIES
 from admin_management_service import (BASIC_FIELDS, TOURISM_FIELDS as EDIT_TOURISM_FIELDS,
-    ACTIONS, DestinationValidationError, mutate_destination, operational_overview)
+    ACTIONS, DestinationValidationError, mutate_destination, operational_overview, validate_destination)
+from admin_photo_service import MAX_PHOTO_BYTES, PhotoError, prepare_photo, upload_photo
 from destination_weather_metadata import load_weather_catalog
 from profile_service import get_own_profile, ProfileServiceError
 from auth_helpers import login_required
@@ -233,6 +236,30 @@ def insights():
         observed_at=datetime.now(timezone(timedelta(hours=8)))), 200 if data is not None else 503
 
 
+@admin.route('/audit-logs')
+@admin_required
+def audit_logs():
+    raw_page = request.args.get('page', '1')
+    action = request.args.get('action') or None
+    if (set(request.args) - {'action', 'page'}
+            or any(len(request.args.getlist(key)) != 1 for key in request.args)
+            or (action is not None and action not in AUDIT_ACTIONS)
+            or not raw_page.isascii() or not raw_page.isdecimal() or len(raw_page) > 6
+            or str(int(raw_page)) != raw_page or not 1 <= int(raw_page) <= AUDIT_MAX_PAGE):
+        return 'Invalid audit action or page.', 400
+    page = int(raw_page)
+    try:
+        data = audit_page(g.auth, action=action, page=page)
+    except AdminPlacesError:
+        data = None
+    page_args = {'action': action} if action else {}
+    return render_admin_page('admin/audit_logs.html', active='audit', logout_csrf=_logout_csrf(),
+        data=data, action=action, actions=AUDIT_ACTIONS, page=page,
+        previous_url=url_for('admin.audit_logs', **page_args, page=page - 1) if page > 1 else None,
+        next_url=url_for('admin.audit_logs', **page_args, page=page + 1)
+            if data is not None and data.has_next and page < AUDIT_MAX_PAGE else None), 200 if data is not None else 503
+
+
 @admin.route('/places')
 @admin_required
 def places():
@@ -288,14 +315,32 @@ def _load_management_place(slug):
     return get_destination(g.auth, slug, tourism_metadata_enabled=_tourism_enabled())
 
 
+def _valid_destination_form(fields):
+    """Validate text and file controls without weakening the mutation boundary."""
+    required = set(fields) | {'csrf_token'}
+    return (request.headers.get('Origin') == request.host_url.rstrip('/')
+        and required <= set(request.form) <= required | {'remove_photo'}
+        and all(len(request.form.getlist(key)) == 1 for key in request.form)
+        and set(request.files) <= {'photo'}
+        and all(len(request.files.getlist(key)) == 1 for key in request.files)
+        and request.form.get('remove_photo', '1') == '1'
+        and get_normal_auth_dependencies().coordinator.validate_csrf(
+            g.auth.auth_session_id, request.form.get('csrf_token', '')))
+
+
 def _destination_form(slug=None):
+    request.max_content_length = MAX_PHOTO_BYTES + 128 * 1024
     enabled = _tourism_enabled()
     fields = BASIC_FIELDS + (EDIT_TOURISM_FIELDS if enabled else ())
-    error, status, place = '', 200, None
+    error, status, place, photo_uploaded = '', 200, None, False
     if request.args:
         return 'Destination forms do not accept selection parameters.', 400
-    if request.method == 'POST' and not _valid_mutation_form(fields + (('expected_updated_at',) if slug else ())):
-        return 'Please reload this page and try again.', 403
+    try:
+        if request.method == 'POST' and not _valid_destination_form(fields + (('expected_updated_at',) if slug else ())):
+            return 'Please reload this page and try again.', 403
+    except RequestEntityTooLarge:
+        return render_admin_page('admin/upload_error.html', active='places', logout_csrf=_logout_csrf(),
+            back_url=url_for('admin.edit_place', slug=slug) if slug else url_for('admin.new_place')), 413
     try:
         if slug:
             place = _load_management_place(slug)
@@ -303,15 +348,40 @@ def _destination_form(slug=None):
                 return render_admin_page('admin/catalog_error.html', active='places',
                     logout_csrf=_logout_csrf(), unavailable=False), 404
         if request.method == 'POST':
+            values = {key: request.form[key] for key in fields}
+            validate_destination(values, tourism_enabled=enabled)
+            photo = request.files.get('photo')
+            has_photo = photo is not None and bool(photo.filename)
+            remove_photo = 'remove_photo' in request.form
+            if has_photo and remove_photo:
+                raise DestinationValidationError('Choose a replacement photo or remove the current photo, not both.')
+            if has_photo:
+                # Avoid uploading for an already stale edit. The RPC still
+                # performs the authoritative locked concurrency check.
+                if place:
+                    try:
+                        fresh = datetime.fromisoformat(request.form['expected_updated_at']) == place.updated_at
+                    except ValueError:
+                        fresh = False
+                    if not fresh:
+                        raise DestinationValidationError('This destination changed. Reload before uploading a photo.')
+                values['image_url'] = upload_photo(g.auth, prepare_photo(photo))
+                photo_uploaded = True
+            elif remove_photo:
+                values['image_url'] = None
             result = mutate_destination(g.auth, action='edit' if slug else 'create', slug=slug,
                 expected_updated_at=request.form.get('expected_updated_at'),
-                values={key: request.form[key] for key in fields}, tourism_enabled=enabled)
+                values=values, tourism_enabled=enabled)
             flash('Destination changes saved.' if slug else 'Destination created as Draft.', 'success')
             return redirect(url_for('admin.place_detail', slug=result['slug']), code=303)
     except DestinationValidationError as exc:
         error, status = str(exc), 400
+    except PhotoError as exc:
+        error, status = str(exc), exc.status
     except AdminPlacesError:
-        error, status = ('Destination could not be saved or loaded. Reload before retrying. '
+        error, status = (('The photo was uploaded, but the destination save could not be confirmed. '
+            'Reload and check the destination before retrying. Existing photos have not been deleted.') if photo_uploaded else
+            'Destination could not be saved or loaded. Reload before retrying. '
             'The write capability may need deployment, or this record may have changed.'), 503
         if slug and place is None:
             return render_admin_page('admin/catalog_error.html', active='places',
