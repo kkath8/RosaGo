@@ -1,0 +1,118 @@
+{
+  "target_project_ref": "jfaufpfzfhysqkhcdsrs",
+  "authorization": "Local implementation and qualification only; hosted application not approved.",
+  "remote_deployment": "NO-GO",
+  "hosted_changes": false,
+  "live_signins": false,
+  "sql_candidates_gated": true,
+  "managed_auth_restore_replay_qualified": false,
+  "full_schema_restore_protected": false,
+  "evaluation_mcp_compatibility": "OAuth refresh failed; no hosted SQL executed.",
+  "preserved_original_sha256": {
+    "evaluation/infrastructure/sql/private_sessions.review.sql": "59899c43c3d3bfe232b9b91e87b979a3fa3338e2dd8ed7d070768fc6b05555ea",
+    "evaluation/infrastructure/sql/provider_access_guards.review.sql": "4136cd079ad39201e3fb185c0de8410374a556cb38631f25ac51e81c19983307",
+    "docs/production-readiness/remote-evaluation/linux-build-results.json": "b3645b00f1ebe1a724e96ccf8d0f9831ef98cb1e627d27d5249b7d73f10a470d"
+  },
+  "files": [
+    {
+      "file": "independent_provider_sessions.py",
+      "sha256": "c93530e64a4a946a57788257650c047283a0bdc6ed364390fc2e57f68f6b45a0"
+    },
+    {
+      "file": "authority_http_transport.py",
+      "sha256": "9a8e67cfb14021ba0b06b76c9f41d402df0a02692f4c368fb9b0f968c6c06e2e"
+    },
+    {
+      "file": "normal_auth_coordinator.py",
+      "sha256": "db40ab6757d74b44e7c5cc1301c3be9072c052c92dc7ca9ae06eda13d192e3ab"
+    },
+    {
+      "file": "normal_auth_flask.py",
+      "sha256": "285b46023bc4c77341a159f74339a5e2e87dcc73675a430c362da34f956b85ed"
+    },
+    {
+      "file": "admin_session_flask.py",
+      "sha256": "0c83a3cd4d958d31c72b7e3e10bbfc634cd074b24fe97b435bfb95c9deaba196"
+    },
+    {
+      "file": "shared_session_runtime.py",
+      "sha256": "7908b08b889df0cc5c4adae9917dd563ececc5cf6c3aa11763cd63d451553d51"
+    },
+    {
+      "file": "tests/test_independent_provider_sessions.py",
+      "sha256": "45214667f867815d17fd6655161c6c59cbea9bb3ac6f21634197986c61b163fa"
+    },
+    {
+      "file": "tools/qualify_independent_provider_local.py",
+      "sha256": "cbfc036507ff61b3d1c59919ccd9024eee2bcd3d5729bb5bba433f7e4c755b20"
+    },
+    {
+      "file": "tools/qualify_independent_provider_linux.py",
+      "sha256": "628d0be3024598d721f8d38e6376e8b1f47138efd5fe286b04a387e7d49c6520"
+    },
+    {
+      "file": "evaluation/infrastructure/INDEPENDENT_PROVIDER_AUTHORITY_REVIEW.md",
+      "sha256": "77629789145dafd6cc0d3534d3be3ed650f003c789ad8fc33c59290317224c6f"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/worker.mjs",
+      "sha256": "8cf3bbba91caee71f3d1d20c549ab37dab3e519a8eddbb66aeda4517372c987d"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/provider-ledger.mjs",
+      "sha256": "eeb67a81d2c01b71c0efa7bec31c4994159fbb966f13d0490ec374726200259f"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/wrangler.review.toml",
+      "sha256": "8cf9cffbd6f994f81fa1e0201fa966bd0f3ca09e49979dfe5d4263d6b220338b"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/test/provider-ledger.test.mjs",
+      "sha256": "07d2280d45b30f44d906b708c30963a2d3132286ad47f315f4b94bd31c901e17"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/test/provider-worker.test.mjs",
+      "sha256": "66ea72e9fd26f2b8cf73585abe99d7fedeca1671809974e1d83c71f13344beb9"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/test/stdio-provider-workerd-service.mjs",
+      "sha256": "80891c2b45bb435a36cb59f56c3ad4ccd52678e0c59366f30aad7fff073eeea2"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/test/native-https-relay.py",
+      "sha256": "273e8fc8aac21169dfc5df6e1522059f9b8218ea0217e663e7a8af4845ed5a08"
+    },
+    {
+      "file": "evaluation/infrastructure/sql/independent_provider_authority.review.sql",
+      "sha256": "b1c9d335f02f8ce4694e826e0b56e9bf3d598244354c38c40cd792a02ac1c202"
+    },
+    {
+      "file": "evaluation/infrastructure/sql/independent_provider_authority.preflight.readonly.sql",
+      "sha256": "c0f2908ee6e0027a203866fdb9d20ba80ed4a43d5e27ab4df2ea75bf187d79c6"
+    },
+    {
+      "file": "evaluation/infrastructure/sql/independent_provider_authority.verify.readonly.sql",
+      "sha256": "415b60ca2b4326fdbd81cfe34bd3345da42132c2f34ca755eece1cd5e5790b41"
+    },
+    {
+      "file": "evaluation/infrastructure/sql/independent_provider_authority.quarantine.review.sql",
+      "sha256": "4c22fba069c1b2cfc90619e890404703133766a7e85d502d67c6ab4c8559c898"
+    },
+    {
+      "file": "docs/production-readiness/remote-evaluation/independent-provider-local-results.json",
+      "sha256": "eed9e70c442ad56ed3f0d9a996b4555a7963a48422f05715dfaa69f14a800ef9"
+    },
+    {
+      "file": "docs/production-readiness/remote-evaluation/independent-provider-linux-results.json",
+      "sha256": "46dab869f099ea939fca7879ec4a1c16c7d33ffcb103ddc31331e8d79a67139f"
+    },
+    {
+      "file": "docs/production-readiness/remote-evaluation/independent-provider-regression-results.json",
+      "sha256": "ab2f1753d6c77caf601f970bbb34dca4a8bcd7309a9e678296790f46d95769a9"
+    },
+    {
+      "file": "docs/production-readiness/remote-evaluation/independent-provider-worker-results.json",
+      "sha256": "5ca7065b9941905f04207ef91cf56be55e03134108612d6d3cef887d2d914a92"
+    }
+  ]
+}

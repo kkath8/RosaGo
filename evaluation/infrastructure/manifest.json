@@ -1,0 +1,138 @@
+{
+  "target_project_ref": "jfaufpfzfhysqkhcdsrs",
+  "local_implementation_approved": true,
+  "hosted_execution_authorized": false,
+  "deployment_authorized": false,
+  "spending_authorized": false,
+  "ordered_sql": [
+    {
+      "file": "evaluation/infrastructure/sql/private_sessions.review.sql",
+      "sha256": "59899c43c3d3bfe232b9b91e87b979a3fa3338e2dd8ed7d070768fc6b05555ea"
+    },
+    {
+      "file": "evaluation/infrastructure/sql/provider_access_guards.review.sql",
+      "sha256": "4136cd079ad39201e3fb185c0de8410374a556cb38631f25ac51e81c19983307"
+    }
+  ],
+  "review_files": [
+    {
+      "file": "evaluation/infrastructure/README.md",
+      "sha256": "42f3ec8c20935d8af62f47283fb4d8d4b14bd23d4889d715150fe6971b53f5ce"
+    },
+    {
+      "file": "evaluation/infrastructure/PLAN.md",
+      "sha256": "88bb6c92fe47125cb1831223169098f721c52c845aae4b765d1e08a853913fce"
+    },
+    {
+      "file": "evaluation/infrastructure/runtime.env.review.example",
+      "sha256": "8af2a403ba1b5a40ea9cd5fb77314e4cdd9f58fccd3bbc181b38ec6769fc37f9"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/ledger.mjs",
+      "sha256": "dfd66fd5a7eee51de4271f5bec9592299a4d4aee5ad6d6c6908dbd345f59c012"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/worker.mjs",
+      "sha256": "2b21b666d67dc20bbb01232ce1b0dffa0e5de9be7c59125c693cc996039d595d"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/wrangler.review.toml",
+      "sha256": "4f0aec519bde5729eeb26862de520c1f39fbdfc862f5574a853522f3b6728df0"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/package.json",
+      "sha256": "57c4f54203189537c9d730bed14f53bdc136bae4ddca6b9c024ee6ca5fcaa2eb"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/package-lock.json",
+      "sha256": "238b6dcea747dd2760321ea7e834f842b07b5715008b12b433d2bf74d0b49dac"
+    }
+  ],
+  "runtime_source": [
+    {
+      "file": "authority_http_transport.py",
+      "sha256": "60b2de18a3175880d5e0b33021ed379a3256d7e950b5238974a2812eef567c46"
+    },
+    {
+      "file": "externally_fenced_postgres.py",
+      "sha256": "de252ab654f2396333afa1202ea4bf096b8c15899940b23b2efafcce68865899"
+    },
+    {
+      "file": "durable_session_logout.py",
+      "sha256": "d848122bdacbbd412fbde38dc20f78fd93d838da60c10dfc362c34debdd74ae1"
+    },
+    {
+      "file": "shared_session_runtime.py",
+      "sha256": "71d67b5f8fa307806a74c3653cbec1f3deb3c7d95667eed9d9e872b8aa98f560"
+    },
+    {
+      "file": "redis_session_flask.py",
+      "sha256": "1133f51536dc95c97556ac4cf3a94efc3a354c84373c2045866ae59a550942f4"
+    },
+    {
+      "file": "app.py",
+      "sha256": "859e4f61a8ffa0d7750feea91f6a0fe617c8ddfdacfd459ac38c87c8116b2e2d"
+    },
+    {
+      "file": "admin_routes.py",
+      "sha256": "53f5befdeceef35bd220421fe3016079581774c473ac73e165fd81a18cf693fa"
+    }
+  ],
+  "qualification_source": [
+    {
+      "file": "tests/test_external_session_infrastructure.py",
+      "sha256": "b59a56eb582b78f6a39417ee2f55dabcaf329941691cbfe600c10857955c731b"
+    },
+    {
+      "file": "tests/independent_authority_fixture.py",
+      "sha256": "12e5c6124b3105c6dfe765a597d235272d2d0d445e327612da22294c6ab6b20b"
+    },
+    {
+      "file": "tests/test_authority_tls_local.py",
+      "sha256": "6358936002e48ed4a2299ea52271f4b3b86cc8b11aac5bf5cb5fcf132c56d0da"
+    },
+    {
+      "file": "tests/test_authority_http_transport.py",
+      "sha256": "d7c593d6249fc78db16ba38a9cffebdfaa8f93ae3c20962c052b8a40de5731e6"
+    },
+    {
+      "file": "tools/qualify_external_infrastructure.py",
+      "sha256": "59ef9e5bb2c034b2993627af7fd5d11a374d561a0d6e25ed6c6780c1ccb7170d"
+    },
+    {
+      "file": "tools/qualify_infrastructure_linux.py",
+      "sha256": "b96f1fb02e35e1a6638398b7f48c3be6c0800ba222852c0f623d657744bec375"
+    },
+    {
+      "file": "tools/prepare_provider_guards.py",
+      "sha256": "d5d622ea594c7f2c458595846cbb3d10da94b917ec26664f6bae38e7fa68176e"
+    }
+  ],
+  "worker_qualification_source": [
+    {
+      "file": "evaluation/infrastructure/authority/test/ledger.test.mjs",
+      "sha256": "a9a5cf2a2e2a7aa5b26b0a767ea7420d2a123e802947556aeae79d8396dfcbcd"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/test/sqlite-storage.mjs",
+      "sha256": "5a6b11fd28044e951ba0839522a038ad039d68984a269ad5ba8687866879a34e"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/test/stdio-service.mjs",
+      "sha256": "962d2054ca355c658d0cfd5a008459988782b512d505eac5addf91195b5267be"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/test/stdio-workerd-service.mjs",
+      "sha256": "bdb4dd3480c7a2606a9ad65aeca41b94d2ac8e49ff6bb0cf654fe51b8fbbded2"
+    },
+    {
+      "file": "evaluation/infrastructure/authority/test/worker.test.mjs",
+      "sha256": "4f36bee3b41f9b5e4642cf3170f431cea16896b682a774c725618c1644ef7d0d"
+    }
+  ],
+  "original_linux_evidence": {
+    "file": "docs/production-readiness/remote-evaluation/linux-build-results.json",
+    "sha256": "b3645b00f1ebe1a724e96ccf8d0f9831ef98cb1e627d27d5249b7d73f10a470d"
+  },
+  "note": "Review hashes are integrity evidence, not approval. No hosted commands are provided or executed."
+}
