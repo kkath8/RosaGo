@@ -73,6 +73,23 @@ class UserProfileEditTests(unittest.TestCase):
     def form(self, **changes):
         return dict(csrf_token=self.csrf, first_name='Ana', last_name='Cruz') | changes
 
+    def test_saved_name_refreshes_navigation_profile_and_avatar_api(self):
+        before = Document(self.client.get('/user').get_data(as_text=True))
+        self.assertEqual([n.text for n in before.find('span') if 'data-user-initials' in n.attrs], ['AC', 'AC'])
+        response = self.client.post(self.path, data=self.form(first_name='Kath', last_name='Userr'))
+        self.assertEqual(response.status_code, 303)
+        page = Document(self.client.get(response.location).get_data(as_text=True))
+        self.assertEqual([n.text for n in page.find('span') if 'data-user-initials' in n.attrs], ['KU', 'KU'])
+        self.assertEqual(self.client.get('/api/user/avatar').json, {'initials': 'KU'})
+        self.assertEqual(self.data[0]['first_name'], 'Kath')
+        self.assertEqual(self.data[0]['last_name'], 'Userr')
+
+    def test_invalid_unsaved_name_does_not_become_navigation_identity(self):
+        response = self.client.post(self.path, data=self.form(first_name='Not saved', last_name=''))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.client.get('/api/user/avatar').json, {'initials': 'AC'})
+        self.update.assert_not_called()
+
     def assert_protected(self, response):
         self.assertEqual(response.headers['Cache-Control'], 'no-store')
         self.assertEqual(response.headers['Referrer-Policy'], 'same-origin')

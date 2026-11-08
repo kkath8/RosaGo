@@ -2,6 +2,7 @@
 {% block title %}Review Your Trip | RosaGo{% endblock %}
 {% block content %}
 {% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'industrial': 'Industrial Tourism', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private Car', 'public_transport': 'Public Transport', 'ride_hailing': 'Ride-Hailing / Taxi', 'mixed_transport': 'Mixed Transport', 'sightseeing': 'Sightseeing', 'food_trip': 'Food Trip', 'outdoor_activities': 'Outdoor Activities', 'culture_heritage': 'Culture & Heritage', 'relaxation': 'Relaxation', 'indoor': 'Mostly Indoor', 'outdoor': 'Mostly Outdoor', 'mixed': 'Mix of Both'} %}
+{% set labels = dict(labels, **category_labels) %}
 {% macro display_date(value) -%}
 <time datetime="{{ value }}">{{ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][(value[5:7] | int) - 1] }} {{ value[8:10] | int }}, {{ value[:4] }}</time>
 {%- endmacro %}

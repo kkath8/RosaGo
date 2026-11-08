@@ -27,7 +27,7 @@ class EmailVerificationTests(unittest.TestCase):
         self.app.extensions['rosago_email_verification'] = self.provider
 
     def begin(self):
-        response = self.client.post('/register', data=self.valid)
+        response = test_registration.post_public_form(self, '/register', data=self.valid)
         self.assertEqual((response.status_code,response.location), (303,'/verify-email'))
         with self.client.session_transaction() as current:
             self.handle = current['pending_email_verification']
@@ -52,9 +52,9 @@ class EmailVerificationTests(unittest.TestCase):
         self.assertTrue(page.find('a', href='/privacy'))
         self.assertNotIn('checked',page.find('input',name='terms')[0].attrs)
         for value in ['', 'false']:
-            self.assertEqual(self.client.post('/register',data=self.valid|{'terms':value}).status_code,400)
+            self.assertEqual(test_registration.post_public_form(self, '/register',data=self.valid|{'terms':value}).status_code,400)
         duplicated = MultiDict(self.valid); duplicated.add('terms','accepted')
-        self.assertEqual(self.client.post('/register',data=duplicated).status_code,400)
+        self.assertEqual(test_registration.post_public_form(self, '/register',data=duplicated).status_code,400)
         self.supabase.auth.sign_up.assert_not_called()
 
     def test_real_terms_and_privacy_content(self):

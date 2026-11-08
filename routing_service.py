@@ -134,7 +134,7 @@ class RoutingService:
         try:
             with self._http_factory(timeout=12, follow_redirects=False, trust_env=False) as client:
                 if self._provider == 'ors':
-                    url = 'https://api.openrouteservice.org/v2/directions/' + ORS_PROFILES[mode] + '/geojson'
+                    url = 'https://api.heigit.org/openrouteservice/v2/directions/' + ORS_PROFILES[mode] + '/geojson'
                     response = client.post(url, headers={'Authorization': self._key},
                         json={'coordinates': [start, end], 'instructions': False})
                 else:

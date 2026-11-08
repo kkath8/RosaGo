@@ -18,9 +18,11 @@
         function restoreSaved() {
             releasePreview();
             const src = preview.dataset.savedSrc;
-            preview.hidden = !src || Boolean(remove && remove.checked);
-            if (src) preview.src = src;
-            else preview.removeAttribute('src');
+            const useSaved = Boolean(src) && !(remove && remove.checked);
+            preview.hidden = false;
+            preview.src = useSaved ? src : preview.dataset.placeholderSrc;
+            preview.alt = useSaved ? 'Destination cover photo preview' : 'Destination photo unavailable';
+            preview.classList.toggle('destination-photo-placeholder', !useSaved);
         }
         input.addEventListener('change', () => {
             releasePreview();
@@ -38,6 +40,8 @@
             previewUrl = URL.createObjectURL(file);
             preview.src = previewUrl;
             preview.hidden = false;
+            preview.alt = 'Selected destination photo preview';
+            preview.classList.remove('destination-photo-placeholder');
             reset.hidden = false;
             status.textContent = 'Replacement selected. Save the destination to upload it.';
         });
@@ -84,6 +88,20 @@
             passwordToggle.setAttribute('aria-pressed', String(reveal));
         });
     }
+
+    // Keep an expanded audit panel fully inside its horizontal scroll region.
+    // Native details still works without JavaScript; this only adjusts the view.
+    document.addEventListener('toggle', event => {
+        const details = event.target;
+        if (!details.matches('.admin-audit-details') || !details.open) return;
+        const region = details.closest('.admin-table-scroll');
+        const body = details.querySelector('.admin-audit-detail-body');
+        if (!region || !body) return;
+        const viewport = region.getBoundingClientRect();
+        const panel = body.getBoundingClientRect();
+        if (panel.right > viewport.right - 12) region.scrollLeft += panel.right - viewport.right + 12;
+        else if (panel.left < viewport.left + 12) region.scrollLeft -= viewport.left + 12 - panel.left;
+    }, true);
 
     const selector = '.admin-header details';
     document.addEventListener('toggle', event => {

@@ -18,7 +18,7 @@
     <main class="admin-login-main" id="main-content" tabindex="-1">
         <p class="visually-hidden" data-theme-status role="status">Theme preference is saved on this device.</p>
         <section class="admin-login-card" aria-labelledby="admin-login-title">
-            <div class="admin-login-card-heading"><p class="eyebrow">Administration Portal</p><h1 id="admin-login-title">Admin sign in</h1><p class="admin-login-intro">Access the RosaGo administration workspace.</p></div>
+            <div class="admin-login-card-heading"><p class="eyebrow">Administration Portal</p><h1 id="admin-login-title">Admin sign in</h1><p class="admin-login-intro">Access the RosaGo administration workspace. Admin sign-in is separate from your User session.</p></div>
             {% if message %}<p class="admin-login-message" id="admin-login-message" role="alert">{{ icon('Alerts') }}<span>{{ message }}</span></p>{% endif %}
             {% if signed_in %}
             <div class="admin-login-account-actions"><a class="admin-login-submit" href="{{ url_for('user_index') }}">Continue to User side <span aria-hidden="true">&rarr;</span></a>

@@ -252,7 +252,7 @@ class RecoveryCallbackTests(unittest.TestCase):
         self.claims['session_id'] = 'second-session'
         self.pending()
         self.callback()
-        self.client.post('/logout')
+        test_registration.post_user_logout(self)
         self.denied(self.client.get('/reset-password'), 403)
 
     def test_diagnostics_and_query_logs_never_contain_credentials(self):

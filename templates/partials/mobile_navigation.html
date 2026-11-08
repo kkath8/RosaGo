@@ -1,8 +1,11 @@
 <nav class="mobile-tabs" aria-label="Mobile navigation">
-{% for label, endpoint, icon in [('Explore','places_list','compass'),('Plan','planner','plus'),('Trips','trips_list','bookmark'),('Map','map_index','pin'),('AI','assistant','chat')] %}
-<a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-{{ icon }}"></use></svg>{{ label }}</a>
+{% set active = request.endpoint or '' %}
+{% set active_primary = 'planner' if active.startswith('itinerary_') or active in ('trips_new','trips_create','features.save_preview') else 'trips_list' if active.startswith('trips_') or active in ('features.move_destination','features.remove_destination','features.bag','features.save_bag') else 'places_list' if active == 'places_detail' else active %}
+{% set tabs = [('Dashboard','index','home'),('Explore','places_list','compass'),('Plan','planner','plus'),('Trips','trips_list','bookmark'),('Map','map_index','pin')] %}
+{% for label, endpoint, icon in tabs %}
+<a href="{{ url_for(endpoint) }}"{% if endpoint == 'index' %} class="mobile-dashboard-tab"{% endif %}{% if active_primary == endpoint %} aria-current="{{ 'page' if active == endpoint else 'true' }}"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-{{ icon }}"></use></svg>{{ label }}</a>
 {% endfor %}
-<button type="button" data-open-dialog="more-dialog" aria-label="More navigation"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-more"></use></svg>More</button>
+<button type="button" data-open-dialog="more-dialog" aria-label="More navigation" aria-controls="more-dialog" aria-haspopup="dialog" aria-expanded="false"{% if active_primary and active_primary not in tabs | map(attribute=1) | list %} aria-current="true"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-more"></use></svg>More</button>
 </nav>
 <dialog id="more-dialog" aria-labelledby="more-title"><h2 id="more-title">More</h2>{% with mobile_more=true %}{% include 'partials/navigation.html' %}{% endwith %}<form method="dialog"><button class="site-button site-button-secondary">Close</button></form></dialog>
 <dialog id="bag-dialog" class="trip-bag-dialog" aria-labelledby="bag-title"><div class="dialog-heading"><div><h2 id="bag-title">Trip Bag</h2><p>Collect places before saving them as a trip.</p></div><form method="dialog"><button class="dialog-close" aria-label="Close Trip Bag">&times;</button></form></div><div data-bag-list></div><p class="trip-help">Saving requires sign-in. Guest and account bags are separate.</p><div class="dialog-footer"><button class="mini-button" type="button" data-action="bag-clear">Clear Bag</button><a class="site-button" data-bag-save href="{{ url_for('features.bag') }}">Save as Trip</a></div></dialog>

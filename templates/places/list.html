@@ -2,18 +2,19 @@
 {% block title %}Places | RosaGo{% endblock %}
 {% block content %}
 {% set search_query = request.args.get('q', '') | trim %}
-{% set category_labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'industrial': 'Industrial Tourism'} %}
 <div class="explore-page">
-<nav class="destination-breadcrumb" aria-label="Breadcrumb"><a href="{{ url_for('index') }}">Home</a><span aria-hidden="true">&rsaquo;</span><span>Explore</span></nav>
 <header class="explore-heading">
-    <h1 class="page-heading">Explore Santa Rosa</h1>
-    <p class="intro-text">Find places to visit around Santa Rosa, Laguna.</p>
+    <h1 class="page-heading">{{ 'Planner simulation' if preview_simulation else 'Explore Santa Rosa' }}</h1>
+    <p class="intro-text">{% if preview_simulation %}Category-based visual simulation using first-batch candidates and proposed category parents. Local/Common ranking only; no personalized itinerary, travel-time or opening-hour guarantee. Nothing is saved.{% else %}Find places to visit around Santa Rosa, Laguna.{% endif %}</p>
+    {% if preview_simulation %}<form class="preview-simulation-form" method="get" action="{{ url_for(preview_planner_endpoint or 'planner') }}">
+    <label>Interest<select name="interest">{% for interest in preview_interests %}<option value="{{ interest }}"{% if interest == preview_interest %} selected{% endif %}>{{ interest | title }}</option>{% endfor %}</select></label>
+    <label>Maximum suggestions<select name="stops">{% for count in ['3','6','9','12'] %}<option value="{{ count }}"{% if count == preview_stops %} selected{% endif %}>{{ count }}</option>{% endfor %}</select></label><button class="site-button">Preview suggestions</button></form>{% endif %}
 </header>
 {% set development = namespace(found=false) %}
 {% for place in places if place.slug.startswith('rosago-test-v1-') %}{% set development.found = true %}{% endfor %}
 {% if development.found %}<p class="catalog-disclosure">Development data: places marked as test records are synthetic examples, not real businesses or attractions.</p>{% endif %}
 <div class="explore-layout">
-<section class="explore-filters" aria-label="Search and filter destinations">
+{% if not preview_simulation %}<section class="explore-filters" aria-label="Search and filter destinations">
 <form role="search" method="get" action="{{ url_for('places_list') }}" data-explore-search class="explore-controls">
 {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
 <label for="explore-query">Search destinations</label><div class="inline-controls"><input id="explore-query" name="q" value="{{ search_query }}" maxlength="200" placeholder="Search by place, area, or category"><button class="site-button">Search</button></div>
@@ -26,9 +27,10 @@
         {% endfor %}
     </ul>
 </nav>
-<div class="filter-controls"><label for="explore-setting">Weather setting<select id="explore-setting"><option value="all">All settings</option><option value="indoor">Primarily indoor</option><option value="covered">Mostly covered</option><option value="mixed">Mixed</option><option value="outdoor">Primarily outdoor</option></select></label><label for="explore-sort">Sort<select id="explore-sort"><option value="name">Name A–Z</option><option value="category">Category</option></select></label><label class="checkbox-label"><input type="checkbox" id="explore-saved"> Saved only</label><a class="secondary-button" href="{{ url_for('places_list') }}">Clear filters</a></div>
-<p class="trip-help">Weather filters use verified metadata only. Unknown settings remain unclassified.</p></form>
+{% if not catalog_preview %}<div class="filter-controls"><label for="explore-setting">Weather setting<select id="explore-setting"><option value="all">All settings</option><option value="indoor">Primarily indoor</option><option value="covered">Mostly covered</option><option value="mixed">Mixed</option><option value="outdoor">Primarily outdoor</option></select></label><label for="explore-sort">Sort<select id="explore-sort"><option value="name">Name A–Z</option><option value="category">Category</option></select></label><label class="checkbox-label"><input type="checkbox" id="explore-saved"> Saved only</label><a class="secondary-button" href="{{ url_for('places_list') }}">Clear filters</a></div>
+<p class="trip-help">Weather filters use verified metadata only. Unknown settings remain unclassified.</p>{% endif %}</form>
 </section>
+{% endif %}
 <section class="explore-results" aria-label="Destinations">
 
 {% if search_query %}<p role="status">Search results for <strong>{{ search_query }}</strong></p><a class="secondary-button" href="{{ url_for('places_list', category=selected_category) if selected_category else url_for('places_list') }}">Clear search</a>{% endif %}
@@ -43,6 +45,7 @@
             <p class="place-category">{{ category_labels[place.category] }}</p>
             {% if place.slug.startswith('rosago-test-v1-') %}<span class="badge destination-test-label">Test record</span>{% endif %}
             <h2>{{ place.name }}</h2>
+            {% if catalog_preview %}{% include 'preview/status.html' %}{% endif %}
             {% if place.tourism_type or place.tourism_category %}
             <p class="destination-tourism-summary">{% if place.tourism_type %}{{ place.tourism_type }}{% endif %}{% if place.tourism_type and place.tourism_category %} &middot; {% endif %}{% if place.tourism_category %}{{ place.tourism_category }}{% endif %}</p>
             {% endif %}
@@ -50,8 +53,10 @@
             <p class="destination-excerpt">{{ place.description | truncate(220, false, '...', 0) }}</p>
             <div class="destination-card-actions">
                 <a class="site-button destination-details-link" href="{{ url_for('places_detail', slug=place.slug) }}" aria-label="View details for {{ place.name }}">View Details <span aria-hidden="true">&rarr;</span></a>
+                {% if catalog_preview %}<a class="secondary-button" href="{{ url_for(preview_planner_endpoint or 'planner') }}">Planner simulation</a>{% else %}
                 <a class="secondary-button" href="{{ url_for('trips_add_place', slug=place.slug) }}" data-add-to-trip>+ Add to Trip</a>
                 <button type="button" class="mini-button button-tertiary" data-action="save" data-id="{{ place.id }}" aria-pressed="false">Save</button>
+                {% endif %}
             </div>
             </div>
         </article>
@@ -61,7 +66,10 @@
 {% else %}
 <div data-explore-grid><section class="empty-state" aria-labelledby="empty-title">
     <p data-result-count>0 destinations</p>
-    {% if search_query %}
+    {% if preview_simulation %}
+    <h2 id="empty-title">No first-batch suggestions for this interest</h2>
+    <p>Try another interest. Draft records awaiting decisions are still available in Explore preview.</p>
+    {% elif search_query %}
     <h2 id="empty-title">No destinations match your search</h2>
     <p>Try a destination name, category, address, or Tourism classification, or clear your search.</p>
     {% elif selected_category is none %}

@@ -204,16 +204,38 @@ class UserProfileTests(unittest.TestCase):
 
     def test_profile_shows_only_supported_fields_and_initials_avatar(self):
         self.seed()
-        for first,last,initials in [('Ana','Cruz','AC'),('Ana',None,'A'),(None,'Cruz','C'),(None,None,'T')]:
+        for first,last,initials in [('Kath','Userr','KU'),('Ana','Cruz','AC'),('Ana',None,'A'),(None,'Cruz','C'),(None,None,'RG')]:
             self.data[0].update(first_name=first,last_name=last)
             page=Document(self.client.get('/user').get_data(as_text=True))
             self.assertEqual(page.find('span', **{'class':'profile-avatar user-avatar'})[0].text,initials)
+            self.assertEqual([node.text for node in page.find('span') if 'data-user-initials' in node.attrs],
+                             [initials, initials])
             self.assertEqual(page.find('input',id='profile-email')[0].attrs['value'],'verified@example.invalid')
             for name in ('username','contact_number','email'):
                 self.assertFalse(page.find('input',name=name))
             self.assertFalse(page.find('input',type='file'))
             self.assertFalse(any('data-device-profile' in form.attrs for form in page.find('form')))
             self.assertNotIn('Travel statistics',page.find('main')[0].text)
+
+    def test_avatar_api_resolves_only_authenticated_saved_names_and_no_private_fields(self):
+        response = self.client.get('/api/user/avatar')
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(self.requests, [])
+        handle = self.seed()
+        for first, last, expected in [('Kath', 'Userr', 'KU'), ('Kath', None, 'K'),
+                                      (None, 'Userr', 'U'), (None, None, 'RG')]:
+            self.data[0].update(first_name=first, last_name=last)
+            response = self.client.get('/api/user/avatar')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json, {'initials': expected})
+            self.assertEqual(response.headers['Cache-Control'], 'no-store')
+            self.assertEqual(response.headers.getlist('Set-Cookie'), [])
+        self.data = []
+        self.assertEqual(self.client.get('/api/user/avatar').json, {'initials': 'RG'})
+        self.provider_status = 503
+        self.assertEqual(self.client.get('/api/user/avatar').status_code, 503)
+        self.assert_authority_preserved(handle)
+        self.assertEqual(self.client.post('/api/user/avatar').status_code, 405)
 
     def test_shared_templates_have_no_auth_authority_or_extra_operations(self):
         self.seed()

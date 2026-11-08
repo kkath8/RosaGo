@@ -16,20 +16,22 @@ from admin_audit_service import audit_page, ACTION_LABELS as AUDIT_ACTIONS, MAX_
 from admin_insights_service import catalog_insights, ISSUES, SCOPES, ATTENTION_PAGE_SIZE
 from admin_places_service import (
     destination_counts, catalog_page, validate_catalog_filters, AdminPlacesFilterError,
-    get_destination, AdminPlacesError, STATUSES, PAGE_SIZE, MAX_OFFSET,
+    get_destination, AdminPlacesError, STATUSES, MAX_OFFSET,
 )
-from place_model import CATEGORIES
+from place_model import CATEGORIES, ENVIRONMENTS
+from destination_categories import flexible_catalog_enabled
 from admin_management_service import (BASIC_FIELDS, TOURISM_FIELDS as EDIT_TOURISM_FIELDS,
     ACTIONS, DestinationValidationError, mutate_destination, operational_overview, validate_destination)
 from admin_photo_service import MAX_PHOTO_BYTES, PhotoError, prepare_photo, upload_photo
 from destination_weather_metadata import load_weather_catalog
 from profile_service import get_own_profile, ProfileServiceError
-from auth_helpers import login_required
+from admin_session_flask import admin_login_required as login_required
 from normal_auth_coordinator import PasswordLoginError
-from normal_auth_flask import (
-    normal_authenticated, NormalAuthEntryError, clear_normal_auth_authority,
-    get_normal_auth_dependencies, establish_normal_session, SessionEstablishmentError,
-    logout_normal_session, LocalLogoutError,
+from normal_auth_flask import NormalAuthEntryError, SessionEstablishmentError, LocalLogoutError
+from admin_session_flask import (
+    admin_authenticated, clear_admin_auth_authority,
+    get_admin_auth_dependencies, establish_admin_session,
+    logout_admin_session, verify_admin_candidate,
 )
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
@@ -43,6 +45,11 @@ def _login_csrf():
         token = secrets.token_urlsafe(32)
         session['admin_login_csrf'] = token
         session['admin_login_csrf_at'] = time.time()
+    challenges = current_app.extensions['rosago_login_challenges']
+    if not challenges.valid('admin', token):
+        token = challenges.issue('admin')
+        session['admin_login_csrf'] = token
+        session['admin_login_csrf_at'] = time.time()
     return token
 
 
@@ -53,7 +60,7 @@ def _strict_form(fields):
 
 
 def _logout_csrf():
-    record = get_normal_auth_dependencies().store.resolve(g.auth.auth_session_id)
+    record = get_admin_auth_dependencies().store.resolve(g.admin_auth.auth_session_id)
     return record.csrf if record else ''
 
 
@@ -67,14 +74,14 @@ def _current_login_destination():
     """Check membership inside the normal context; render without its authority."""
     with ExitStack() as stack:
         try:
-            stack.enter_context(normal_authenticated())
+            stack.enter_context(admin_authenticated())
         except NormalAuthEntryError as error:
             if error.may_clear_authority:
-                clear_normal_auth_authority()
+                clear_admin_auth_authority()
                 return _login_page()
             return _login_page('Authentication is temporarily unavailable. Please try again.', 503)
         try:
-            allowed = is_current_admin(g.auth)
+            allowed = is_current_admin(g.admin_auth)
         except AdminAuthorizationError:
             return _login_page('Admin authorization is temporarily unavailable. Please try again.',
                                503, signed_in=True)
@@ -97,13 +104,21 @@ def login():
             or type(issued) not in (int, float) or not 0 <= time.time() - issued < 1800
             or not secrets.compare_digest(supplied.encode(), expected.encode())):
         return _login_page('Please reload this page and try again.', 403)
+    from redis_session_flask import begin_login
+    if not begin_login('admin', expected):
+        return _login_page('Please reload this page and try again.', 403)
+    if not current_app.extensions['rosago_login_challenges'].allow_attempt('admin', request.remote_addr):
+        return _login_page('Too many login attempts. Please wait before trying again.', 429)
     email = request.form['email'].strip()
     password = request.form['password']
     if not email or not password.strip():
         return _login_page('Enter your email and password.', 400, email=email)
     try:
-        credentials = get_normal_auth_dependencies().adapters.password_login(email, password)
-        establish_normal_session(credentials)
+        credentials = get_admin_auth_dependencies().adapters.password_login(email, password)
+        allowed = verify_admin_candidate(credentials)
+        if not allowed:
+            return _login_page('Admin access required. Sign in with an authorized Admin account.', 403, email=email)
+        establish_admin_session(credentials)
     except PasswordLoginError as error:
         status, message = {
             'invalid_credentials': (401, 'Invalid email or password.'),
@@ -113,6 +128,8 @@ def login():
             'service_failure': (503, 'We could not complete your login. Please try again later.'),
         }[error.reason]
         return _login_page(message, status, email=email)
+    except AdminAuthorizationError:
+        return _login_page('Admin authorization is temporarily unavailable. Please try again.', 503, email=email)
     except SessionEstablishmentError:
         return _login_page('We could not complete your login. Please try again later.', 503)
     session.pop('admin_login_csrf', None)
@@ -125,12 +142,14 @@ def login():
 def logout():
     # Membership revocation must not prevent a signed-in user from logging out.
     if (not _strict_form({'csrf_token'})
-            or not get_normal_auth_dependencies().coordinator.validate_csrf(
-                g.auth.auth_session_id, request.form.get('csrf_token', ''))):
+            or not get_admin_auth_dependencies().coordinator.validate_csrf(
+                g.admin_auth.auth_session_id, request.form.get('csrf_token', ''))):
         return 'Please reload this page and try again.', 403
     try:
-        logout_normal_session()
+        confirmed = logout_admin_session()
         session.clear()
+        if confirmed is False:
+            return 'Signed out of RosaGo. Provider session revocation is not yet confirmed.', 503, {'Cache-Control':'no-store'}
     except LocalLogoutError:
         return 'Logout could not be completed. Please try again.', 503
     return redirect(url_for('admin.login'), code=303)
@@ -140,13 +159,13 @@ def logout():
 @admin_required
 def index():
     try:
-        counts = destination_counts(g.auth)
+        counts = destination_counts(g.admin_auth)
     except AdminPlacesError:
         counts = None
     health = None
     if counts is not None:
         try:
-            health = published_catalog_health(g.auth, tourism_metadata_enabled=(
+            health = published_catalog_health(g.admin_auth, tourism_metadata_enabled=(
                 os.getenv('ROSAGO_TOURISM_METADATA_ENABLED', '').lower() == 'true'))
         except AdminPlacesError:
             pass
@@ -154,7 +173,7 @@ def index():
     if overview is not None:
         overview = {key: overview[key] for key in ('users_total', 'trips_total')}
     try:
-        attention = catalog_insights(g.auth, tourism_metadata_enabled=_tourism_enabled(),scope='all')['attention_total']
+        attention = catalog_insights(g.admin_auth, tourism_metadata_enabled=_tourism_enabled(),scope='all')['attention_total']
     except AdminPlacesError:
         attention = None
     return render_admin_page('admin/dashboard.html', logout_csrf=_logout_csrf(),
@@ -171,7 +190,7 @@ def account():
     display_name = None
     profile_unavailable = False
     try:
-        profile = get_own_profile(g.auth)
+        profile = get_own_profile(g.admin_auth)
     except ProfileServiceError:
         profile_unavailable = True
     else:
@@ -180,7 +199,7 @@ def account():
     # Pass display strings only, never the profile's ID, auth context or claims.
     # User updates are explicitly outside Phase 4, including own-name changes.
     return render_admin_page('admin/account.html', active='account', logout_csrf=_logout_csrf(),
-        display_name=display_name, account_email=g.auth.user_email, profile_unavailable=profile_unavailable)
+        display_name=display_name, account_email=g.admin_auth.user_email, profile_unavailable=profile_unavailable)
 
 
 @admin.route('/settings')
@@ -223,7 +242,7 @@ def insights():
     page = int(raw_page)
     enabled = os.getenv('ROSAGO_TOURISM_METADATA_ENABLED', '').lower() == 'true'
     try:
-        data = catalog_insights(g.auth, tourism_metadata_enabled=enabled, scope=scope, issue=issue, page=page)
+        data = catalog_insights(g.admin_auth, tourism_metadata_enabled=enabled, scope=scope, issue=issue, page=page)
     except AdminPlacesError:
         data = None
     page_args = dict(scope=scope, issue=issue) if issue else dict(scope=scope)
@@ -249,7 +268,7 @@ def audit_logs():
         return 'Invalid audit action or page.', 400
     page = int(raw_page)
     try:
-        data = audit_page(g.auth, action=action, page=page)
+        data = audit_page(g.admin_auth, action=action, page=page)
     except AdminPlacesError:
         data = None
     page_args = {'action': action} if action else {}
@@ -263,7 +282,7 @@ def audit_logs():
 @admin.route('/places')
 @admin_required
 def places():
-    if (set(request.args) - {'q', 'status', 'category', 'tourism_type', 'coordinates', 'offset'}
+    if (set(request.args) - {'q', 'status', 'category', 'tourism_type', 'coordinates', 'offset', 'sort', 'page_size'}
             or any(len(request.args.getlist(key)) != 1 for key in request.args)):
         return 'Invalid destination filter or page.', 400
     raw_offset = request.args.get('offset', '0')
@@ -272,25 +291,33 @@ def places():
             or str(int(raw_offset)) != raw_offset or int(raw_offset) > MAX_OFFSET):
         return 'Invalid destination filter or page.', 400
     offset = int(raw_offset)
+    raw_size = request.args.get('page_size', '25')
+    if raw_size not in ('10', '25', '50'):
+        return 'Invalid destination page size.', 400
     enabled = os.getenv('ROSAGO_TOURISM_METADATA_ENABLED', '').lower() == 'true'
     try:
         filters = validate_catalog_filters(q=request.args.get('q', ''),
             status=request.args.get('status') or None, category=request.args.get('category') or None,
             tourism_type=request.args.get('tourism_type') or None,
             coordinates=request.args.get('coordinates') or None, offset=offset,
-            tourism_metadata_enabled=enabled)
+            tourism_metadata_enabled=enabled, sort=request.args.get('sort', 'slug'), page_size=int(raw_size))
     except AdminPlacesFilterError:
         return 'Invalid destination filter or search.', 400
     try:
-        catalog = catalog_page(g.auth, **filters)
+        catalog = catalog_page(g.admin_auth, **filters)
     except AdminPlacesError:
         catalog = None
     page_args = {key: value for key, value in filters.items()
                  if key not in ('offset', 'tourism_metadata_enabled') and value}
-    next_offset = offset + PAGE_SIZE if catalog is not None and offset + PAGE_SIZE < catalog.matching else None
+    if filters['sort'] == 'slug':
+        page_args.pop('sort')
+    if filters['page_size'] == 25:
+        page_args.pop('page_size')
+    page_size = filters['page_size']
+    next_offset = offset + page_size if catalog is not None and offset + page_size < catalog.matching else None
     return render_admin_page('admin/places.html', logout_csrf=_logout_csrf(), active='places',
         catalog=catalog, filters=filters, categories=sorted(CATEGORIES), offset=offset,
-        previous_url=url_for('admin.places', **page_args, offset=max(0, offset - PAGE_SIZE)) if offset else None,
+        previous_url=url_for('admin.places', **page_args, offset=max(0, offset - page_size)) if offset else None,
         next_url=url_for('admin.places', **page_args, offset=next_offset) if next_offset is not None else None,
         tourism_enabled=enabled), 200 if catalog is not None else 503
 
@@ -305,38 +332,48 @@ def _tourism_enabled():
     return os.getenv('ROSAGO_TOURISM_METADATA_ENABLED', '').lower() == 'true'
 
 
+def _environment_enabled():
+    return os.getenv('ROSAGO_DESTINATION_ENVIRONMENT_ENABLED', '').lower() == 'true'
+
+
 def _valid_mutation_form(fields):
     return (_strict_form(set(fields) | {'csrf_token'}) and
-        get_normal_auth_dependencies().coordinator.validate_csrf(
-            g.auth.auth_session_id, request.form.get('csrf_token', '')))
+        get_admin_auth_dependencies().coordinator.validate_csrf(
+            g.admin_auth.auth_session_id, request.form.get('csrf_token', '')))
 
 
 def _load_management_place(slug):
-    return get_destination(g.auth, slug, tourism_metadata_enabled=_tourism_enabled())
+    return get_destination(g.admin_auth, slug, tourism_metadata_enabled=_tourism_enabled(),
+                           environment_enabled=_environment_enabled())
 
 
-def _valid_destination_form(fields):
+def _valid_destination_form(fields, *, environment_enabled=False):
     """Validate text and file controls without weakening the mutation boundary."""
     required = set(fields) | {'csrf_token'}
+    optional = {'remove_photo'} | ({'environment'} if environment_enabled else set())
+    if flexible_catalog_enabled():
+        optional.add('operating_days_raw')
     return (request.headers.get('Origin') == request.host_url.rstrip('/')
-        and required <= set(request.form) <= required | {'remove_photo'}
+        and required <= set(request.form) <= required | optional
         and all(len(request.form.getlist(key)) == 1 for key in request.form)
         and set(request.files) <= {'photo'}
         and all(len(request.files.getlist(key)) == 1 for key in request.files)
         and request.form.get('remove_photo', '1') == '1'
-        and get_normal_auth_dependencies().coordinator.validate_csrf(
-            g.auth.auth_session_id, request.form.get('csrf_token', '')))
+        and get_admin_auth_dependencies().coordinator.validate_csrf(
+            g.admin_auth.auth_session_id, request.form.get('csrf_token', '')))
 
 
 def _destination_form(slug=None):
     request.max_content_length = MAX_PHOTO_BYTES + 128 * 1024
     enabled = _tourism_enabled()
+    environment_enabled = _environment_enabled()
     fields = BASIC_FIELDS + (EDIT_TOURISM_FIELDS if enabled else ())
     error, status, place, photo_uploaded = '', 200, None, False
     if request.args:
         return 'Destination forms do not accept selection parameters.', 400
     try:
-        if request.method == 'POST' and not _valid_destination_form(fields + (('expected_updated_at',) if slug else ())):
+        if request.method == 'POST' and not _valid_destination_form(fields + (('expected_updated_at',) if slug else ()),
+                                                                  environment_enabled=environment_enabled):
             return 'Please reload this page and try again.', 403
     except RequestEntityTooLarge:
         return render_admin_page('admin/upload_error.html', active='places', logout_csrf=_logout_csrf(),
@@ -349,6 +386,11 @@ def _destination_form(slug=None):
                     logout_csrf=_logout_csrf(), unavailable=False), 404
         if request.method == 'POST':
             values = {key: request.form[key] for key in fields}
+            if flexible_catalog_enabled() and 'operating_days_raw' in request.form:
+                values['operating_days_raw'] = request.form['operating_days_raw'] or None
+            if environment_enabled and 'environment' in request.form:
+                raw_environment = request.form['environment']
+                values['environment'] = None if raw_environment == '' else raw_environment
             validate_destination(values, tourism_enabled=enabled)
             photo = request.files.get('photo')
             has_photo = photo is not None and bool(photo.filename)
@@ -365,11 +407,11 @@ def _destination_form(slug=None):
                         fresh = False
                     if not fresh:
                         raise DestinationValidationError('This destination changed. Reload before uploading a photo.')
-                values['image_url'] = upload_photo(g.auth, prepare_photo(photo))
+                values['image_url'] = upload_photo(g.admin_auth, prepare_photo(photo))
                 photo_uploaded = True
             elif remove_photo:
                 values['image_url'] = None
-            result = mutate_destination(g.auth, action='edit' if slug else 'create', slug=slug,
+            result = mutate_destination(g.admin_auth, action='edit' if slug else 'create', slug=slug,
                 expected_updated_at=request.form.get('expected_updated_at'),
                 values=values, tourism_enabled=enabled)
             flash('Destination changes saved.' if slug else 'Destination created as Draft.', 'success')
@@ -388,16 +430,22 @@ def _destination_form(slug=None):
                 logout_csrf=_logout_csrf(), unavailable=True), 503
     values = {key: request.form.get(key, '') if request.method == 'POST' else
               (getattr(place, key, None) if place else '') for key in fields}
+    values['environment'] = (request.form['environment'] if request.method == 'POST' and 'environment' in request.form
+                             else getattr(place, 'environment', None))
+    values['operating_days_raw'] = (request.form.get('operating_days_raw') if request.method == 'POST'
+                                    else getattr(place, 'operating_days_raw', None))
     return render_admin_page('admin/place_form.html', active='places', logout_csrf=_logout_csrf(),
         place=place, values=values, error=error, tourism_enabled=enabled, categories=sorted(CATEGORIES),
+        environment_enabled=environment_enabled, environments=ENVIRONMENTS,
         form_version=request.form.get('expected_updated_at','') if request.method == 'POST' else
             (place.updated_at.isoformat() if place else '')), status
 
 
 def _destination_page(slug, template):
     try:
-        place = get_destination(g.auth, slug, tourism_metadata_enabled=(
-            os.getenv('ROSAGO_TOURISM_METADATA_ENABLED', '').lower() == 'true'))
+        place = get_destination(g.admin_auth, slug, tourism_metadata_enabled=(
+            os.getenv('ROSAGO_TOURISM_METADATA_ENABLED', '').lower() == 'true'),
+            environment_enabled=_environment_enabled())
     except AdminPlacesError:
         return render_admin_page('admin/catalog_error.html', active='places',
             logout_csrf=_logout_csrf(), unavailable=True), 503
@@ -436,7 +484,7 @@ def publication(slug, action):
         if action not in allowed[place.status]:
             return 'This publication action is no longer available. Reload the destination.', 409
         if request.method == 'POST':
-            mutate_destination(g.auth, action=action, slug=slug,
+            mutate_destination(g.admin_auth, action=action, slug=slug,
                 expected_updated_at=request.form['expected_updated_at'])
             flash('Destination publication updated.', 'success')
             return redirect(url_for('admin.place_detail', slug=slug), code=303)
@@ -451,7 +499,7 @@ def publication(slug, action):
 
 def _overview_or_none(**kwargs):
     try:
-        return operational_overview(g.auth, **kwargs)
+        return operational_overview(g.admin_auth, **kwargs)
     except AdminPlacesError:
         return None
 
@@ -497,7 +545,7 @@ def system():
         return 'Invalid weather review page.', 400
     page=int(raw_page)
     try:
-        data=catalog_insights(g.auth,tourism_metadata_enabled=_tourism_enabled(),scope='all',
+        data=catalog_insights(g.admin_auth,tourism_metadata_enabled=_tourism_enabled(),scope='all',
             issue='weather_unknown',page=page)
     except AdminPlacesError:
         data=None

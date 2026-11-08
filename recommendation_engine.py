@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from place_model import CATEGORIES, Place
+from destination_categories import category_matches
 
 
 POLICY_VERSION = 'category-interest-tourism-v2'
@@ -73,7 +74,7 @@ def rank_candidates(preferences: dict, places: list[Place] | tuple[Place, ...]) 
     if type(preferences) is not dict:
         raise RecommendationInputError()
     interests = preferences.get('interests')
-    if (type(interests) is not list or not 1 <= len(interests) <= len(CATEGORIES)
+    if (type(interests) is not list or not 1 <= len(interests) <= 7
             or any(type(item) is not str or item not in CATEGORIES for item in interests)
             or len(set(interests)) != len(interests)):
         raise RecommendationInputError()
@@ -97,7 +98,7 @@ def rank_candidates(preferences: dict, places: list[Place] | tuple[Place, ...]) 
                 or place.tourism_type not in TOURISM_PRIORITY):
             raise RecommendationInputError()
         seen.add(canonical_id)
-        match = place.category in interests
+        match = any(category_matches(place.category, interest) for interest in interests)
         signals = (MatchedSignal(CATEGORY_INTEREST_MATCH, place.category),) if match else ()
         candidates.append(RecommendationCandidate(canonical_id, place.category, int(match), signals,
                                                   tourism_priority=TOURISM_PRIORITY[place.tourism_type]))

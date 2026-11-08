@@ -16,7 +16,7 @@ CURATED = {'enchanted-kingdom': 'mixed', 'sm-city-santa-rosa': 'indoor',
 
 
 def transition_plan():
-    return json.loads((FOLDER / 'tourism_transition_plan.json').read_text(encoding='utf-8'))
+    return json.loads((FOLDER / 'archive/tourism_transition_plan.json').read_text(encoding='utf-8'))
 
 
 def current_catalog_rows():

@@ -6,6 +6,7 @@
 {% endblock %}
 {% block content %}
 {% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'industrial': 'Industrial Tourism', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private car', 'public_transport': 'Public transport', 'ride_hailing': 'Ride-hailing / Taxi', 'mixed_transport': 'Mixed transport'} %}
+{% set labels = dict(labels, **category_labels) %}
 {% macro revision_fields() %}
 <input type="hidden" name="csrf_token" value="{{ csrf }}">
 <input type="hidden" name="expected_revision" value="{{ revision }}">

@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from recovery_diagnostics import recovery_diagnostic
+from public_auth_security import validate_public_origin
 
 
 RECOVERY_REDIRECT_TO = "http://127.0.0.1:5000/auth/reset-callback"
@@ -23,7 +24,8 @@ class RecoveryRequestRejected(RecoveryTransportError):
     """Provider rejection: callers should preserve account-enumeration protection."""
 
 
-def send_pkce_recovery(email, code_challenge, *, supabase_url, supabase_key, client):
+def send_pkce_recovery(email, code_challenge, *, supabase_url, supabase_key, client,
+                       redirect_to=RECOVERY_REDIRECT_TO):
     """Send only the public challenge, never the verifier, through a caller client.
 
     The supplied client must not enable sensitive HTTP tracing. Its lifecycle
@@ -47,10 +49,15 @@ def send_pkce_recovery(email, code_challenge, *, supabase_url, supabase_key, cli
         valid_origin = False
     if not valid_origin:
         raise ValueError("Invalid Supabase recovery origin.")
+    callback = urlsplit(redirect_to)
+    validate_public_origin(callback._replace(path='', query='', fragment='').geturl(),
+                           allow_loopback_http=True)
+    if callback.path != '/auth/reset-callback' or callback.query or callback.fragment:
+        raise ValueError('Invalid recovery callback URL.')
     try:
         response = client.post(
             supabase_url.rstrip("/") + "/auth/v1/recover",
-            params={"redirect_to": RECOVERY_REDIRECT_TO},
+            params={"redirect_to": redirect_to},
             headers={"apikey": supabase_key},
             json={
                 "email": email,

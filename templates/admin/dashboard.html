@@ -1,6 +1,9 @@
 {% extends 'admin/base.html' %}
 {% from 'partials/icons.html' import icon %}
 {% block title %}Dashboard &mdash; RosaGo Admin{% endblock %}
+{% macro summary_icon(key) %}
+<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ {'published':'M9 12l2 2 4-4 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0', 'draft':'M13 5l6 6 M4 20l5-1L21 7l-5-5L4 14z', 'archived':'M3 3h18v5H3z M5 8v13h14V8 M10 12h4', 'total':'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z'}[key] }}"/></svg>
+{% endmacro %}
 {% macro coverage(value, total, label) %}
 {% if total > 0 %}
 <div class="admin-coverage-caption"><span>Coverage</span><strong>{{ (value / total * 100)|round|int }}%</strong></div>
@@ -10,25 +13,35 @@
 {% block content %}
 <div class="admin-dashboard">
 <header class="admin-page-heading">
-    <div><p class="eyebrow">RosaGo Administration</p><h1>Dashboard</h1><p class="intro">Your catalog, coverage, and review priorities at a glance.</p></div>
+    <div><p class="eyebrow">RosaGo Administration</p><h1>Dashboard</h1></div>
     <div class="admin-page-actions"><a class="admin-ui-button admin-ui-primary" href="{{ url_for('admin.new_place') }}"><span aria-hidden="true">+</span> Add Destination</a><a class="admin-ui-button" href="{{ url_for('admin.places') }}">Manage Destinations</a></div>
 </header>
+<section class="admin-panel admin-actions-panel" aria-labelledby="quick-title">
+    <div class="admin-panel-heading"><h2 id="quick-title">Quick management</h2></div>
+    <div class="admin-action-grid">
+    {% for endpoint,label,icon_name,description in [('admin.new_place','Add Destination','Destinations','Create a new draft record'),('admin.places','Manage Destinations','Map','Browse and maintain the catalog'),('admin.users','View Users','Profile','Open account administration'),('admin.insights','Catalog Insights','Dashboard','Explore coverage and data quality'),('admin.system','System & Weather','Settings','Review service and weather information')] %}
+        <a class="admin-action-card{% if loop.first %} admin-action-primary{% endif %}" href="{{ url_for(endpoint) }}"><span class="admin-action-icon" aria-hidden="true">{{ icon(icon_name) }}</span><span class="admin-action-copy"><strong>{{ label }}</strong></span><span class="admin-action-arrow" aria-hidden="true">&rarr;</span></a>
+    {% endfor %}
+        <a class="admin-action-card" href="{{ url_for('admin.places',status='draft') }}"><span class="admin-action-icon" aria-hidden="true">{{ icon('Planner') }}</span><span class="admin-action-copy"><strong>Review Drafts</strong></span><span class="admin-action-arrow" aria-hidden="true">&rarr;</span></a>
+    </div>
+</section>
 {% if counts is none %}<p class="notice" role="alert">Destination counts are unavailable. Please try again later.</p>{% endif %}
 <section aria-label="Destination summary" class="admin-kpi-grid">
 {% set summary = [('published', 'Published', 'Available to RosaGo users'), ('draft', 'Draft', 'Not publicly visible'), ('archived', 'Archived', 'Retained but inactive'), ('total', 'Total Destinations', 'Across all publication statuses')] %}
 {% for key, label, description in summary %}
     <article class="admin-kpi admin-kpi-{{ key }}">
-        <div class="admin-kpi-top"><h2>{{ label }}</h2><a class="admin-kpi-open" href="{{ url_for('admin.places',status=key) if key != 'total' else url_for('admin.places') }}" aria-label="View {{ label|lower }}{{ ' destinations' if key != 'total' else '' }}"><span aria-hidden="true">&nearr;</span></a></div>
+        <div class="admin-kpi-top"><span class="admin-kpi-icon">{{ summary_icon(key) }}</span><a class="admin-kpi-open" href="{{ url_for('admin.places',status=key) if key != 'total' else url_for('admin.places') }}" aria-label="View {{ label|lower }}{{ ' destinations' if key != 'total' else '' }}"><span aria-hidden="true">&nearr;</span></a></div>
+        <h2>{{ label }}</h2>
         {% if counts is not none %}<p class="metric-value">{{ counts[key] }}</p>{% else %}<p class="metric-value" aria-label="Unavailable">&mdash;</p>{% endif %}
-        <p class="admin-kpi-caption"><span class="admin-status-dot" aria-hidden="true"></span>{{ description }}</p>
+        <p class="visually-hidden">{{ description }}</p>
     </article>
 {% endfor %}
 </section>
 <section class="admin-operations-row" aria-label="Operations and review">
         {% for label,value,icon_name in [('Users',overview.users_total if overview else none,'Profile'),('Saved Trips / Itineraries',overview.trips_total if overview else none,'My Trips')] %}
-            <div class="admin-inline-stat"><span class="admin-stat-icon" aria-hidden="true">{{ icon(icon_name) }}</span><h2>{{ label }}</h2><p class="admin-stat-value{% if value is none %} admin-stat-unavailable{% endif %}">{{ value if value is not none else 'Unavailable' }}</p></div>
+            <div class="admin-inline-stat admin-inline-stat-{{ 'users' if loop.first else 'trips' }}"><span class="admin-stat-icon" aria-hidden="true">{{ icon(icon_name) }}</span><h2>{{ label }}</h2><p class="admin-stat-value{% if value is none %} admin-stat-unavailable{% endif %}">{{ value if value is not none else 'Unavailable' }}</p></div>
         {% endfor %}
-        <aside class="admin-panel admin-review-panel{% if attention is not none and attention > 0 %} admin-review-warning{% endif %}" aria-labelledby="attention-title">
+        <aside class="admin-panel admin-review-panel{% if attention is not none and attention > 0 %} admin-review-warning{% endif %}" aria-labelledby="attention-title"{% if attention is not none %} data-catalog-review-alert{% endif %}>
             <div class="admin-panel-heading"><h2 id="attention-title">Needs attention</h2><span class="admin-review-icon" aria-hidden="true">{{ icon('Alerts') }}</span></div>
             <div class="admin-review-body"><p class="admin-review-value{% if attention is none %} admin-review-unavailable{% endif %}">{{ attention if attention is not none else 'Unavailable' }}</p><p>{% if attention is none %}The destination review count is temporarily unavailable.{% elif attention > 0 %}Destination{{ '' if attention == 1 else 's' }} flagged for catalog review.{% else %}No destinations are currently flagged for catalog review.{% endif %}</p><a class="admin-ui-button" href="{{ url_for('admin.insights',scope='all',_anchor='needs-attention') }}">Review Needs Attention <span aria-hidden="true">&rarr;</span></a></div>
         </aside>
@@ -52,30 +65,22 @@
 
         <section class="admin-panel admin-status-panel" aria-labelledby="status-title">
             <div class="admin-panel-heading"><h2 id="status-title">Destination Status</h2><span class="admin-scope">All destinations</span></div>
-            <div class="admin-table-wrap"><table class="admin-data-table"><caption class="visually-hidden">Destination publication status distribution</caption><thead><tr><th scope="col">Status</th><th scope="col" class="admin-count">Count</th></tr></thead><tbody>
-            {% for key,label,meaning in [('published','Published','Visible to users'),('draft','Draft','Not publicly visible'),('archived','Archived','Retained but inactive')] %}<tr><th scope="row"><span class="admin-pill admin-pill-{{ key }}">{{ label }}</span><small class="admin-status-meaning">{{ meaning }}</small></th><td class="admin-count">{% if counts is not none %}{{ counts[key] }}{% else %}&mdash;{% endif %}</td></tr>{% endfor %}
-            </tbody></table></div>
+            <div class="admin-table-wrap"><div class="admin-table-scroll" tabindex="0" role="region" aria-label="Dashboard statistics table"><table class="admin-table admin-data-table"><caption class="visually-hidden">Destination publication status distribution</caption><thead><tr><th scope="col">Status</th><th scope="col" class="admin-count">Count</th></tr></thead><tbody>
+            {% for key,label,meaning in [('published','Published','Visible to users'),('draft','Draft','Not publicly visible'),('archived','Archived','Retained but inactive')] %}<tr><th scope="row"><span class="admin-pill admin-pill-{{ key }}">{{ label }}</span><small class="visually-hidden">{{ meaning }}</small></th><td class="admin-count">{% if counts is not none %}{{ counts[key] }}{% else %}&mdash;{% endif %}</td></tr>{% endfor %}
+            </tbody></table></div></div>
             <div class="admin-panel-footer"><a href="{{ url_for('admin.places') }}">Manage Destinations <span aria-hidden="true">&rarr;</span></a></div>
         </section>
         <section class="admin-panel admin-tourism-panel" aria-labelledby="tourism-title">
             <div class="admin-panel-heading"><h2 id="tourism-title">Tourism Type</h2><span class="admin-scope">Published destinations</span></div>
             {% if health is not none and health.local is not none %}
-            <div class="admin-table-wrap"><table class="admin-data-table"><caption class="visually-hidden">Published destination Tourism Type distribution</caption><thead><tr><th scope="col">Classification</th><th scope="col" class="admin-count">Count</th></tr></thead><tbody>
+            <div class="admin-table-wrap"><div class="admin-table-scroll" tabindex="0" role="region" aria-label="Dashboard statistics table"><table class="admin-table admin-data-table"><caption class="visually-hidden">Published destination Tourism Type distribution</caption><thead><tr><th scope="col">Classification</th><th scope="col" class="admin-count">Count</th></tr></thead><tbody>
             {% for label, value,kind in [('Local',health.local,'local'),('Common',health.common,'common'),('Not assigned',health.unclassified,'unset')] %}<tr><th scope="row"><span class="admin-pill admin-pill-{{ kind }}">{{ label }}</span></th><td class="admin-count">{{ value }}</td></tr>{% endfor %}
-            </tbody></table></div>
+            </tbody></table></div></div>
             {% else %}<p class="admin-panel-empty">Tourism Type counts are unavailable.</p>{% endif %}
             <div class="admin-panel-footer"><p>Tourism Type and publication status are separate classifications.</p></div>
         </section>
-<section class="admin-panel admin-actions-panel" aria-labelledby="quick-title">
-    <div class="admin-panel-heading"><h2 id="quick-title">Quick management</h2></div>
-    <div class="admin-action-grid">
-    {% for endpoint,label,icon_name,description in [('admin.new_place','Add Destination','Destinations','Create a new draft record'),('admin.places','Manage Destinations','Map','Browse and maintain the catalog'),('admin.users','View Users','Profile','Open account administration'),('admin.insights','Catalog Insights','Dashboard','Explore coverage and data quality'),('admin.system','System & Weather','Settings','Review service and weather information')] %}
-        <a class="admin-action-card{% if loop.first %} admin-action-primary{% endif %}" href="{{ url_for(endpoint) }}"><span class="admin-action-icon" aria-hidden="true">{{ icon(icon_name) }}</span><span class="admin-action-copy"><strong>{{ label }}</strong><small>{{ description }}</small></span><span class="admin-action-arrow" aria-hidden="true">&rarr;</span></a>
-    {% endfor %}
-        <a class="admin-action-card" href="{{ url_for('admin.places',status='draft') }}"><span class="admin-action-icon" aria-hidden="true">{{ icon('Planner') }}</span><span class="admin-action-copy"><strong>Review Drafts</strong><small>Open unpublished destinations</small></span><span class="admin-action-arrow" aria-hidden="true">&rarr;</span></a>
-    </div>
-</section>
+
 </div>
-<p class="dashboard-observed">Updated <time datetime="{{ observed_at.isoformat() }}">{{ observed_at.strftime('%d %b %Y, %I:%M %p') }}</time> &middot; Asia/Manila <span>Counts reflect separate catalog reads.</span></p>
+<p class="dashboard-observed">Updated <time data-admin-date="datetime" datetime="{{ observed_at.isoformat() }}">{{ observed_at.strftime('%d %b %Y, %I:%M %p') }}</time> &middot; Asia/Manila <span>Counts reflect separate catalog reads.</span></p>
 </div>
 {% endblock %}

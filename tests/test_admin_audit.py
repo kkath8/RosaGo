@@ -35,7 +35,7 @@ class AuditRouteTests(unittest.TestCase):
     protected = foundation.AdminBoundaryTests.protected
 
     def install(self):
-        test_registration.seed_normal_session(self)
+        test_registration.seed_admin_session(self)
         self.value = True
         self.rows = [audit_row()]
         self.audit_status = 200
@@ -75,7 +75,7 @@ class AuditRouteTests(unittest.TestCase):
 
     def test_unauthenticated_forged_nonadmin_revoked_and_unavailable_membership(self):
         for state in ({}, {'is_admin': True, 'role': 'admin'}):
-            with self.client.session_transaction() as session:
+            with self.client.session_transaction(path='/admin') as session:
                 session.clear(); session.update(state)
             self.protected(self.client.get('/admin/audit-logs'), 302)
         self.assertEqual(self.requests, [])
@@ -178,7 +178,7 @@ class AuditRouteTests(unittest.TestCase):
         response = self.client.get('/admin/audit-logs')
         self.protected(response, 200)
         document = Document(response.get_data(as_text=True))
-        self.assertIn(b'Performed by', response.data)
+        self.assertIn(b'Admin / Actor', response.data)
         self.assertIn(b'Actor ID:', response.data)
         # Directory order differs from event order; identity must match by UUID.
         tbody = document.find('tbody')[0]
@@ -264,6 +264,47 @@ class AuditRouteTests(unittest.TestCase):
         self.assertIn(b'Submitted fields: image url', response.data)
         self.assertIn(ACTOR_ONE.encode(), response.data)
         self.assertNotIn(b'/storage/v1/', response.data)
+
+    def test_environment_history_retains_distinguishable_actor_attribution(self):
+        self.install()
+        self.users = [directory_user(ACTOR_ONE, 'First Administrator'),
+                      directory_user(ACTOR_TWO, 'Second Administrator')]
+        self.rows = [audit_row(1, actor_id=ACTOR_ONE,
+            summary=dict(submitted_fields=['environment'], resulting_status='published')),
+            audit_row(2, actor_id=ACTOR_TWO,
+            summary=dict(submitted_fields=['environment'], resulting_status='draft'))]
+        response = self.client.get('/admin/audit-logs')
+        self.protected(response, 200)
+        page = Document(response.get_data(as_text=True))
+        tbody = page.find('tbody')[0]
+        rows = [node for node in page.find('tr') if tbody in node.ancestors]
+        for row, actor, name in zip(rows, (ACTOR_ONE, ACTOR_TWO), ('First Administrator', 'Second Administrator')):
+            self.assertIn(actor, row.text)
+            self.assertIn(name, row.text)
+            self.assertIn('Submitted fields: environment', row.text)
+
+    def test_compact_summary_keeps_all_original_identifiers_and_fields_in_closed_details(self):
+        self.install()
+        response = self.client.get('/admin/audit-logs')
+        self.protected(response, 200)
+        page = Document(response.get_data(as_text=True))
+        self.assertIn(b'2 fields submitted', response.data)
+        details = page.find('details', **{'class': 'admin-audit-details'})
+        self.assertEqual(len(details), 1)
+        self.assertNotIn('open', details[0].attrs)
+        self.assertIn('2026-11-03T12:05:06+08:00', details[0].text)
+        for value in (self.rows[0]['id'], self.rows[0]['actor_id'],
+                      self.rows[0]['destination_id'], 'address', 'name'):
+            codes = [node for node in page.find('code') if node.text == value]
+            self.assertEqual(len(codes), 1)
+            self.assertIn(details[0], codes[0].ancestors)
+        summary = [node for node in page.find('summary') if details[0] in node.ancestors][0]
+        self.assertIn(self.rows[0]['id'], summary.attrs['aria-label'])
+        self.rows = [audit_row(action='publish', summary=dict(submitted_fields=[], resulting_status='published'))]
+        html = self.client.get('/admin/audit-logs').get_data(as_text=True)
+        self.assertIn('Publication status change', html)
+        self.assertIn('No submitted fields were recorded.', html)
+        self.assertNotIn('0 fields submitted', html)
 
 
 if __name__ == '__main__':

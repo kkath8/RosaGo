@@ -73,7 +73,7 @@ class PlacesServiceTests(unittest.TestCase):
         self.assertIsInstance(result, tuple)
         place = result[0]
         self.assertIsInstance(place, Place)
-        self.assertEqual([field.name for field in fields(place)], PROJECTION.split(',') + list(TOURISM_FIELDS))
+        self.assertEqual([field.name for field in fields(place)], PROJECTION.split(',') + list(TOURISM_FIELDS) + ['environment', 'operating_days_raw'])
         self.assertFalse(hasattr(place, '__dict__'))
         self.assertFalse(hasattr(place, 'status'))
         self.assertFalse(hasattr(place, 'token'))

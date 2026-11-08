@@ -99,7 +99,15 @@ def prepare_photo(file):
     return PreparedPhoto(content, *FORMATS[fmt])
 
 
-def upload_photo(context, photo):
+def photo_object_path(extension, planned_object_id=None):
+    """Optional operator-reserved identity; never a browser-supplied path."""
+    if extension not in ('jpg','png','webp') or (planned_object_id is not None and
+            (type(planned_object_id) is not str or not re.fullmatch(r'[0-9a-f]{32}',planned_object_id))):
+        raise PhotoValidationError('Invalid reserved photo identity.')
+    return f'destinations/{planned_object_id if planned_object_id is not None else uuid4().hex}.{extension}'
+
+
+def upload_photo(context, photo, *, planned_object_id=None):
     """Only Storage uses the dedicated secret. Database writes use caller authority."""
     _context(context)
     try:
@@ -114,7 +122,7 @@ def upload_photo(context, photo):
     # accepts explicit headers, so no Auth client/session ever receives it.
     if not re.fullmatch(r'sb_secret_[A-Za-z0-9_-]+', secret):
         raise PhotoError('Photo upload is temporarily unavailable.')
-    path = f'destinations/{uuid4().hex}.{photo.extension}'
+    path = photo_object_path(photo.extension,planned_object_id)
     try:
         with _http_client(timeout=30, follow_redirects=False, trust_env=False) as http:
             storage = SyncStorageClient(base + '/storage/v1/', {'apikey': secret}, http_client=http)

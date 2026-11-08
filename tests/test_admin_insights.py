@@ -116,7 +116,7 @@ class InsightsReadTests(unittest.TestCase):
             getattr(query, key).return_value = query
         client = Mock(spec=['table'])
         client.table.return_value = query
-        context = AuthenticatedContext('handle', 'user', 'email', client)
+        context = AuthenticatedContext('handle', 'user', 'email', client, realm='admin')
         fields = (PROJECTION + ',tourism_type,tourism_category,tourism_hours_status').split(',')
         rows = [{key: record(n)[key] for key in fields} for n in range(205)]
         query.execute.side_effect = [SimpleNamespace(data=rows[:200], count=205),

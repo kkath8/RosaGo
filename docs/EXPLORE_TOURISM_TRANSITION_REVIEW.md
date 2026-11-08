@@ -1,5 +1,8 @@
 # Tourism catalog transition review (Phase 3)
 
+> Historical catalog artifacts now live in `data/santa_rosa_places/archive/`. Their bytes are preserved; `weather_metadata.json` remains at its original runtime path.
+
+
 REVIEW ONLY: the SQL has not been executed. Migration 0011 was manually applied
 and verified by the project owner before this phase; its file is unchanged.
 Read-only public queries confirmed 28 published records and all seven Tourism

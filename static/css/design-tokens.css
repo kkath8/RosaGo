@@ -4,6 +4,8 @@
     --site-red: #8e3b2c;
     --site-deep-red: #6e2a1e;
     --site-gold: #eec35c;
+    --site-shell-bg: var(--site-red);
+    --site-shell-ink: #fff;
     --site-ink: #2e1a14;
     --site-muted: #6b5a48;
     --site-border: #efe2bd;

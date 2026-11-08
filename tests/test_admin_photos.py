@@ -155,16 +155,16 @@ class PhotoRouteTests(unittest.TestCase):
             self.protected(self.save(), 403)
         self.assertEqual(self.storage_requests, [])
         self.assertEqual(self.operations, [])
-        with self.client.session_transaction() as session: session.clear()
+        with self.client.session_transaction(path='/admin') as session: session.clear()
         self.protected(self.save(), 302)
 
     def test_browser_origin_rendered_edit_form_accepts_multipart_photo(self):
         self.install(); self.protected(self.save(), 303)
         self.records[0]['slug'] = 'enchanted-kingdom'
         # Exercise the browser's exact host, with a host-scoped session cookie.
-        cookie_name = self.app.config['SESSION_COOKIE_NAME']
-        cookie = self.client.get_cookie(cookie_name)
-        self.client.set_cookie(cookie_name, cookie.value, domain='127.0.0.1')
+        cookie_name = self.app.session_interface.cookie_name
+        cookie = self.client.get_cookie(cookie_name, path='/admin')
+        self.client.set_cookie(cookie_name, cookie.value, domain='127.0.0.1', path='/admin')
         base = 'http://127.0.0.1:5000'
         path = '/admin/places/enchanted-kingdom/edit'
         writes = len(self.operations)
@@ -175,7 +175,7 @@ class PhotoRouteTests(unittest.TestCase):
         form = page.find('form', enctype='multipart/form-data')[0]
         values = MultiDict()
         for node in page.elements:
-            if form not in node.ancestors or 'name' not in node.attrs:
+            if form not in node.ancestors or 'name' not in node.attrs or 'disabled' in node.attrs:
                 continue
             name = node.attrs['name']
             if node.tag == 'input' and node.attrs.get('type') not in ('file', 'checkbox', 'submit'):
@@ -223,7 +223,7 @@ class PhotoRouteTests(unittest.TestCase):
     def test_csrf_is_bound_to_current_session_even_when_token_is_present(self):
         self.install()
         previous_csrf = self.csrf
-        handle = test_registration.seed_normal_session(self)
+        handle = test_registration.seed_admin_session(self)
         current_csrf = self.dependencies.store.resolve(handle).csrf
         self.assertNotEqual(previous_csrf, current_csrf)
         self.protected(self.save(csrf_token=previous_csrf), 403)
@@ -268,13 +268,13 @@ class PhotoRouteTests(unittest.TestCase):
         self.protected(response, 403)
         self.assertNotIn(b'Please reload this page and try again.', response.data)
 
-        with self.client.session_transaction() as session:
+        with self.client.session_transaction(path='/admin') as session:
             session['auth_session_id'] = 'missing-fixture-session'
         response = submit()
         self.protected(response, 302)
         self.assertTrue(response.location.startswith('/admin/login'))
 
-        handle = test_registration.seed_normal_session(self)
+        handle = test_registration.seed_admin_session(self)
         record = self.dependencies.store.resolve(handle)
         self.csrf = record.csrf
         with patch.object(self.dependencies.store, '_clock', return_value=record.last_activity_at + 1801):
@@ -346,7 +346,7 @@ class PhotoRouteTests(unittest.TestCase):
         self.protected(self.save(edit=True, file=False, remove_photo='1'), 303)
         response = self.client.get('/places/fixture-destination')
         self.assertNotIn(url.encode(), response.data)
-        self.assertIn(b'<svg viewBox="0 0 200 100"', response.data)
+        self.assertIn(b'src="/static/img/destination-placeholder.svg"', response.data)
         self.protected(self.transition('archive'), 303)
         self.assertEqual(self.client.get('/places/fixture-destination').status_code, 404)
         self.assertNotIn(b'RosaGo Admin Verification Test', self.client.get('/places').data)

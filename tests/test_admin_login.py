@@ -32,7 +32,7 @@ class AdminLoginTests(unittest.TestCase):
         return VerifiedLoginCredentials('user-123', 'admin@example.invalid', 'fixture-access',
             'fixture-refresh', time.time() + 3600, 'fixture-session')
 
-    def test_login_success_uses_normal_session_then_fresh_membership(self):
+    def test_login_success_uses_admin_session_and_candidate_then_fresh_membership(self):
         data = self.payload()
         self.value = True
         with patch.object(self.dependencies.adapters, 'password_login', return_value=self.credentials()) as login:
@@ -40,23 +40,24 @@ class AdminLoginTests(unittest.TestCase):
         self.protected(response, 303)
         self.assertEqual(response.location, '/admin')
         login.assert_called_once_with('admin@example.invalid', 'private-password')
-        with self.client.session_transaction() as session:
+        with self.client.session_transaction(path='/admin') as session:
             self.assertEqual(set(session), {'auth_session_id'})
             self.assertIsNotNone(self.dependencies.store.resolve(session['auth_session_id']))
         self.protected(self.client.get('/admin'), 200)
-        self.assertEqual(sum(r.url.path == '/rest/v1/rpc/rosago_is_admin' for r in self.requests), 2)
+        self.assertEqual(sum(r.url.path == '/rest/v1/rpc/rosago_is_admin' for r in self.requests), 3)
 
-    def test_normal_user_login_retains_only_normal_authority(self):
+    def test_nonadmin_login_installs_no_authority(self):
         data = self.payload()
         with patch.object(self.dependencies.adapters, 'password_login', return_value=self.credentials()):
             response = self.client.post('/admin/login', data=data, headers=ORIGIN)
         self.protected(response, 403)
         self.assertIn(b'Admin access required', response.data)
-        self.assertIn(b'Continue to User side', response.data)
-        self.protected(self.client.get('/admin'), 403)
+        self.assertIn(b'Sign in with an authorized Admin account', response.data)
+        self.protected(self.client.get('/admin'), 302)
+        self.assertEqual(self.dependencies.store._records, {})
 
     def test_already_authenticated_states_and_template_isolation(self):
-        test_registration.seed_normal_session(self)
+        test_registration.seed_admin_session(self)
         seen = []
         def inspect(sender, template, context, **kwargs):
             self.assertNotIn('auth', g)
@@ -83,7 +84,7 @@ class AdminLoginTests(unittest.TestCase):
         with patch.object(self.dependencies.adapters, 'password_login') as login:
             for form, headers in cases:
                 self.protected(self.client.post('/admin/login', data=form, headers=headers), 403)
-            with self.client.session_transaction() as session:
+            with self.client.session_transaction(path='/admin') as session:
                 session['admin_login_csrf_at'] = time.time() - 1801
             self.protected(self.client.post('/admin/login', data=data, headers=ORIGIN), 403)
             login.assert_not_called()
@@ -93,6 +94,7 @@ class AdminLoginTests(unittest.TestCase):
         data = self.payload()
         for reason, status in [('invalid_credentials', 401), ('unconfirmed_email', 403),
                                ('throttled', 429), ('invalid_result', 401), ('service_failure', 503)]:
+            data = self.payload()
             error = PasswordLoginError(reason)
             error.args = ('private-provider-detail',)
             with patch.object(self.dependencies.adapters, 'password_login', side_effect=error):
@@ -107,16 +109,19 @@ class AdminLoginTests(unittest.TestCase):
         self.status = 503
         with patch.object(self.dependencies.adapters, 'password_login', return_value=self.credentials()):
             self.protected(self.client.post('/admin/login', data=data, headers=ORIGIN), 503)
-        self.protected(self.client.get('/admin'), 503)
-        with self.client.session_transaction() as session:
+        self.protected(self.client.get('/admin'), 302)
+        self.assertEqual(self.dependencies.store._records, {})
+        self.status = 200
+        self.value = True
+        with self.client.session_transaction(path='/admin') as session:
             session.clear()
         data = self.payload()
         with patch.object(self.dependencies.adapters, 'password_login', return_value=self.credentials()), \
-                patch('admin_routes.establish_normal_session', side_effect=SessionEstablishmentError()):
+                patch('admin_routes.establish_admin_session', side_effect=SessionEstablishmentError()):
             self.protected(self.client.post('/admin/login', data=data, headers=ORIGIN), 503)
 
     def test_logout_requires_csrf_origin_and_revokes_normal_session(self):
-        handle = test_registration.seed_normal_session(self)
+        handle = test_registration.seed_admin_session(self)
         csrf = self.dependencies.store.resolve(handle).csrf
         self.protected(self.client.get('/admin/logout'), 405)
         for data, headers in [({}, ORIGIN), ({'csrf_token': 'wrong'}, ORIGIN),
@@ -132,7 +137,7 @@ class AdminLoginTests(unittest.TestCase):
         self.assertEqual(self.requests, [])  # Revoked membership cannot trap a user in a session.
 
     def test_dashboard_and_destinations_are_read_only(self):
-        test_registration.seed_normal_session(self)
+        test_registration.seed_admin_session(self)
         self.value = True
         for path in ('/admin', '/admin/places'):
             response = self.client.get(path)

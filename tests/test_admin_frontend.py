@@ -47,13 +47,13 @@ class PreviewRouteTests(unittest.TestCase):
             self.clients.append(client)
             return client
         self.dependencies.adapters._http_factory = factory
-        test_registration.seed_normal_session(self)
+        test_registration.seed_admin_session(self)
 
     def test_all_new_pages_require_fresh_admin_membership(self):
         for path in self.paths:
             self.protected(self.client.get(path), 302)
         self.assertEqual(self.requests, [])
-        test_registration.seed_normal_session(self)
+        test_registration.seed_admin_session(self)
         for path in self.paths:
             self.protected(self.client.get(path), 403)
         self.assertFalse(any(r.url.path.endswith('/places') for r in self.requests))
@@ -108,7 +108,7 @@ class DetailReadTests(unittest.TestCase):
             getattr(query, method).return_value = query
         client = Mock(spec=['table'])
         client.table.return_value = query
-        context = AuthenticatedContext('handle', 'user', 'email', client)
+        context = AuthenticatedContext('handle', 'user', 'email', client, realm='admin')
         query.execute.return_value = SimpleNamespace(data=[detail()])
         result = get_destination(context, 'rosago-test-v1-fixture')
         self.assertIsNone(result.latitude)

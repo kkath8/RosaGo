@@ -13,6 +13,7 @@ from places_service import PlacesUnavailableError, PlacesConsistencyError
 from trip_service import TripServiceError, TripValidationError, remove_place, reorder_places
 from alerts_service import Alert, trip_alerts
 from itinerary_weather import forecast_review
+from profile_service import profile_initials, ProfileServiceError
 
 
 def personal_scope(user_id):
@@ -83,6 +84,21 @@ def init_user_features(app, helpers):
         response.headers['Referrer-Policy'] = 'same-origin'
         return response
 
+    @bp.get('/api/user/avatar')
+    def user_avatar():
+        """Caller-only display initials; no names, email, tokens, or cached identity."""
+        try:
+            with helpers['normal_authenticated']():
+                try:
+                    profile = helpers['get_own_profile'](g.auth)
+                except ProfileServiceError:
+                    return response_json({'error': 'Profile is temporarily unavailable.'}, 503)
+                return response_json({'initials': profile_initials(
+                    profile.first_name if profile else None, profile.last_name if profile else None)})
+        except helpers['NormalAuthEntryError'] as error:
+            return response_json({'error': 'Profile is unavailable.'},
+                                 401 if error.kind == 'unauthenticated' else 503)
+
     @bp.get('/api/places')
     def catalog():
         try:
@@ -94,6 +110,8 @@ def init_user_features(app, helpers):
             category=p.category, address=p.address, description=p.description,
             tourism_type=getattr(p, 'tourism_type', None),
             tourism_category=getattr(p, 'tourism_category', None),
+            environment=getattr(p, 'environment', None),
+            operating_days_raw=getattr(p, 'operating_days_raw', None),
             exposure=weather.for_place(p).exposure,
             image_url=p.image_url,
             detail_url=url_for('places_detail', slug=p.slug),

@@ -27,7 +27,7 @@ class CatalogHealthTests(unittest.TestCase):
             getattr(self.query, method).return_value = self.query
         self.client = Mock(spec=['table'])
         self.client.table.return_value = self.query
-        self.context = AuthenticatedContext('handle', 'user', 'private@example.invalid', self.client)
+        self.context = AuthenticatedContext('handle', 'user', 'private@example.invalid', self.client, realm='admin')
 
     def read(self, rows, **kwargs):
         self.query.execute.return_value = SimpleNamespace(count=len(rows), data=rows)
@@ -107,7 +107,7 @@ class DashboardRouteTests(unittest.TestCase):
     protected = foundation.AdminBoundaryTests.protected
 
     def install_catalog(self):
-        test_registration.seed_normal_session(self)
+        test_registration.seed_admin_session(self)
         self.value = True
         self.records = [health_row(1, tourism_type='Local', latitude=14.3, longitude=121.1),
                         health_row(2, tourism_type='Common'), health_row(3)]
@@ -151,14 +151,34 @@ class DashboardRouteTests(unittest.TestCase):
                           b'personal-state.js', b'private@example.invalid', b'/admin/analytics'):
             self.assertNotIn(forbidden, response.data)
 
+    def test_unavailable_review_state_is_not_an_optional_catalog_alert(self):
+        self.install_catalog()
+        namespace = unwrap(self.app.view_functions['admin.index']).__globals__
+        with patch.dict(namespace, catalog_insights=Mock(side_effect=AdminPlacesError())):
+            response = self.client.get('/admin')
+        self.protected(response,200)
+        page = Document(response.get_data(as_text=True))
+        review = page.find('aside', **{'aria-labelledby':'attention-title'})[0]
+        self.assertNotIn('data-catalog-review-alert',review.attrs)
+        self.assertIn('temporarily unavailable',review.text)
+
     def test_theme_assets_and_mobile_navigation_share_existing_theme(self):
         self.install_catalog()
         response = self.client.get('/admin')
         for asset in (b'css/design-tokens.css', b'css/theme.css', b'js/theme.js', b'css/admin.css', b'js/admin.js'):
             self.assertIn(asset, response.data)
         for marker in (b'fonts.googleapis.com/css2?family=Inter', b'Mobile Admin navigation',
-                       b'data-set-theme="light"', b'data-set-theme="dark"', b'Admin account'):
+                       b'data-toggle-theme', b'aria-label="Dark mode"', b'Admin account'):
             self.assertIn(marker, response.data)
+        page = Document(response.get_data(as_text=True))
+        toggles = [n for n in page.find('button') if 'data-toggle-theme' in n.attrs]
+        self.assertEqual(len(toggles), 1)
+        self.assertEqual(toggles[0].text.strip(), '')
+        self.assertEqual(toggles[0].attrs['type'], 'button')
+        self.assertEqual(toggles[0].attrs['aria-pressed'], 'false')
+        self.assertIn('title', toggles[0].attrs)
+        self.assertNotIn(b'family=Sora', response.data)
+        self.assertNotIn(b'Your catalog, coverage, and review priorities at a glance.', response.data)
 
     def test_disabled_tourism_is_explicit_and_dashboard_never_fetches_weather(self):
         self.install_catalog()

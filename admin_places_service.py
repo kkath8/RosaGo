@@ -12,8 +12,9 @@ import httpx
 from postgrest.exceptions import APIError
 
 from normal_auth_coordinator import AuthenticatedContext
-from place_model import CATEGORIES
+from place_model import CATEGORIES, ENVIRONMENTS
 from places_service import TOURISM_FIELDS, PlacesConsistencyError, _tourism_metadata
+from destination_categories import flexible_catalog_enabled
 
 STATUSES = ('published', 'draft', 'archived')
 PAGE_SIZE = 25
@@ -49,6 +50,7 @@ class AdminPlace:
     tourism_category: str | None = field(default=None, kw_only=True)
     tourism_hours_status: str | None = field(default=None, kw_only=True)
     tourism_metadata_available: bool = field(default=False, kw_only=True)
+    catalog_created_at: datetime | None = field(default=None, kw_only=True)
 
     @property
     def has_coordinates(self):
@@ -68,15 +70,19 @@ class AdminPlaceDetail(AdminPlace):
     tourism_closing_hours_raw: str | None = field(default=None, kw_only=True)
     tourism_source: str | None = field(default=None, kw_only=True)
     tourism_source_row: int | None = field(default=None, kw_only=True)
+    environment: str | None = field(default=None, kw_only=True)
+    operating_days_raw: str | None = field(default=None, kw_only=True)
 
 
-def get_destination(context, slug, *, tourism_metadata_enabled=False):
+def get_destination(context, slug, *, tourism_metadata_enabled=False, environment_enabled=False):
     """Read one exact slug with the request-owned Admin client; never write."""
     _context(context)
     if (type(slug) is not str or not 1 <= len(slug) <= 120
             or not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', slug)):
         return None
     projection = _projection(DETAIL_PROJECTION, TOURISM_FIELDS, tourism_metadata_enabled)
+    projection = _projection(projection, ('environment',), environment_enabled)
+    projection = _projection(projection, ('operating_days_raw',), flexible_catalog_enabled())
     response = _execute(context.client.table('places').select(projection)
                         .eq('slug', slug).limit(1))
     data = getattr(response, 'data', None)
@@ -96,6 +102,12 @@ def get_destination(context, slug, *, tourism_metadata_enabled=False):
             or row['status'] not in STATUSES):
         raise AdminPlacesError()
     _coordinates(row)
+    environment = row.get('environment')
+    days = row.get('operating_days_raw')
+    if days is not None and (type(days) is not str or not 1 <= len(days) <= 2000 or not days.strip()):
+        raise AdminPlacesError()
+    if environment is not None and (type(environment) is not str or environment not in ENVIRONMENTS):
+        raise AdminPlacesError()
     image = row['image_url']
     if image is not None and (type(image) is not str or not 9 <= len(image) <= 2048
             or image != image.strip() or not image.startswith('https://')):
@@ -138,7 +150,7 @@ def _coordinates(row):
 
 
 def _context(context):
-    if type(context) is not AuthenticatedContext or context.client is None:
+    if type(context) is not AuthenticatedContext or context.realm != 'admin' or context.client is None:
         raise AdminPlacesError()
 
 
@@ -169,9 +181,11 @@ def destination_counts(context):
     return result
 
 
-def _list_row(row, *, tourism_metadata_enabled=False, include_hours=False):
+def _list_row(row, *, tourism_metadata_enabled=False, include_hours=False, include_created=False):
     fields = LIST_TOURISM_FIELDS + (('tourism_hours_status',) if include_hours else ())
     projection = _projection(PROJECTION, fields, tourism_metadata_enabled)
+    if include_created:
+        projection += ',created_at'
     if type(row) is not dict or set(row) != set(projection.split(',')):
         raise AdminPlacesError()
     for key, maximum in (('name', 150), ('slug', 120), ('address', 500)):
@@ -188,11 +202,20 @@ def _list_row(row, *, tourism_metadata_enabled=False, include_hours=False):
         updated = None
     if updated is None or updated.tzinfo is None or updated.utcoffset() is None:
         raise AdminPlacesError()
+    created = None
+    if include_created:
+        try:
+            created = datetime.fromisoformat(row['created_at']) if type(row['created_at']) is str else None
+        except ValueError:
+            pass
+        if created is None or created.tzinfo is None or created.utcoffset() is None:
+            raise AdminPlacesError()
+        row = {key: value for key, value in row.items() if key != 'created_at'}
     _coordinates(row)
     metadata = _metadata(row)
     return AdminPlace(**(row | {'updated_at': updated}),
                       **{key: metadata[key] for key in fields if key not in row},
-                      tourism_metadata_available=tourism_metadata_enabled)
+                      tourism_metadata_available=tourism_metadata_enabled, catalog_created_at=created)
 
 
 def list_destinations(context, *, status=None, offset=0, tourism_metadata_enabled=False):
@@ -224,12 +247,16 @@ class DestinationCatalogPage:
 
 
 def validate_catalog_filters(*, q='', status=None, category=None, tourism_type=None,
-                             coordinates=None, offset=0, tourism_metadata_enabled=False):
+                             coordinates=None, offset=0, tourism_metadata_enabled=False,
+                             sort='slug', page_size=25):
     """Literal search only; user text never becomes a PostgREST expression."""
     if (type(q) is not str or len(q) > 150
             or any(ord(char) < 32 or 0xD800 <= ord(char) <= 0xDFFF for char in q)
             or type(offset) is not int or not 0 <= offset <= MAX_OFFSET
             or type(tourism_metadata_enabled) is not bool):
+        raise AdminPlacesFilterError()
+    if (type(sort) is not str or sort not in ('slug', 'newest', 'oldest', 'name')
+            or type(page_size) is not int or page_size not in (10, 25, 50)):
         raise AdminPlacesFilterError()
     for value, allowed in ((status, STATUSES), (category, CATEGORIES),
                            (tourism_type, ('Local', 'Common', 'unclassified')),
@@ -239,21 +266,24 @@ def validate_catalog_filters(*, q='', status=None, category=None, tourism_type=N
     if tourism_type is not None and not tourism_metadata_enabled:
         raise AdminPlacesFilterError()
     return dict(q=q.strip(), status=status, category=category, tourism_type=tourism_type,
-                coordinates=coordinates, offset=offset, tourism_metadata_enabled=tourism_metadata_enabled)
+                coordinates=coordinates, offset=offset, tourism_metadata_enabled=tourism_metadata_enabled,
+                sort=sort, page_size=page_size)
 
 
-def read_catalog(context, *, tourism_metadata_enabled=False, include_hours=False):
+def read_catalog(context, *, tourism_metadata_enabled=False, include_hours=False, include_created=False):
     """Complete bounded Admin catalog read shared by review and insights.
 
     Optional hours status is projected once per page, never through N+1 detail
     reads. Exact counts, row validation and duplicate checks apply to both callers.
     """
     _context(context)
-    if type(include_hours) is not bool:
+    if type(include_hours) is not bool or type(include_created) is not bool:
         raise AdminPlacesError()
     enabled = tourism_metadata_enabled
     fields = LIST_TOURISM_FIELDS + (('tourism_hours_status',) if include_hours else ())
     projection = _projection(PROJECTION, fields, enabled)
+    if include_created:
+        projection += ',created_at'
     rows, seen, expected = [], set(), None
     while expected is None or len(rows) < expected:
         offset = len(rows)
@@ -266,7 +296,7 @@ def read_catalog(context, *, tourism_metadata_enabled=False, include_hours=False
             raise AdminPlacesError()
         expected = count
         for row in data:
-            place = _list_row(row, tourism_metadata_enabled=enabled, include_hours=include_hours)
+            place = _list_row(row, tourism_metadata_enabled=enabled, include_hours=include_hours, include_created=include_created)
             if place.slug in seen:
                 raise AdminPlacesError()
             seen.add(place.slug)
@@ -282,7 +312,7 @@ def catalog_page(context, **filters):
     """Literal filtering and pagination over the same complete catalog read."""
     filters = validate_catalog_filters(**filters)
     enabled = filters['tourism_metadata_enabled']
-    rows = read_catalog(context, tourism_metadata_enabled=enabled)
+    rows = read_catalog(context, tourism_metadata_enabled=enabled, include_created=filters['sort'] in ('newest', 'oldest'))
     summary = {status: sum(place.status == status for place in rows) for status in STATUSES}
     summary.update(local=sum(p.tourism_type == 'Local' for p in rows) if enabled else None,
                    common=sum(p.tourism_type == 'Common' for p in rows) if enabled else None,
@@ -308,4 +338,8 @@ def catalog_page(context, **filters):
             continue
         selected.append(place)
     offset = filters['offset']
-    return DestinationCatalogPage(tuple(selected[offset:offset + PAGE_SIZE]), len(rows), len(selected), summary)
+    if filters['sort'] in ('newest', 'oldest'):
+        selected.sort(key=lambda place: place.catalog_created_at, reverse=filters['sort'] == 'newest')
+    elif filters['sort'] == 'name':
+        selected.sort(key=lambda place: (place.name.casefold(), place.slug))
+    return DestinationCatalogPage(tuple(selected[offset:offset + filters['page_size']]), len(rows), len(selected), summary)

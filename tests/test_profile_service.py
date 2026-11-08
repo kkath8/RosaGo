@@ -31,6 +31,13 @@ class ProfileServiceTests(unittest.TestCase):
     user_id = '00000000-0000-0000-0000-000000000001'
     secret = 'fake-bearer-secret private-provider-message SQL-details private-hint'
 
+    def test_shared_initials_use_saved_names_and_safe_brand_fallback(self):
+        for first, last, expected in [('Kath', 'Userr', 'KU'), (' Kath ', ' Userr ', 'KU'),
+                ('Kath', None, 'K'), (None, 'Userr', 'U'), ('', '  ', 'RG'),
+                (None, None, 'RG'), (42, object(), 'RG'), ('Élise', '王', 'É王')]:
+            with self.subTest(first=first, last=last):
+                self.assertEqual(profile_service.profile_initials(first, last), expected)
+
     def setUp(self):
         for target, names in (
             (socket, ('create_connection', 'getaddrinfo', 'gethostbyname',

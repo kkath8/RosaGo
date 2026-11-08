@@ -8,7 +8,9 @@ from datetime import datetime, timedelta, timezone
 import re
 from uuid import UUID
 
-from admin_management_service import BASIC_FIELDS, TOURISM_FIELDS, PHOTO_FIELDS, operational_overview
+from admin_management_service import BASIC_FIELDS, TOURISM_FIELDS, PHOTO_FIELDS, ENVIRONMENT_FIELDS, SCHEDULE_FIELDS, SOURCE_FIELDS, operational_overview
+
+LOCATION_AUDIT_FIELDS = ('coordinate_verification',)
 from admin_places_service import AdminPlacesError, STATUSES, _context, _execute
 
 PAGE_SIZE = 25
@@ -104,8 +106,8 @@ def _entry(row):
     if type(summary) is not dict or set(summary) != {'submitted_fields', 'resulting_status'}:
         raise ValueError()
     fields = summary['submitted_fields']
-    if (type(fields) is not list or len(fields) > len(BASIC_FIELDS + TOURISM_FIELDS + PHOTO_FIELDS)
-            or any(type(field) is not str or field not in BASIC_FIELDS + TOURISM_FIELDS + PHOTO_FIELDS for field in fields)
+    if (type(fields) is not list or len(fields) > len(BASIC_FIELDS + TOURISM_FIELDS + PHOTO_FIELDS + ENVIRONMENT_FIELDS + SCHEDULE_FIELDS + SOURCE_FIELDS + LOCATION_AUDIT_FIELDS)
+            or any(type(field) is not str or field not in BASIC_FIELDS + TOURISM_FIELDS + PHOTO_FIELDS + ENVIRONMENT_FIELDS + SCHEDULE_FIELDS + SOURCE_FIELDS + LOCATION_AUDIT_FIELDS for field in fields)
             or len(fields) != len(set(fields))
             or type(summary['resulting_status']) is not str or summary['resulting_status'] not in STATUSES):
         raise ValueError()

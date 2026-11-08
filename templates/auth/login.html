@@ -23,6 +23,7 @@
                 <p class="form-intro">Your next Santa Rosa discovery is waiting.</p>
                 {% if request.args.get('login_required') == '1' %}<p class="account-status" role="status">Please sign in to continue. Your session may have expired.</p>{% endif %}
                 <form id="login-form" method="post" action="{{ url_for('login') }}" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ user_login_csrf() }}">
                     {% if add_place_slug %}<input type="hidden" name="add_place" value="{{ add_place_slug }}">{% endif %}
                     <div class="field">
                         <label for="login-email">Email Address {{ required_mark() }}</label>

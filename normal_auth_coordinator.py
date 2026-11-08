@@ -97,6 +97,7 @@ class AuthenticatedContext:
     user_id: str
     user_email: str
     client: object
+    realm: str = 'user'
 
     def __repr__(self):
         return '<AuthenticatedContext redacted>'
@@ -270,18 +271,101 @@ class SupabaseAdapters:
         with self._client(access_token) as client:
             yield client
 
+    def _provider_session_operation(self, record, issuer, realm, *, logout=False, presence=False):
+        """Inactive bounded transport boundary; no factory/route invokes it yet.
+
+        Inputs must be the server record established by verified login/refresh.
+        None means unconfirmed outcome; never retry a provider mutation here.
+        The evaluation RPC is installed, but live behavior remains unqualified.
+        Absence/unknown response is unavailable, never a fallback to JWT expiry.
+        """
+        try:
+            if (issuer != self.issuer or realm not in ('user', 'admin')
+                    or not all(_text(getattr(record, field, None))
+                               for field in ('user_id', 'session_id', 'access_token'))):
+                return None
+            headers = {'apikey': self._key, 'Authorization': 'Bearer ' + record.access_token}
+            with self._http_factory(timeout=2.0, follow_redirects=False, trust_env=False) as http:
+                if logout:
+                    # Headers suffice for acknowledgement. Never buffer an
+                    # unbounded provider/proxy body or retry this mutation.
+                    with http.stream('POST', self._url + '/auth/v1/logout',
+                                     params={'scope': 'local'}, headers=headers) as response:
+                        return True if response.status_code in (200, 204) else None
+                started = time.monotonic()
+                rpc='rosago_provider_session_present' if presence else 'rosago_provider_session_current'
+                with http.stream('POST', self._url + '/rest/v1/rpc/'+rpc,
+                                 json={}, headers=headers) as response:
+                    if response.status_code != 200 or response.headers.get('Content-Encoding','identity') != 'identity':
+                        return None
+                    raw = bytearray()
+                    for chunk in response.iter_bytes():
+                        if len(chunk) > 128-len(raw) or time.monotonic()-started > 2:
+                            return None
+                        raw.extend(chunk)
+                    if time.monotonic()-started > 2:
+                        return None
+                    status = json.loads(raw)
+                    return status if type(status) is bool else None
+        except Exception:
+            return None  # Never retain or expose token-bearing HTTP exceptions.
+
+    def provider_session_check(self, record, issuer, realm):
+        return self._provider_session_operation(record, issuer, realm)
+
+    def sign_out_current_session(self, record, issuer, realm):
+        return self._provider_session_operation(record, issuer, realm, logout=True)
+
+    def provider_session_present(self, record, issuer, realm):
+        """Caller-bound diagnostic only; never grants admission or substitutes for it."""
+        return self._provider_session_operation(record, issuer, realm, presence=True)
+
 
 class NormalAuthCoordinator:
     def __init__(self, store, *, refresh_transport, client_factory, issuer,
-                 clock=time.time, refresh_seconds=60):
+                 clock=time.time, refresh_seconds=60, realm='user',
+                 provider_session_check=None):
         if not _number(refresh_seconds) or refresh_seconds < 0 or not _text(issuer):
             raise ValueError('Invalid normal-auth coordinator configuration.')
+        if realm not in ('user', 'admin'):
+            raise ValueError('Invalid authentication realm.')
+        if provider_session_check is not None and not callable(provider_session_check):
+            raise ValueError('Invalid provider session checker.')
+        self._realm = realm
         self._store = store
         self._refresh = refresh_transport
         self._clients = client_factory
         self._issuer = issuer
         self._clock = clock
         self._threshold = refresh_seconds
+        # Optional server-injected qualification boundary, not a production
+        # transport. Existing local factories do not supply it; production startup
+        # stays closed. The checker must establish current provider-session state
+        # for this exact issuer/user/session, with bounded authenticated I/O.
+        # get_claims/get_user or token expiry alone are not revocation proof.
+        self._provider_session_check = provider_session_check
+
+    def _check_provider_session(self, record, auth_handle=None):
+        if self._provider_session_check is None:
+            return  # Existing local-only behavior; never production approval.
+        try:
+            status = self._provider_session_check(record, self._issuer, self._realm)
+        except Exception:
+            status = None
+        # Strict three-state contract. Unknown/outage/malformed results are
+        # transient unavailable, never authority or a reason to destroy a newer
+        # local generation. No automatic refresh/retry or positive cache exists.
+        if status is False:
+            # Confirmed provider-session removal must also terminate this local
+            # auth reference. Otherwise browser cleanup conflicts with a still-
+            # active shared record and old references can retain local authority.
+            # A storage/unknown-commit failure propagates as unavailable; it is
+            # never misreported as successful logout or automatically retried here.
+            if auth_handle is not None:
+                self._store.revoke(auth_handle)
+            raise AuthenticationRequired()
+        if status is not True:
+            raise ClientUnavailable() from None
 
     def _fresh(self, record):
         return record.access_expires_at > self._clock() + self._threshold
@@ -309,12 +393,16 @@ class NormalAuthCoordinator:
             raise AuthenticationRequired()
         if self._fresh(record):
             return record
+        # Do not rotate provider credentials or mutate refresh/activity state
+        # when current-session proof is already revoked or unavailable.
+        self._check_provider_session(record, handle)
         reservation = self._store.reserve_refresh(handle)
         if reservation is None:
             if self._store.resolve(handle) is None:
                 raise AuthenticationRequired()
             raise SessionBusy()
         lease, latest = reservation
+        storage_uncertain = False
         try:
             # Another refresh might have completed before this reservation.
             if self._fresh(latest):
@@ -333,15 +421,22 @@ class NormalAuthCoordinator:
                 raise AuthenticationRequired()
             return current
         except BaseException as error:
+            from session_realms import SessionStorageUnavailable
+            if isinstance(error, SessionStorageUnavailable):
+                storage_uncertain = True
+                raise
             # A refresh may already have consumed the token. Revoke only our
             # still-reserved generation; never damage a newer worker's result.
+            storage_uncertain = True
             self._store.revoke_refresh(handle, lease)
+            storage_uncertain = False
             # Preserve shutdown/cancellation semantics; finally still releases
             # the reservation before the original signal reaches the caller.
             if not isinstance(error, Exception):
                 raise
         finally:
-            self._store.release_refresh(handle, lease)
+            if not storage_uncertain:
+                self._store.release_refresh(handle, lease)
         # Raise outside the handler so sensitive transport errors are not retained
         # in __context__; `from None` alone only hides their formatted traceback.
         raise AuthenticationRequired() from None
@@ -355,6 +450,7 @@ class NormalAuthCoordinator:
         automatic write retry, or concurrent duplicate refresh is performed.
         """
         record = self._resolve(auth_session_id)
+        self._check_provider_session(record, auth_session_id)
         with ExitStack() as stack:
             try:
                 client = stack.enter_context(self._clients(record.access_token))
@@ -366,7 +462,7 @@ class NormalAuthCoordinator:
                     if self._store.resolve(auth_session_id) is None:
                         raise AuthenticationRequired()
                     raise SessionBusy()
-                yield AuthenticatedContext(auth_session_id, record.user_id, record.user_email, client)
+                yield AuthenticatedContext(auth_session_id, record.user_id, record.user_email, client, self._realm)
                 return
         # Finish cleanup and leave the handler before raising, so sensitive
         # construction failures are not retained in the public __context__.

@@ -11,6 +11,10 @@
         for (const button of document.querySelectorAll('[data-set-theme]')) {
             button.setAttribute('aria-pressed', String(button.dataset.setTheme === current));
         }
+        for (const button of document.querySelectorAll('[data-toggle-theme]')) {
+            button.setAttribute('aria-pressed', String(current === 'dark'));
+            button.setAttribute('title', 'Switch to ' + (current === 'dark' ? 'Light' : 'Dark') + ' Mode');
+        }
     }
     function apply(value, save) {
         if (!valid(value)) return;
@@ -25,8 +29,10 @@
             'Theme applied. Your browser could not remember it for your next visit.';
     }
     document.addEventListener('click', event => {
-        const button = event.target.closest('[data-set-theme]');
-        if (button) apply(button.dataset.setTheme, true);
+        const button = event.target.closest('[data-set-theme], [data-toggle-theme]');
+        if (!button || button.disabled) return;
+        apply(button.hasAttribute('data-toggle-theme') ?
+            (current === 'dark' ? 'light' : 'dark') : button.dataset.setTheme, true);
     });
     document.addEventListener('DOMContentLoaded', reflect);
     window.addEventListener('storage', event => {

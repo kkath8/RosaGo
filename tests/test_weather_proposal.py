@@ -38,7 +38,7 @@ def metadata_document(places, exposures=None):
 class MetadataTests(unittest.TestCase):
     def test_approved_curation_only_three_records_and_all_other_records_unknown(self):
         folder = Path(__file__).resolve().parents[1]/'data/santa_rosa_places'
-        places = json.loads((folder/'places.json').read_text(encoding='utf-8'))
+        places = json.loads((folder/'archive/places.json').read_text(encoding='utf-8'))
         document = json.loads((folder/'weather_metadata.json').read_text(encoding='utf-8'))
         metadata = validate_weather_catalog(document)
         expected = {
@@ -146,7 +146,7 @@ class MetadataTests(unittest.TestCase):
 
     def test_all_28_real_catalog_records_have_explicit_valid_metadata_and_provenance(self):
         folder = Path(__file__).resolve().parents[1]/'data/santa_rosa_places'
-        places = json.loads((folder/'places.json').read_text(encoding='utf-8'))
+        places = json.loads((folder/'archive/places.json').read_text(encoding='utf-8'))
         document = json.loads((folder/'weather_metadata.json').read_text(encoding='utf-8'))
         self.assertEqual({row['slug'] for row in document['destinations']}, {row['slug'] for row in places})
         self.assertEqual(len(document['destinations']), 28)

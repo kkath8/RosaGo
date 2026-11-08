@@ -18,6 +18,12 @@ from supabase import Client, ClientOptions, create_client
 from supabase_auth.errors import AuthApiError, AuthError
 
 from auth_helpers import login_required
+from admin_session_flask import init_admin_auth
+from session_realms import init_session_realms, LoginChallenges
+from public_auth_security import (configured_public_origin, email_form_origin_allowed,
+                                  email_attempt_allowed)
+from user_csrf import (user_login_csrf, validate_user_login_csrf,
+                       user_logout_csrf, validate_user_logout_csrf)
 from user_features import init_user_features, personal_scope, visitor_place, notification_cards, alerts_notification_cards
 from password_policy import PASSWORD_RULES, password_error
 from admin_routes import admin
@@ -74,15 +80,32 @@ from places_service import (
     CATEGORIES, PlacesService, PlacesValidationError,
     PlacesUnavailableError, PlacesConsistencyError,
 )
+from destination_categories import CATEGORY_LABELS, category_registry, flexible_catalog_enabled
 from profile_service import (
     get_own_profile, update_own_profile, ProfileUnavailableError,
-    ProfileConsistencyError, ProfileValidationError, ProfileNotFoundError,
+    ProfileConsistencyError, ProfileValidationError, ProfileNotFoundError, profile_initials,
 )
 from recovery_helpers import RECOVERY_ERROR, RecoveryGrants, recovery_expiry, PendingRecoveries, pkce_s256_challenge
 from recovery_diagnostics import recovery_diagnostic
 from recovery_transport import send_pkce_recovery, RecoveryRequestRejected
 
-load_dotenv()
+EVALUATION_MODE = os.environ.get('ROSAGO_EVALUATION') == 'true'
+if EVALUATION_MODE:
+    # Never merge this workspace's real-project .env into an evaluation process.
+    from evaluation_config import validate_evaluation_environment
+    validate_evaluation_environment(os.environ)
+else:
+    load_dotenv()
+
+if os.environ.get('ROSAGO_CATALOG_PREVIEW') == 'true':
+    from catalog_preview import validate_preview_environment
+    validate_preview_environment(os.environ)
+
+# A requested rollout with a missing/unapproved/wrong-project registry must fail
+# at startup, before any destination requests, rather than fall back silently.
+category_registry()
+
+PUBLIC_ORIGIN = configured_public_origin(os.environ)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -103,9 +126,49 @@ supabase: Client = create_client(
 )
 
 app = Flask(__name__)
+if EVALUATION_MODE:
+    from evaluation_config import configure_evaluation_http
+    app.extensions['rosago_evaluation'] = configure_evaluation_http(app, os.environ)
+
+    @app.before_request
+    def evaluation_disabled_operations():
+        email_paths = ('/register', '/forgot-password', '/verify-email',
+                       '/verify-email/resend', '/reset-password')
+        if request.path in email_paths:
+            return 'Email account workflows are disabled in this synthetic evaluation.', 503
+        if request.method == 'POST' and request.path.startswith('/admin/places'):
+            photo = request.files.get('photo')
+            if (photo is not None and photo.filename) or 'remove_photo' in request.form:
+                return 'Photo changes are disabled in this synthetic evaluation.', 403
+
+app.config.update(MAX_CONTENT_LENGTH=6 * 1024 * 1024,
+                  MAX_FORM_MEMORY_SIZE=128 * 1024, MAX_FORM_PARTS=100)
+app.extensions['rosago_public_email_limits'] = LoginChallenges()
+
+
+@app.after_request
+def browser_security_headers(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    private_auth = (request.path in ('/register', '/login', '/logout', '/forgot-password')
+                    or request.path.startswith(('/auth/', '/verify-email', '/reset-password')))
+    response.headers.setdefault('Referrer-Policy',
+                                'no-referrer' if private_auth else 'strict-origin-when-cross-origin')
+    if private_auth:
+        response.headers.setdefault('Cache-Control', 'no-store')
+    response.headers.setdefault('Content-Security-Policy',
+                                "frame-ancestors 'none'; base-uri 'self'; object-src 'none'")
+    return response
+
+
+@app.get('/health/ready')
+def production_readiness():
+    # Liveness is not proof of qualified public authentication/recovery.
+    return {'ready': False, 'production_sessions_qualified': False}, 503
 # Recheck edited Jinja files even when the local server runs without a debugger.
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.globals['password_rules'] = PASSWORD_RULES
+app.jinja_env.globals['profile_initials'] = profile_initials
 
 
 def auth_asset_url(filename):
@@ -121,6 +184,7 @@ app.jinja_env.globals['auth_asset_url'] = auth_asset_url
 app.extensions['rosago_places'] = PlacesService(
     PublicPlacesClient(SUPABASE_URL, SUPABASE_KEY).database_client,
     tourism_metadata_enabled=os.getenv('ROSAGO_TOURISM_METADATA_ENABLED', '').lower() == 'true',
+    environment_enabled=os.getenv('ROSAGO_DESTINATION_ENVIRONMENT_ENABLED', '').lower() == 'true',
 )
 app.extensions['rosago_routing'] = RoutingService.from_environment(os.environ)
 app.extensions['rosago_weather'] = WeatherService()
@@ -132,7 +196,11 @@ app.extensions['rosago_email_verification'] = EmailVerificationService(SUPABASE_
 
 @app.context_processor
 def website_template_options():
-    return {'website_settings': get_settings(session)}
+    return {'website_settings': get_settings(session),
+            'category_labels': dict(CATEGORY_LABELS),
+            'catalog_category_choices': tuple(CATEGORY_LABELS.items()),
+            'flexible_catalog_enabled': flexible_catalog_enabled(),
+            'user_login_csrf': user_login_csrf, 'user_logout_csrf': user_logout_csrf}
 
 
 @app.context_processor
@@ -147,15 +215,22 @@ def routing_template_options():
                 unsupported_route_preference=bool((requested_mode or preference) and selected not in routing.modes))
 
 
+init_session_realms(app, mode=os.getenv('ROSAGO_AUTH_MODE', 'development'))
 init_normal_auth(app, SUPABASE_URL, SUPABASE_KEY)
+init_admin_auth(app, SUPABASE_URL, SUPABASE_KEY)
 recovery_grants = RecoveryGrants()
 pending_recoveries = PendingRecoveries()
+if 'rosago_shared_sessions' in app.extensions:
+    from shared_session_runtime import session_model
+    recovery_grants = session_model(app, 'user', 'grants')
+    pending_recoveries = session_model(app, 'user', 'pending')
+    app.extensions['rosago_email_pending'] = session_model(app, 'user', 'email')
 app.config.update(
     SECRET_KEY=FLASK_SECRET_KEY,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     # Local HTTP only. Set this to True in production when HTTPS is used.
-    SESSION_COOKIE_SECURE=False,
+    SESSION_COOKIE_SECURE=bool(getattr(app.session_interface,'secure',False)),
 )
 
 
@@ -187,11 +262,14 @@ def protect_auth_response(response):
         message = response.get_data(as_text=True)
         if message and '<' not in message:
             auth = g.pop('auth', None)
+            logout_token = g.pop('user_logout_token', None)
             try:
                 response.set_data(render_template('user/error.html', message=message))
             finally:
                 if auth is not None:
                     g.auth = auth
+                if logout_token is not None:
+                    g.user_logout_token = logout_token
     if (request.path in ('/budget', '/user/planner', '/user/transport', '/user/alerts', '/user/settings')
             or request.path == '/user/assistant' or request.path.startswith('/user/assistant/')):
         response.headers['Cache-Control'] = 'private, no-store'
@@ -207,7 +285,8 @@ def protect_auth_response(response):
         response.headers["Cache-Control"] = "no-store"
     if request.path in ("/auth/callback", "/auth/reset-callback"):
         response.headers["Referrer-Policy"] = "no-referrer"
-    if request.path in ("/reset-password", "/verify-email", "/verify-email/resend", "/user/profile/edit"):
+    if request.path in ("/login", "/register", "/forgot-password", "/reset-password",
+                        "/verify-email", "/verify-email/resend", "/user/profile/edit"):
         # Native POSTs under no-referrer send Origin: null. Preserve a
         # verifiable same-origin POST without sharing cross-origin referrers.
         response.headers["Referrer-Policy"] = "same-origin"
@@ -414,6 +493,7 @@ def index():
                 if error.kind != 'unauthenticated':
                     trip_state = 'unavailable'
             else:
+                g.user_logout_token = user_logout_csrf()
                 trip_state = 'ready'
                 ui_scope = personal_scope(auth.user_id)
                 try:
@@ -571,6 +651,8 @@ def places_detail(slug):
 
 @app.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
+    if request.method == 'POST' and not email_form_origin_allowed():
+        return 'Please reload this page and try again.', 403
     email = ""
     message = ""
     state = ""
@@ -585,6 +667,8 @@ def forgot_password():
             message = "Please enter a valid email address."
             state, status = "error", 400
         else:
+            if not email_attempt_allowed('recovery'):
+                return 'Too many requests. Please wait before trying again.', 429, {'Retry-After': '60'}
             message = "If an account exists for that email, a password reset link has been sent."
             state = "success"
             # Replace only the pending recovery flow; normal login is untouched.
@@ -600,6 +684,7 @@ def forgot_password():
                     send_pkce_recovery(
                         email, challenge, supabase_url=SUPABASE_URL,
                         supabase_key=SUPABASE_KEY, client=client,
+                        redirect_to=PUBLIC_ORIGIN + '/auth/reset-callback',
                     )
                 # Signed cookies contain only this opaque reference, never a verifier.
                 session["pending_recovery_id"] = pending_id
@@ -651,6 +736,16 @@ def _login_trip_destination():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == 'POST' and not validate_user_login_csrf():
+        response = app.make_response((render_template('auth/login.html', email='',
+            message='Please reload this page and try again.', state='error', add_place_slug=None), 403))
+        response.headers['Cache-Control'] = 'no-store'
+        return response
+    if request.method == 'POST' and not app.extensions['rosago_login_challenges'].allow_attempt('user', request.remote_addr):
+        response = app.make_response((render_template('auth/login.html', email='',
+            message='Too many login attempts. Please wait before trying again.', state='error', add_place_slug=None), 429))
+        response.headers['Cache-Control'] = 'no-store'
+        return response
     add_place_slug = _login_trip_destination()
     if request.method in ("GET", "HEAD"):
         response = normal_auth_page_check("auth/login.html")
@@ -691,6 +786,7 @@ def login():
             try:
                 credentials = get_normal_auth_dependencies().adapters.password_login(email, password)
                 establish_normal_session(credentials)
+                session.pop('user_login_csrf', None)
                 return redirect(url_for('trips_add_place', slug=add_place_slug)
                                 if add_place_slug else url_for('index'), code=303)
             except PasswordLoginError as error:
@@ -1911,16 +2007,30 @@ def trips_delete(trip_id):
 
 @app.route("/logout", methods=["POST"])
 def logout():
+    if not validate_user_logout_csrf():
+        response = app.make_response(('Please reload this page and try again.', 403))
+        response.headers['Cache-Control'] = 'no-store'
+        return response
     try:
-        logout_normal_session()
+        confirmed = logout_normal_session()
         # Preserve the existing whole-application browser logout, including recovery.
         session.clear()
+        if confirmed is False:
+            return 'Signed out of RosaGo. Provider session revocation is not yet confirmed.', 503, {'Cache-Control':'no-store'}
     except Exception:
         response = app.make_response(("Logout could not be completed. Please try again.", 503))
         response.headers["Cache-Control"] = "no-store"
         return response
     response = redirect(url_for("login", logged_out="1"), code=303)
     response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.get('/auth/logout-token')
+def user_logout_token():
+    response = jsonify(csrf_token=user_logout_csrf(resolve=True))
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['Referrer-Policy'] = 'same-origin'
     return response
 
 
@@ -1939,8 +2049,18 @@ def auth_status():
     return response
 
 
+def registration_pending_response(email):
+    handle = current_app.extensions['rosago_email_pending'].create(email)
+    if handle is None:
+        return 'Verification is temporarily unavailable. Please try again later.', 503
+    session['pending_email_verification'] = handle
+    return redirect(url_for('verify_email'), code=303)
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == 'POST' and not email_form_origin_allowed():
+        return 'Please reload this page and try again.', 403
     response = normal_auth_page_check("auth/register.html")
     if response is not None:
         return response
@@ -1982,6 +2102,8 @@ def register():
         if field_errors:
             status = 400
         else:
+            if not email_attempt_allowed('registration'):
+                return 'Too many requests. Please wait before trying again.', 429, {'Retry-After': '60'}
             try:
                 # Only these two metadata fields are accepted from public registration.
                 supabase.auth.sign_up({
@@ -1992,13 +2114,14 @@ def register():
                             "first_name": form_data["first_name"],
                             "last_name": form_data["last_name"],
                         },
-                        "email_redirect_to": "http://127.0.0.1:5000/auth/callback",
+                        "email_redirect_to": PUBLIC_ORIGIN + '/auth/callback',
                     },
                 })
             except AuthApiError as error:
+                if error.code in ('user_already_exists', 'email_exists'):
+                    # Match accepted registration navigation; don't disclose existence.
+                    return registration_pending_response(form_data['email'])
                 messages = {
-                    "user_already_exists": "An account with this email already exists. Please check your inbox for a verification email.",
-                    "email_exists": "An account with this email already exists. Please check your inbox for a verification email.",
                     "email_address_invalid": "Please enter a valid email address.",
                     "email_address_not_authorized": "We cannot send a verification email to this address right now. Please contact support.",
                     "weak_password": "Please choose a stronger password with a mix of letters, numbers, and symbols.",
@@ -2014,11 +2137,7 @@ def register():
                 message = "We could not reach the registration service. Please try again later."
                 status = 503
             else:
-                handle = current_app.extensions['rosago_email_pending'].create(form_data['email'])
-                if handle is None:
-                    return 'Verification is temporarily unavailable. Please try again later.', 503
-                session['pending_email_verification'] = handle
-                return redirect(url_for('verify_email'), code=303)
+                return registration_pending_response(form_data['email'])
 
     return render_template(
         "auth/register.html", form_data=form_data, message=message, state=state,
@@ -2069,7 +2188,7 @@ def _email_verification_action(action):
     reserved, wait = store.reserve(handle, action)
     if reserved is None:
         return _email_verification_page(message='Please wait before trying again.', status=429, retry_after=wait or 1)
-    verified, resent, limited = False, False, False
+    verified, resent, limited, uncertain = False, False, False, False
     error_message, error_status = '', 200
     try:
         provider = current_app.extensions['rosago_email_verification']
@@ -2088,8 +2207,11 @@ def _email_verification_action(action):
             error_status = 400
     except Exception:
         error_message, error_status = 'Verification is temporarily unavailable. Please try again later.', 503
+        uncertain = 'rosago_shared_sessions' in current_app.extensions
+        if uncertain:
+            error_message = 'We could not confirm verification. Return to registration to start a new verification session.'
     finally:
-        store.finish(handle, verified=verified, resent=resent, limited=limited)
+        store.finish(handle, verified=verified, resent=resent, limited=limited, uncertain=uncertain)
     if error_message:
         return _email_verification_page(message=error_message, status=error_status, retry_after=60 if limited else None)
     if action == 'verify' and not verified:
@@ -2115,6 +2237,10 @@ def user_not_found(error):
     if request.path == '/admin' or request.path.startswith('/admin/'):
         return 'Not found.', 404
     return render_template('library/not_found.html'), 404
+
+
+from catalog_preview import install_catalog_preview
+install_catalog_preview(app)
 
 
 if __name__ == "__main__":
