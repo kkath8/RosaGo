@@ -1,0 +1,90 @@
+{
+  "approved": false,
+  "decisions": [
+    {
+      "csv_record": 56,
+      "field": "description",
+      "proposed_value": "An outdoor beach volleyball court on Nuvali Boulevard in Santa Rosa, Laguna.",
+      "evidence": {
+        "name": "Nuvali Sand Courts",
+        "tourism_category": "Beach Volleyball Court",
+        "environment": "Outdoor",
+        "address": "Nuvali Boulevard, Don Jose (or Santo Domingo area), City of Santa Rosa, Laguna, Philippines"
+      },
+      "basis": "Rephrased only from researched CSV name, category, environment and address; no new venue claims.",
+      "approved": false
+    },
+    {
+      "csv_record": 58,
+      "field": "description",
+      "proposed_value": "An indoor badminton venue in the San Lorenzo South area of Santa Rosa, Laguna.",
+      "evidence": {
+        "name": "Winner Badminton Court",
+        "tourism_category": "Badminton Court",
+        "environment": "Indoor",
+        "address": "Villa Segovia Corner, San Lorenzo Avenue, Brgy. Dita / San Lorenzo South, City of Santa Rosa, 4026 Laguna, Philippines (also referenced as Block 43 Lot 37 Phase 1, San Lorenzo South)"
+      },
+      "basis": "Rephrased only from researched CSV name, category, environment and address; no new venue claims.",
+      "approved": false
+    },
+    {
+      "csv_record": 59,
+      "field": "description",
+      "proposed_value": "An indoor pickleball venue at Building 26, Daystar Santa Rosa Industrial Park, Santa Rosa, Laguna.",
+      "evidence": {
+        "name": "Court Zero Pickleball Court",
+        "tourism_category": "Pickleball Court",
+        "environment": "Indoor",
+        "address": "Building 26, Daystar Main Road, Daystar Santa Rosa Industrial Park, Brgy. Pulong Santa Cruz, City of Santa Rosa, 4026 Laguna"
+      },
+      "basis": "Rephrased only from researched CSV name, category, environment and address; no new venue claims.",
+      "approved": false
+    },
+    {
+      "csv_record": 60,
+      "field": "description",
+      "proposed_value": "An indoor badminton venue at One Sta. Rosa Prime on the National Highway in Santa Rosa, Laguna.",
+      "evidence": {
+        "name": "Infinite Badminton & Sports Center",
+        "tourism_category": "Badminton Court",
+        "environment": "Indoor",
+        "address": "Annex A Warehouse, One Sta. Rosa Prime, National Highway, Brgy. Dila, Santa Rosa, Laguna, 4026, Philippines"
+      },
+      "basis": "Rephrased only from researched CSV name, category, environment and address; no new venue claims.",
+      "approved": false
+    },
+    {
+      "csv_record": 70,
+      "field": "category",
+      "proposed_value": "resort-swimming-pool",
+      "evidence": {
+        "csv_tourism_category": "Resort / Swimming Pool",
+        "description": "A popular events venue, water park, and private/public resort in Laguna."
+      },
+      "basis": "Existing merged-resort proposal: attraction parent; no lodging classification inferred.",
+      "approved": false
+    },
+    {
+      "csv_record": 72,
+      "field": "category",
+      "proposed_value": "resort-swimming-pool",
+      "evidence": {
+        "csv_tourism_category": "Resort Swimming Pool",
+        "description": "A local sports, recreation, and public swimming pool venue designed and used for birthday parties, private functions, and family gatherings."
+      },
+      "basis": "Existing merged-resort proposal: attraction parent; no lodging classification inferred.",
+      "approved": false
+    },
+    {
+      "csv_record": 73,
+      "field": "category",
+      "proposed_value": "resort-swimming-pool",
+      "evidence": {
+        "csv_tourism_category": "Resort Swimming Pool",
+        "description": "Private swimming pool and event resort offering \"probinsya\" (countryside) vibes near the city."
+      },
+      "basis": "Existing merged-resort proposal: attraction parent; no lodging classification inferred.",
+      "approved": false
+    }
+  ]
+}

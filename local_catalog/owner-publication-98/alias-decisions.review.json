@@ -1,0 +1,95 @@
+{
+  "approved": false,
+  "mappings": [
+    {
+      "csv_record": 2,
+      "existing_id": "4751680c-faab-4043-9d5b-d55053e54415",
+      "existing_slug": "nuvali",
+      "existing_name": "Nuvali Park",
+      "csv_name": "Nuvali Lakeside / Park",
+      "decision": "Reuse this existing UUID/slug only after exact mapping approval; never create a duplicate.",
+      "approved": false
+    },
+    {
+      "csv_record": 3,
+      "existing_id": "772aa257-089e-426b-9669-d4da7a6492c1",
+      "existing_slug": "solenad-1-2-and-3",
+      "existing_name": "Ayala Malls Solenad",
+      "csv_name": "Ayala Malls Solenad (Ayala Malls Nuvali)",
+      "decision": "Reuse this existing UUID/slug only after exact mapping approval; never create a duplicate.",
+      "approved": false
+    },
+    {
+      "csv_record": 12,
+      "existing_id": "20fb152e-b13b-422a-a21f-4c24dc487a0e",
+      "existing_slug": "cuartel-de-santo-domingo",
+      "existing_name": "Cuartel de Santo Domingo",
+      "csv_name": "Fort Santo Domingo / Cuartel de Santo Domingo",
+      "decision": "Reuse this existing UUID/slug only after exact mapping approval; never create a duplicate.",
+      "approved": false
+    },
+    {
+      "csv_record": 42,
+      "existing_id": "5591677c-107e-4960-b36a-fbd475965e4f",
+      "existing_slug": "santa-rosa-arch",
+      "existing_name": "Santa Rosa Arch (Bantayang Bato)",
+      "csv_name": "Santa Rosa Arch",
+      "decision": "Reuse this existing UUID/slug only after exact mapping approval; never create a duplicate.",
+      "approved": false
+    },
+    {
+      "csv_record": 43,
+      "existing_id": "b2b0dab7-f8b1-4c1a-8828-bcff6fa5db40",
+      "existing_slug": "the-city-of-santa-rosa-museum",
+      "existing_name": "Museo ng Santa Rosa",
+      "csv_name": "The City of Santa Rosa Museum (Museo de Santa Rosa)",
+      "decision": "Reuse this existing UUID/slug only after exact mapping approval; never create a duplicate.",
+      "approved": false
+    },
+    {
+      "csv_record": 47,
+      "existing_id": "c4927777-5067-40bc-92af-0cc143deac11",
+      "existing_slug": "toyota-santa-rosa",
+      "existing_name": "Toyota Santa Rosa",
+      "csv_name": "Toyota Santa Rosa (Toyota Motor Philippines)",
+      "decision": "Reuse this existing UUID/slug only after exact mapping approval; never create a duplicate.",
+      "approved": false
+    },
+    {
+      "csv_record": 48,
+      "existing_id": "22c498a5-2540-421b-b355-afbf5017c463",
+      "existing_slug": "coca-cola-santa-rosa",
+      "existing_name": "Coca-Cola Santa Rosa",
+      "csv_name": "Coca-Cola Santa Rosa (Coca-Cola Beverages Philippines)",
+      "decision": "Reuse this existing UUID/slug only after exact mapping approval; never create a duplicate.",
+      "approved": false
+    },
+    {
+      "csv_record": 49,
+      "existing_id": "8253f1f0-acc7-4a7a-aad5-a3fe4c4ccdd0",
+      "existing_slug": "monde-nissin-santa-rosa",
+      "existing_name": "Monde Nissin Santa Rosa",
+      "csv_name": "Monde Nissin Santa Rosa Plant",
+      "decision": "Reuse this existing UUID/slug only after exact mapping approval; never create a duplicate.",
+      "approved": false
+    },
+    {
+      "csv_record": 50,
+      "existing_id": "fe47d1c8-2078-4615-8ee9-9fb07393b658",
+      "existing_slug": "mitsubishi-motors-santa-rosa",
+      "existing_name": "Mitsubishi Motors Santa Rosa",
+      "csv_name": "Mitsubishi Motors Philippines Corporation",
+      "decision": "Reuse this existing UUID/slug only after exact mapping approval; never create a duplicate.",
+      "approved": false
+    },
+    {
+      "csv_record": 51,
+      "existing_id": "184cb1aa-fa72-42ba-a94d-07e097f33d83",
+      "existing_slug": "fun-farm-sta-elena",
+      "existing_name": "The Fun Farm at Sta. Elena",
+      "csv_name": "Fun Farm at Sta. Elena",
+      "decision": "Reuse this existing UUID/slug only after exact mapping approval; never create a duplicate.",
+      "approved": false
+    }
+  ]
+}
