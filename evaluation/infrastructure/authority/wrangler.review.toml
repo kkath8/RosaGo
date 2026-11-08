@@ -1,0 +1,24 @@
+# REVIEW ONLY. No deployment or account identifiers. No real secrets.
+name = "rosago-evaluation-authority-review"
+main = "worker.mjs"
+compatibility_date = "2026-11-07"
+workers_dev = false
+preview_urls = false
+
+[[durable_objects.bindings]]
+name = "AUTHORITY"
+class_name = "SessionAuthority"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SessionAuthority"]
+
+# Required private operator configuration, intentionally absent:
+# AUTHORITY_OBJECT, AUTHORITY_ID, AUTHORITY_INCARNATION
+# APPLICATION_TOKEN and OPERATOR_TOKEN are distinct independently held secrets.
+# Provider candidate additionally requires PROVIDER_ISSUER bound only to
+# https://jfaufpfzfhysqkhcdsrs.supabase.co/auth/v1 and three distinct secrets:
+# PROVIDER_ENROLL_TOKEN (verified-login server ONLY; NEVER in PostgreSQL/Vault),
+# PROVIDER_CHECK_TOKEN (read/inspect), PROVIDER_REVOKE_TOKEN (revoke/shorten ONLY).
+# All five credentials must be distinct. No secrets or resources are created here.
+# LOCAL_TEST_ONLY must be absent in any hosted configuration.
