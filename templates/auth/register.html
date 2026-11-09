@@ -1,5 +1,6 @@
 {% from 'auth/required.html' import required_mark %}
 {% set field_errors = field_errors | default({}) %}
+{% set admin_registration = request.args.getlist('workspace') == ['admin'] %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,10 +8,11 @@
     {% include 'partials/fonts.html' %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create an account | RosaGo</title>
+    <title>{{ 'Create an Admin account' if admin_registration else 'Create an account' }} | RosaGo</title>
     <link rel="stylesheet" href="{{ auth_asset_url('css/auth.css') }}">
     <script src="{{ auth_asset_url('js/password-policy.js') }}" defer></script>
     <script src="{{ auth_asset_url('js/auth.js') }}" defer></script>
+    {% include 'partials/workspace_ui.html' %}
 </head>
 <body class="auth-site">
     <main class="registration-layout">
@@ -21,10 +23,11 @@
 
         <section class="form-panel" aria-labelledby="register-title">
             <div class="registration-card">
-                <p class="eyebrow">Start exploring</p>
-                <h2 id="register-title">Create your account</h2>
-                <p class="form-intro">A new way to discover Santa Rosa starts here.</p>
-                <form id="registration-form" action="{{ url_for('register') }}" method="post" novalidate>
+                <p class="eyebrow">{{ 'Admin access' if admin_registration else 'Start exploring' }}</p>
+                <h2 id="register-title">{{ 'Create an Admin account' if admin_registration else 'Create your account' }}</h2>
+                {% if admin_registration %}<p class="account-status">Already have a RosaGo User account? Use the same account and ask the project owner to approve Admin access. You do not need to register again. <a href="{{ url_for('admin.login') }}">Go to Admin login</a>.</p>{% endif %}
+                <p class="form-intro">{% if admin_registration %}Verify your email, then ask the project owner to approve Admin access. Until approved, this account has ordinary User permissions.{% else %}A new way to discover Santa Rosa starts here.{% endif %}</p>
+                <form id="registration-form" action="{{ url_for('register', workspace='admin') if admin_registration else url_for('register') }}" method="post" novalidate>
                     <div class="name-fields">
                         <div class="field">
                             <label for="first-name">First Name {{ required_mark() }}</label>
@@ -69,7 +72,7 @@
                     <button class="submit-button" id="create-account" type="submit">Create Account <span aria-hidden="true">→</span></button>
                     <p class="form-status" id="form-status" data-state="{{ state }}" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">{{ message }}</p>
                 </form>
-                <p class="login-prompt">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+                <p class="login-prompt">Already have an account? <a href="{{ url_for('admin.login') if admin_registration else url_for('login') }}">{{ 'Admin log in' if admin_registration else 'Log in' }}</a></p>
             </div>
             <p class="footer-note">Made for discovering Santa Rosa.</p>
         </section>

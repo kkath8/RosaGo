@@ -3,7 +3,7 @@
 {% block content %}
 {% set search_query = request.args.get('q', '') | trim %}
 <div class="explore-page">
-<header class="explore-heading">
+<header class="explore-heading{% if not preview_simulation %} visually-hidden{% endif %}">
     <h1 class="page-heading">{{ 'Planner simulation' if preview_simulation else 'Explore Santa Rosa' }}</h1>
     <p class="intro-text">{% if preview_simulation %}Category-based visual simulation using first-batch candidates and proposed category parents. Local/Common ranking only; no personalized itinerary, travel-time or opening-hour guarantee. Nothing is saved.{% else %}Find places to visit around Santa Rosa, Laguna.{% endif %}</p>
     {% if preview_simulation %}<form class="preview-simulation-form" method="get" action="{{ url_for(preview_planner_endpoint or 'planner') }}">
@@ -17,8 +17,8 @@
 {% if not preview_simulation %}<section class="explore-filters" aria-label="Search and filter destinations">
 <form role="search" method="get" action="{{ url_for('places_list') }}" data-explore-search class="explore-controls">
 {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
-<label for="explore-query">Search destinations</label><div class="inline-controls"><input id="explore-query" name="q" value="{{ search_query }}" maxlength="200" placeholder="Search by place, area, or category"><button class="site-button">Search</button></div>
-<h2 id="explore-filter-title">Category</h2>
+<label class="visually-hidden" for="explore-query">Search destinations</label><div class="inline-controls"><input id="explore-query" name="q" value="{{ search_query }}" maxlength="200" placeholder="Search by place, area, or category"><button class="site-button">Search</button></div>
+<h2 class="visually-hidden" id="explore-filter-title">Category</h2>
 <nav class="category-nav" aria-label="Place categories">
     <ul>
         <li><a href="{{ url_for('places_list', q=search_query) if search_query else url_for('places_list') }}"{% if selected_category is none %} aria-current="page"{% endif %}>All</a></li>

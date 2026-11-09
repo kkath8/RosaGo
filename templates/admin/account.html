@@ -1,13 +1,14 @@
 {% extends 'admin/base.html' %}
 {% block title %}Admin Account | RosaGo Admin{% endblock %}
 {% block content %}
-<div class="admin-utility-page">
+<div class="admin-utility-page admin-account-page">
 <header class="utility-heading"><p class="eyebrow">Administration</p><h1>Admin Account</h1><p class="intro">Your administrator identity and account actions.</p></header>
-<section class="panel" aria-labelledby="account-heading"><div class="section-heading"><h2 id="account-heading">Account information</h2><span class="admin-badge">Administrator</span></div>
-<dl class="record-fields utility-facts"><dt>Display name</dt><dd>{{ display_name or ('Temporarily unavailable' if profile_unavailable else 'Not provided') }}</dd><dt>Email</dt><dd data-account-email>{{ account_email }}</dd><dt>Role</dt><dd>Administrator</dd><dt>Admin access</dt><dd>Authorized</dd></dl>
+<div class="admin-account-grid">
+<section class="panel admin-account-information" aria-labelledby="account-heading"><h2 id="account-heading">Account information</h2>
+<dl class="record-fields utility-facts"><dt>Display name</dt><dd>{{ display_name or ('Temporarily unavailable' if profile_unavailable else 'Not provided') }}</dd><dt>Email</dt><dd data-account-email>{{ account_email }}</dd><dt>Role</dt><dd>Administrator</dd><dt>Admin access</dt><dd><span class="admin-access-status">Authorized</span></dd></dl>
 {% if profile_unavailable %}<p class="notice" role="status">Your profile name could not be loaded. Your signed-in email remains available.</p>{% endif %}
 <p class="section-note">Account information is read-only in this Admin workspace.</p></section>
-<section class="panel utility-section" aria-labelledby="account-security"><h2 id="account-security">Account security</h2><p class="muted">To change your password, request a recovery email for your account.</p><div class="actions utility-actions"><a class="secondary-button" href="{{ url_for('forgot_password') }}">Change Password</a><form method="post" action="{{ url_for('admin.logout') }}"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><button class="button" type="submit">Log Out of Admin</button></form></div><p class="section-note">Logging out ends only your Admin session. Your User session is unchanged. Other devices may remain signed in.</p></section>
-<div class="utility-links"><a class="secondary-button" href="{{ url_for('admin.settings') }}">Admin Settings</a><a class="secondary-button" href="{{ url_for('admin.help_page') }}">Admin Help</a></div>
+<section class="panel admin-account-security" aria-labelledby="account-security"><h2 id="account-security">Account security</h2><p class="section-note">Change your password through the existing recovery email and verification flow.</p><div class="actions utility-actions"><a class="secondary-button" href="{{ url_for('forgot_password') }}">Change Password</a><form method="post" action="{{ url_for('admin.logout') }}"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><button class="warning-button" type="submit">Log Out of Admin</button></form></div><p class="section-note">Logging out ends only your Admin session. Your User session is unchanged.</p><p class="section-note">A password change affects this account in both systems.</p></section>
+</div>
 </div>
 {% endblock %}

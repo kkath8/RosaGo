@@ -9,11 +9,12 @@
     <title>Log in | RosaGo</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
     <script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+    {% include 'partials/workspace_ui.html' %}
 </head>
 <body class="auth-site">
     <main class="registration-layout">
         <section class="welcome" aria-labelledby="welcome-title">
-            <a class="brand" href="{{ url_for('index') }}" aria-label="RosaGo home">Rosa<span>Go</span></a>
+            <a class="brand login-wordmark" href="{{ url_for('index') }}" aria-label="RosaGo home">Rosa<span>Go</span></a>
             <div class="welcome-copy"><h1 id="welcome-title">Welcome back to the <span>Lion City.</span></h1></div>
         </section>
         <section class="form-panel" aria-labelledby="login-title">

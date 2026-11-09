@@ -21,7 +21,7 @@
         current = value;
         root.dataset.theme = current;
         let persisted = true;
-        if (save) { try { localStorage.setItem(key, current); } catch (_) { persisted = false; } }
+        if (save) { try { localStorage.setItem(key, current); persisted = localStorage.getItem(key) === current; } catch (_) { persisted = false; } }
         reflect();
         const status = document.querySelector('[data-theme-status]');
         if (save && status) status.textContent = persisted ?

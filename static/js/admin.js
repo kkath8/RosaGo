@@ -2,6 +2,41 @@
 (() => {
     'use strict';
 
+    // Browser history must revalidate protected pages, even if a browser retains
+    // a no-store page in its back/forward cache. No session authority lives here.
+    window.addEventListener('pagehide', event => {
+        if (event.persisted && (document.body.classList.contains('admin-shell') || document.body.classList.contains('admin-login-page'))) {
+            document.body.style.visibility = 'hidden';
+        }
+    });
+    window.addEventListener('pageshow', event => {
+        if (event.persisted && (document.body.classList.contains('admin-shell') || document.body.classList.contains('admin-login-page'))) {
+            document.body.style.visibility = 'hidden';
+            // A prior login error may be a POST response. Navigate with GET,
+            // never reload that POST and risk resending a password/challenge.
+            if (document.body.classList.contains('admin-login-page')) window.location.replace('/admin/login');
+            else window.location.reload();
+        }
+    });
+
+    // A login challenge is single-use. Native navigation submits it once; do
+    // not send a second password request while the first response is pending.
+    const loginForm = document.querySelector('.admin-login-form');
+    if (loginForm) {
+        let submitted = false;
+        loginForm.addEventListener('submit', event => {
+            if (event.defaultPrevented) return;
+            if (submitted) {
+                event.preventDefault();
+                return;
+            }
+            submitted = true;
+            loginForm.setAttribute('aria-busy', 'true');
+            const button = loginForm.querySelector('button[type="submit"]');
+            if (button) button.disabled = true;
+        });
+    }
+
     const destinationForm = document.querySelector('[data-destination-form]');
     if (destinationForm) {
         const input = destinationForm.querySelector('[data-photo-input]');

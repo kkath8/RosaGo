@@ -69,6 +69,8 @@
         if (!catalog) return;
         const url = new URL(window.location.href);
         const params = url.searchParams;
+        // A pagination URL already represents a chosen view, including implicit defaults.
+        if (params.has('offset')) return;
         const bare = !url.search;
         let changed = false;
         for (const [name, value, baseline] of [['sort', preferences.sort, 'slug'], ['page_size', preferences.pageSize, '25']]) {

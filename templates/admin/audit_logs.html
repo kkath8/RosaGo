@@ -11,7 +11,7 @@
         <button class="admin-ui-button admin-ui-primary" type="submit">Apply filter</button>
         {% if action %}<a class="admin-ui-text" href="{{ url_for('admin.audit_logs') }}">Clear filter</a>{% endif %}
     </form>
-    <p class="section-note">Destination changes only. Names and emails are resolved from current account information; the recorded Actor ID remains the historical identifier. Times are shown in Asia/Manila.</p>
+    <p class="section-note">Destination changes are shown in Asia/Manila time. View Details includes the original actor ID and recorded information.</p>
     <h2 class="admin-table-title">Activity History</h2>
     {% if data is none %}
     <p class="notice" role="alert">Audit history is temporarily unavailable. Please try again later.</p>

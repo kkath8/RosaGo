@@ -193,3 +193,33 @@ class AdminUtilityTests(unittest.TestCase):
         self.assertEqual(response.status_code, 303)
         self.assertIsNotNone(self.dependencies.store.resolve(handle))
         self.protected(self.client.get('/admin/account'), 200)
+
+    def test_admin_account_logout_preserves_concurrent_user_session_and_blocks_history_requests(self):
+        admin_handle = self.install_account()
+        user_handle = test_registration.seed_normal_session(self)
+        normal = self.app.extensions['rosago_normal_auth']
+        with self.client.session_transaction() as current:
+            user_cookie_state = dict(current)
+        csrf = self.dependencies.store.resolve(admin_handle).csrf
+        self.protected(self.client.get('/admin/account'), 200)
+        self.protected(self.client.post('/admin/logout', data={'csrf_token': csrf}, headers=ORIGIN), 303)
+        self.assertIsNone(self.dependencies.store.resolve(admin_handle))
+        self.assertIsNotNone(normal.store.resolve(user_handle))
+        with self.client.session_transaction() as current:
+            self.assertEqual(dict(current), user_cookie_state)
+        for path in ('/admin/account','/admin/settings','/admin'):
+            response = self.client.get(path)
+            self.protected(response, 302)
+            self.assertIn('/admin/login', response.location)
+
+    def test_account_password_action_opens_existing_recovery_without_sending_email(self):
+        self.install_account()
+        page = Document(self.client.get('/admin/account').get_data(as_text=True))
+        action = next(a for a in page.find('a') if a.text == 'Change Password')
+        self.assertEqual(action.attrs['href'], '/forgot-password')
+        response = self.client.get(action.attrs['href'])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+        form = Document(response.get_data(as_text=True)).find('form', id='forgot-password-form')[0]
+        self.assertEqual((form.attrs['method'], form.attrs['action']), ('post','/forgot-password'))
+        self.assertNotIn(b'fixture-access', response.data)

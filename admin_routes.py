@@ -59,6 +59,27 @@ def _strict_form(fields):
             and all(len(request.form.getlist(key)) == 1 for key in fields))
 
 
+def _login_diagnostic(event, reason, status):
+    """Only fixed classifications/booleans: never log request or credential values."""
+    interface = current_app.session_interface
+    cookie_name = getattr(interface, 'cookie_name', None)
+    if cookie_name is None:
+        cookie_name = interface.cookie('admin')[0]
+    log = current_app.logger.warning if event == 'rejected' else current_app.logger.info
+    log('admin_login event=%s reason=%s status=%s pid=%s backend=%s '
+        'debug=%s reloader_child=%s cookie_present=%s state_loaded=%s origin_match=%s',
+        event, reason, status, os.getpid(),
+        'memory' if hasattr(interface, 'user') else 'shared',
+        bool(current_app.debug), os.environ.get('WERKZEUG_RUN_MAIN') == 'true',
+        bool(request.cookies.getlist(cookie_name)), bool(getattr(session, 'handle', None)),
+        request.headers.get('Origin') == request.host_url.rstrip('/'))
+
+
+def _login_rejected(reason, message='Please reload this page and try again.', status=403, *, email=''):
+    _login_diagnostic('rejected', reason, status)
+    return _login_page(message, status, email=email)
+
+
 def _logout_csrf():
     record = get_admin_auth_dependencies().store.resolve(g.admin_auth.auth_session_id)
     return record.csrf if record else ''
@@ -86,6 +107,7 @@ def _current_login_destination():
             return _login_page('Admin authorization is temporarily unavailable. Please try again.',
                                503, signed_in=True)
         if allowed:
+            _login_diagnostic('accepted', 'membership_verified', 303)
             return redirect(url_for('admin.index'), code=303)
         return _login_page('Admin access required. You can continue to the User side or log out.',
                            403, signed_in=True)
@@ -95,29 +117,33 @@ def _current_login_destination():
 def login():
     if request.method != 'POST':
         return _current_login_destination()
+    if request.headers.get('Origin') != request.host_url.rstrip('/'):
+        return _login_rejected('origin_mismatch_or_missing')
     if not _strict_form({'csrf_token', 'email', 'password'}):
-        return _login_page('Please reload this page and try again.', 403)
+        return _login_rejected('invalid_form_shape')
     supplied = request.form['csrf_token']
     expected = session.get('admin_login_csrf')
     issued = session.get('admin_login_csrf_at')
-    if (type(expected) is not str or not supplied
-            or type(issued) not in (int, float) or not 0 <= time.time() - issued < 1800
-            or not secrets.compare_digest(supplied.encode(), expected.encode())):
-        return _login_page('Please reload this page and try again.', 403)
+    if type(expected) is not str or type(issued) not in (int, float):
+        return _login_rejected('csrf_session_missing')
+    if not 0 <= time.time() - issued < 1800:
+        return _login_rejected('csrf_expired_or_invalid_time')
+    if not supplied or not secrets.compare_digest(supplied.encode(), expected.encode()):
+        return _login_rejected('csrf_token_mismatch')
     from redis_session_flask import begin_login
     if not begin_login('admin', expected):
-        return _login_page('Please reload this page and try again.', 403)
+        return _login_rejected('challenge_missing_expired_or_consumed')
     if not current_app.extensions['rosago_login_challenges'].allow_attempt('admin', request.remote_addr):
-        return _login_page('Too many login attempts. Please wait before trying again.', 429)
+        return _login_rejected('rate_limited', 'Too many login attempts. Please wait before trying again.', 429)
     email = request.form['email'].strip()
     password = request.form['password']
     if not email or not password.strip():
-        return _login_page('Enter your email and password.', 400, email=email)
+        return _login_rejected('credentials_missing', 'Enter your email and password.', 400, email=email)
     try:
         credentials = get_admin_auth_dependencies().adapters.password_login(email, password)
         allowed = verify_admin_candidate(credentials)
         if not allowed:
-            return _login_page('Admin access required. Sign in with an authorized Admin account.', 403, email=email)
+            return _login_rejected('membership_denied', 'Admin access required. Sign in with an authorized Admin account.', 403, email=email)
         establish_admin_session(credentials)
     except PasswordLoginError as error:
         status, message = {
@@ -127,11 +153,11 @@ def login():
             'invalid_result': (401, 'We could not confirm your login. Please try again.'),
             'service_failure': (503, 'We could not complete your login. Please try again later.'),
         }[error.reason]
-        return _login_page(message, status, email=email)
+        return _login_rejected('provider_' + error.reason, message, status, email=email)
     except AdminAuthorizationError:
-        return _login_page('Admin authorization is temporarily unavailable. Please try again.', 503, email=email)
+        return _login_rejected('membership_unavailable', 'Admin authorization is temporarily unavailable. Please try again.', 503, email=email)
     except SessionEstablishmentError:
-        return _login_page('We could not complete your login. Please try again later.', 503)
+        return _login_rejected('session_establishment_failed', 'We could not complete your login. Please try again later.', 503)
     session.pop('admin_login_csrf', None)
     session.pop('admin_login_csrf_at', None)
     return _current_login_destination()

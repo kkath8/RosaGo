@@ -41,7 +41,10 @@ class IndependentProviderSessions:
                     or (response['active'] and (response['revoked'] or response['expired'] or not response['known']))): raise ValueError()
             return response
         except Exception:
-            raise SessionStorageUnavailable('Independent provider authority is unavailable.') from None
+            pass
+        # Leave the exception handler so transport exceptions (potentially
+        # holding credentials/requests) are not retained in __context__.
+        raise SessionStorageUnavailable('Independent provider authority is unavailable.') from None
 
     def enroll_verified_login(self, credentials):
         if (type(credentials) is not VerifiedLoginCredentials
@@ -64,6 +67,14 @@ class IndependentProviderSessions:
             return True if result['revoked'] and not result['active'] else None
         except SessionStorageUnavailable: return None
 
+    def revocation_confirmed(self, record, issuer, realm):
+        """Read-only permanent-tombstone proof, distinct from current admission."""
+        if issuer!=ISSUER or realm not in ('user','admin'): return None
+        try:
+            result=self._exchange('check',record)
+            return result['known'] and result['revoked'] and not result['active']
+        except SessionStorageUnavailable: return None
+
 
 class IndependentProviderAdapters:
     """Wrap existing verified SDK and bounded logout transports, without retries."""
@@ -80,8 +91,10 @@ class IndependentProviderAdapters:
         try:
             self.authority.enroll_verified_login(credentials)
         except (SessionStorageUnavailable,ClientUnavailable):
-            raise PasswordLoginError('service_failure') from None
-        return credentials
+            pass
+        else:
+            return credentials
+        raise PasswordLoginError('service_failure') from None
 
     def provider_session_check(self,record,issuer,realm):
         state=self.authority.current(record,issuer,realm)
@@ -111,7 +124,8 @@ def evaluation_runtime(*, realms, model_factory, challenges_factory, authority, 
         return IndependentProviderAdapters(base_factory(selected_url,selected_key),authority)
     adapters=adapters_factory(url,public_key)
     logout=DurableLogout(realms,issuer=ISSUER,sign_out=adapters.sign_out_current_session,
-                         session_check=adapters.provider_session_present)
+                         session_check=adapters.provider_session_present,
+                         revocation_check=authority.revocation_confirmed)
     return LocalSessionRuntime(realms=realms,model_factory=model_factory,
         challenges_factory=challenges_factory,provider_session_check=adapters.provider_session_check,
         logout_handler=logout,adapters_factory=adapters_factory)

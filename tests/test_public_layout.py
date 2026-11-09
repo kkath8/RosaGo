@@ -138,7 +138,7 @@ class PublicLayoutTests(unittest.TestCase):
                 self.assertEqual(len(page.find('footer')), 1)
                 self.assertIn('RosaGo', page.find('footer')[0].text)
                 styles = page.find('link', rel='stylesheet')
-                self.assertEqual([node.attrs['href'] for node in styles if node.attrs['href'].startswith('/static/')], ['/static/css/theme.css','/static/css/site.css'] + (['/static/css/budget-dashboard.css'] if path == '/' else ['/static/css/tourism.css', '/static/css/trip-chooser.css']) + ['/static/css/destination-images.css'])
+                self.assertEqual([node.attrs['href'] for node in styles if node.attrs['href'].startswith('/static/')], ['/static/css/theme.css','/static/css/site.css'] + (['/static/css/budget-dashboard.css'] if path == '/' else ['/static/css/tourism.css', '/static/css/trip-chooser.css']) + ['/static/css/destination-images.css','/static/css/workspace-ui.css'])
                 self.assertEqual(page.stack, [])
                 assert_shared_scripts(self, page)
                 for tag in ('iframe', 'object', 'embed', 'style'):

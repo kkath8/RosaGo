@@ -165,6 +165,24 @@ class DestinationReviewRoutes(unittest.TestCase):
         self.value = False
         self.protected(self.client.get('/admin/places?sort=name&page_size=50'),403)
 
+    def test_supported_page_sizes_change_rendered_rows_and_preserve_search_on_next_page(self):
+        self.install_catalog()
+        self.records = [record(n, status='draft') for n in range(1,32)]
+        for size in (10,25,50):
+            response = self.client.get(f'/admin/places?sort=oldest&page_size={size}&status=draft&q=Fixture')
+            self.protected(response,200)
+            page = Document(response.get_data(as_text=True)); table = page.find('tbody')[0]
+            self.assertEqual(len([row for row in page.find('tr') if table in row.ancestors]), min(size,31))
+            links = [a.attrs['href'] for a in page.find('a') if a.text == 'Next page']
+            self.assertEqual(bool(links),size<31)
+            if links:
+                for fragment in ('sort=oldest','status=draft','q=Fixture',f'offset={size}'):
+                    self.assertIn(fragment, links[0])
+                if size != 25:
+                    self.assertIn(f'page_size={size}', links[0])
+                following = Document(self.client.get(links[0]).get_data(as_text=True)); body = following.find('tbody')[0]
+                self.assertEqual(len([row for row in following.find('tr') if body in row.ancestors]),min(size,31-size))
+
     def install_catalog(self):
         test_registration.seed_admin_session(self)
         self.value = True

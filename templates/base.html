@@ -22,6 +22,7 @@
     <script src="{{ url_for('static', filename='js/user-ui.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/account-management.js') }}" defer></script>
     {% endif %}
+    {% include 'partials/workspace_ui.html' %}
 </head>
 <body class="public-site{% if catalog_preview %} catalog-preview{% endif %}"{% if not catalog_preview %} data-user-avatar-url="{{ url_for('features.user_avatar') }}"{% endif %}{% if ui_scope %} data-ui-scope="{{ ui_scope }}"{% endif %} data-personalized="{{ 'true' if website_settings.personalized else 'false' }}" data-location-enabled="{{ 'true' if website_settings.location_enabled else 'false' }}" data-authenticated="{{ 'true' if ui_authenticated or trip_state == 'ready' else 'false' }}">
     <a class="skip-link" href="#main-content">Skip to content</a>

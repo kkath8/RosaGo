@@ -1,7 +1,7 @@
 {% extends 'admin/base.html' %}
 {% block title %}Destinations - RosaGo Admin{% endblock %}
 {% block content %}
-<div class="dashboard-heading"><div><p class="eyebrow">Administration</p><h1>Destinations</h1><p class="intro">Manage the destination information used across RosaGo.</p></div><a class="button" href="{{ url_for('admin.new_place') }}">+ Add Destination</a></div>
+<div class="dashboard-heading"><div><p class="eyebrow">Administration</p><h1>Destination Management</h1><p class="intro">Manage the destination information used across RosaGo.</p></div><a class="button" href="{{ url_for('admin.new_place') }}">+ Add Destination</a></div>
 {% if catalog is not none %}
 <section class="catalog-summary" aria-label="Complete catalog summary"><span class="scope-label">All catalog records</span>{% for key,label in [('published','Published'),('draft','Draft'),('archived','Archived'),('local','Local'),('common','Common'),('missing_coordinates','Missing coordinates')] %}<div><span>{{ label }}</span><strong>{{ catalog.summary[key] if catalog.summary[key] is not none else 'Unavailable' }}</strong></div>{% endfor %}</section>
 {% endif %}
@@ -20,13 +20,13 @@
 {% if catalog is none %}<p class="notice" role="alert">Destination information is unavailable. Please try again later.</p>
 {% elif not catalog.rows %}<section class="panel empty-state"><h2>{{ 'No destinations match these filters.' if catalog.total else 'Your catalog is empty' }}</h2><p>No destinations on this page. Adjust your filters or return to the first page.</p><a class="secondary-button" href="{{ url_for('admin.places',status='',sort=filters.sort,page_size=filters.page_size) }}">View All Destinations</a></section>
 {% else %}
-<div class="catalog-results-heading"><h2>Destination Management</h2><p class="muted">{{ offset + 1 }}&ndash;{{ offset + catalog.rows|length }} of {{ catalog.matching }} matching - {{ catalog.total }} total</p></div>
+<div class="catalog-results-heading"><h2 class="visually-hidden">Destination Management</h2><p class="muted">{{ offset + 1 }}&ndash;{{ offset + catalog.rows|length }} of {{ catalog.matching }} matching - {{ catalog.total }} total</p></div>
 <div class="panel catalog-table-panel"><div class="admin-table-scroll" tabindex="0" role="region" aria-label="Destination Management table"><table class="admin-table catalog-table"><caption class="visually-hidden">Destination catalog management list</caption><thead><tr><th scope="col">Destination</th><th scope="col">RosaGo Category</th><th scope="col">Tourism Type</th><th scope="col">Tourism Category</th><th scope="col">Coordinates</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody>
 {% for place in catalog.rows %}<tr><th scope="row" data-label="Destination"><strong>{{ place.name }}</strong><span class="catalog-address">{{ place.address }}</span>{% if place.is_test_record %}<span class="catalog-test-label">Development/test record - not an official or endorsed tourism listing.</span>{% endif %}</th>
 <td data-label="RosaGo Category">{{ category_labels[place.category] }}</td>
 <td data-label="Tourism Type">{% if place.tourism_metadata_available %}<span class="tourism-badge tourism-{{ place.tourism_type|lower if place.tourism_type else 'unset' }}">{{ place.tourism_type or 'Not classified' }}</span>{% else %}<span class="muted">Unavailable</span>{% endif %}</td>
 <td data-label="Tourism Category">{{ (place.tourism_category or 'Not supplied') if place.tourism_metadata_available else 'Unavailable' }}</td>
-<td data-label="Coordinates"><span class="coordinate-state {{ 'coordinate-present' if place.has_coordinates else 'coordinate-missing' }}">{{ 'Available' if place.has_coordinates else 'Missing' }}</span></td>
+<td data-label="Coordinates"><span class="coordinate-state {{ 'coordinate-present' if place.has_coordinates else 'coordinate-missing' }}">{{ 'Available' if place.has_coordinates else 'Missing' }}</span>{% if place.has_coordinates %}<span class="catalog-coordinate-pair"><span><span class="visually-hidden">Latitude </span>{{ place.latitude }},</span> <span><span class="visually-hidden">Longitude </span>{{ place.longitude }}</span></span>{% endif %}</td>
 <td data-label="Status"><span class="status-badge status-{{ place.status }}">{{ place.status|title }}</span></td>
 <td data-label="Actions"><div class="catalog-row-actions"><a class="secondary-button" href="{{ url_for('admin.place_detail', slug=place.slug) }}" aria-label="View Destination: {{ place.name }}">View Destination</a><a class="secondary-button" href="{{ url_for('admin.edit_place', slug=place.slug) }}" aria-label="Edit Destination: {{ place.name }}">Edit Destination</a></div></td></tr>{% endfor %}
 </tbody></table></div></div>{% endif %}

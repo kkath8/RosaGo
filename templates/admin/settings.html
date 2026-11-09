@@ -6,13 +6,13 @@
 {% block content %}
 <div class="admin-settings-page">
 <header class="utility-heading"><p class="eyebrow">Administration</p><h1>Admin Settings</h1><p class="intro">Workspace preferences for this browser, separate from your account.</p></header>
+<p class="section-note admin-preferences-scope">Preferences stay in this browser. Theme applies immediately; save other changes below.</p>
 <form data-admin-preferences-form>
 <div class="admin-settings-grid">
 <section class="panel admin-settings-card settings-appearance" aria-labelledby="appearance-heading">
 <div class="admin-settings-heading">{{ icon('Settings') }}<h2 id="appearance-heading">Appearance &amp; Display</h2></div>
-<p class="section-note">Theme changes apply immediately across RosaGo in this browser.</p>
 <div class="admin-theme-controls settings-theme-controls" role="group" aria-label="Appearance"><button type="button" data-set-theme="light" aria-pressed="true">Light</button><button type="button" data-set-theme="dark" aria-pressed="false">Dark</button></div>
-<p class="settings-theme-status" data-theme-status role="status">Theme changes apply immediately and are saved on this device.</p>
+<p class="settings-theme-status" data-theme-status role="status">Choose Light or Dark to apply it across RosaGo.</p>
 <fieldset class="admin-density-options"><legend>Table density</legend><div class="admin-segmented"><label><input type="radio" name="density" value="comfortable" checked><span>Comfortable</span></label><label><input type="radio" name="density" value="compact"><span>Compact</span></label></div></fieldset>
 {{ switch('reduceMotion','Reduce animations','Limit workspace motion. Your operating system preference is always respected.') }}
 </section>
@@ -33,7 +33,7 @@
 <section class="panel admin-settings-card" aria-labelledby="dates-heading">
 <div class="admin-settings-heading">{{ icon('Planner') }}<h2 id="dates-heading">Date &amp; Time</h2></div>
 {{ select('timeFormat','Time format',[('12','12-hour'),('24','24-hour')]) }}
-{{ select('dateFormat','Date format',[('dmy','Day Month Year · 08 Nov 2026'),('mdy','Month Day, Year · Nov 08, 2026'),('iso','Year-Month-Day · 2026-11-08')]) }}
+{{ select('dateFormat','Date format',[('dmy','Day Month Year'),('mdy','Month Day, Year'),('iso','Year-Month-Day')]) }}
 <p class="section-note">Admin record dates use Asia/Manila. Stored timestamps and original audit details stay unchanged.</p>
 </section>
 </div>

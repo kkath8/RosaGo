@@ -93,6 +93,23 @@ class EmailVerificationTests(unittest.TestCase):
         self.supabase.auth.verify_otp.assert_not_called()
         self.assertNotIn('123456', repr(self.store.get(self.handle)))
 
+    def test_admin_navigation_survives_resend_and_verification_without_admin_authority(self):
+        self.begin()
+        self.now += 61
+        resent = self.client.post('/verify-email/resend?workspace=admin',
+            data={'csrf_token': self.csrf}, headers=ORIGIN)
+        self.assertEqual(resent.location, '/verify-email?workspace=admin')
+        verified = self.client.post('/verify-email?workspace=admin',
+            data={'csrf_token': self.csrf, 'code': '123456'}, headers=ORIGIN)
+        self.assertEqual(verified.location, '/verify-email?workspace=admin')
+        page = self.client.get(verified.location)
+        self.assertIn(b'Email verified', page.data)
+        self.assertIn(b'href="/admin/login"', page.data)
+        self.assertIn(b'separate project owner approval', page.data)
+        self.assertEqual(self.client.get('/admin').status_code, 302)
+        with self.client.session_transaction() as current:
+            self.assertEqual(set(current), {'pending_email_verification'})
+
     def test_invalid_and_expired_codes_are_safe_and_not_repopulated(self):
         self.begin()
         for error in [AuthApiError('sensitive-code',403,'otp_expired'),
@@ -108,6 +125,33 @@ class EmailVerificationTests(unittest.TestCase):
         self.provider.verify.side_effect = None
         self.provider.verify.return_value = False
         self.assertEqual(self.verify().status_code,400)
+
+    def test_admin_context_survives_queryless_verification_and_resend(self):
+        created = test_registration.post_public_form(self, '/register?workspace=admin', data=self.valid)
+        self.assertEqual(created.status_code, 303)
+        with self.client.session_transaction() as current:
+            handle = current['pending_email_verification']
+            self.assertEqual(current['pending_email_workspace'], 'admin')
+        csrf = self.store.get(handle).csrf
+        page = self.client.get('/verify-email')
+        self.assertIn(b'href="/admin/login"', page.data)
+        self.assertIn(b'href="/register?workspace=admin"', page.data)
+        self.now += 61
+        resent = self.client.post('/verify-email/resend', data={'csrf_token': csrf}, headers=ORIGIN)
+        self.assertEqual(resent.location, '/verify-email?workspace=admin')
+        verified = self.client.post('/verify-email', data={'csrf_token': csrf, 'code': '123456'}, headers=ORIGIN)
+        self.assertEqual(verified.location, '/verify-email?workspace=admin')
+        self.assertIn(b'href="/admin/login"', self.client.get('/verify-email').data)
+        self.assertEqual(self.client.get('/admin').status_code, 302)
+
+    def test_user_signup_clears_admin_display_context_and_expiry_drops_it(self):
+        test_registration.post_public_form(self, '/register?workspace=admin', data=self.valid)
+        self.now += 1801
+        self.assertNotIn(b'href="/admin/login"', self.client.get('/verify-email').data)
+        test_registration.post_public_form(self, '/register', data=self.valid)
+        with self.client.session_transaction() as current:
+            self.assertNotIn('pending_email_workspace', current)
+        self.assertIn(b'href="/login"', self.client.get('/verify-email').data)
 
     def test_verify_throttle_and_numeric_validation(self):
         self.begin()

@@ -2049,12 +2049,33 @@ def auth_status():
     return response
 
 
+def _admin_verification_context():
+    values = request.args.getlist('workspace')
+    if values:
+        return values == ['admin']
+    # Display-only context, bound to an existing pending verification record.
+    return (session.get('pending_email_workspace') == 'admin'
+            and current_app.extensions['rosago_email_pending'].get(
+                session.get('pending_email_verification')) is not None)
+
+
+def _verification_page_url():
+    # Presentation context only: fixed internal destinations, never role metadata.
+    if _admin_verification_context():
+        return url_for('verify_email', workspace='admin')
+    return url_for('verify_email')
+
+
 def registration_pending_response(email):
     handle = current_app.extensions['rosago_email_pending'].create(email)
     if handle is None:
         return 'Verification is temporarily unavailable. Please try again later.', 503
     session['pending_email_verification'] = handle
-    return redirect(url_for('verify_email'), code=303)
+    if request.args.getlist('workspace') == ['admin']:
+        session['pending_email_workspace'] = 'admin'
+    else:
+        session.pop('pending_email_workspace', None)
+    return redirect(_verification_page_url(), code=303)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -2151,7 +2172,7 @@ def _email_verification_page(*, message='', status=200, retry_after=None):
     response = current_app.make_response((render_template('auth/verify_email.html',
         pending=record is not None, verified=bool(record and record.verified),
         csrf=record.csrf if record else '', cooldown=store.seconds(record) if record else 0,
-        message=message), status))
+        message=message, admin_registration=_admin_verification_context()), status))
     if retry_after:
         response.headers['Retry-After'] = str(retry_after)
     return response
@@ -2182,7 +2203,7 @@ def _email_verification_action(action):
     if request.files or set(request.form) != fields or any(len(request.form.getlist(f)) != 1 for f in fields):
         return _email_verification_page(message='Invalid verification form. Please reload and try again.', status=400)
     if record.verified:
-        return redirect(url_for('verify_email'), code=303)
+        return redirect(_verification_page_url(), code=303)
     if action == 'verify' and not re.fullmatch(r'[0-9]{6,10}', request.form['code']):
         return _email_verification_page(message='Enter the numeric verification code from your email.', status=400)
     reserved, wait = store.reserve(handle, action)
@@ -2216,7 +2237,7 @@ def _email_verification_action(action):
         return _email_verification_page(message=error_message, status=error_status, retry_after=60 if limited else None)
     if action == 'verify' and not verified:
         return _email_verification_page(message='The verification code is invalid or expired. Check the code or request a new one.', status=400)
-    return redirect(url_for('verify_email'), code=303)
+    return redirect(_verification_page_url(), code=303)
 
 
 @app.route('/terms')

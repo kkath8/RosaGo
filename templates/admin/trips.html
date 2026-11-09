@@ -2,7 +2,7 @@
 {% block title %}Trips &amp; Itineraries | RosaGo Admin{% endblock %}
 {% block content %}
 <div class="page-heading"><div><p class="eyebrow">Administration</p><h1>Trips &amp; Itineraries</h1><p class="intro">Aggregate oversight based on saved trips.</p></div></div>
-{% if data is none %}<p class="notice" role="status">Trip oversight is unavailable. The restricted aggregate backend capability requires deployment verification.</p>
+{% if data is none %}<p class="notice" role="status">Trip information is temporarily unavailable. Please try again later.</p>
 {% else %}
 <section class="metric-grid">{% for key,label in [('trips_total','Saved trips'),('upcoming_trips','Upcoming trips'),('destinations_in_trips','Destinations in saved trips')] %}<article class="metric"><h2>{{ label }}</h2><p class="metric-value">{{ data[key] }}</p></article>{% endfor %}</section>
 {% if data.trips_total == 0 %}<p class="panel empty-state">No saved trips are available.</p>{% endif %}

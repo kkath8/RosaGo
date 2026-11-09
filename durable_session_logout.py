@@ -9,10 +9,12 @@ from session_realms import SessionStorageUnavailable
 
 
 class DurableLogout:
-    def __init__(self, realms, *, issuer, sign_out, session_check):
-        if set(realms)!={'user','admin'} or not callable(sign_out) or not callable(session_check):
+    def __init__(self, realms, *, issuer, sign_out, session_check, revocation_check=None):
+        if (set(realms)!={'user','admin'} or not callable(sign_out) or not callable(session_check)
+                or (revocation_check is not None and not callable(revocation_check))):
             raise ValueError('Invalid logout dependencies.')
         self.realms, self.issuer, self.sign_out, self.session_check=realms,issuer,sign_out,session_check
+        self.revocation_check=revocation_check
 
     def __call__(self, realm, web_handle):
         backend=self.realms[realm]
@@ -54,6 +56,13 @@ class DurableLogout:
             except Exception: acknowledged=False
         else:
             try: acknowledged=self.session_check(record,self.issuer,realm) is False
+            except Exception: acknowledged=False
+        # Provider-row absence is not independent revocation proof: an Auth
+        # restore can recreate that row. Unknown/expired/unenrolled authority
+        # state cannot stand in for the permanent tombstone either. This check
+        # is read-only and never retries the claimed provider logout operation.
+        if acknowledged and self.revocation_check is not None:
+            try: acknowledged=self.revocation_check(record,self.issuer,realm) is True
             except Exception: acknowledged=False
         if not acknowledged: return False
         snap=backend.snapshot('logout',web_handle)

@@ -7,7 +7,7 @@
     --admin-primary:var(--site-red);
     --admin-primary-hover:var(--site-deep-red);
     --admin-primary-active:var(--site-deep-red);
-    --admin-primary-soft:#faf0ed; /* auth.css .password-toggle:hover */
+    --admin-primary-soft:var(--site-tint);
     --admin-secondary:var(--site-red);
     --admin-accent:var(--site-gold);
     --admin-accent-soft:var(--site-tint);
@@ -16,18 +16,18 @@
     --admin-surface-muted:var(--site-raised,var(--site-paper));
     --admin-input-bg:var(--admin-surface);
     --admin-input-border:var(--site-border); /* auth.css .field input */
-    --admin-input-hover:#aa9788; /* auth.css .field input:hover */
+    --admin-input-hover:var(--site-red);
     --admin-text:var(--site-ink);
     --admin-text-muted:var(--site-muted);
-    --admin-border:#d8cbb5; /* buttons.css .mini-button.button-tertiary */
+    --admin-border:var(--site-border);
     --admin-card-border:var(--admin-border);
     --admin-border-strong:var(--admin-border);
     --admin-logo-accent:#d6a21c; /* prototype-components.css wordmark */
     --admin-selected:var(--admin-primary); /* User selected category/filter: white on red */
-    --admin-success:#24563c; /* auth.css success text */
-    --admin-success-soft:#f1f8f3; /* auth.css success surface */
-    --admin-warning:#745027; /* auth.css warning/note text */
-    --admin-warning-soft:var(--site-tint);
+    --admin-success:#166534;
+    --admin-success-soft:#ecfdf3;
+    --admin-warning:#854d0e;
+    --admin-warning-soft:#fff8db;
     --admin-danger:var(--site-deep-red);
     --admin-danger-soft:var(--admin-primary-soft);
     --admin-neutral:var(--site-muted);
@@ -44,9 +44,9 @@
     --admin-shadow-color:color-mix(in srgb,var(--site-deep-red) 8%,transparent);
     --admin-card-shadow:var(--site-shadow);
     --admin-popover-shadow:var(--site-shadow);
-    --admin-button-shadow:0 1px 2px #2b110b22; /* auth.css submit-button */
+    --admin-button-shadow:0 1px 2px #11111109;
     --admin-radius:16px;
-    --admin-control-radius:12px;
+    --admin-control-radius:10px;
     --admin-pill-radius:999px;
 }
 html[data-theme=dark] .admin-site {
@@ -63,8 +63,9 @@ html[data-theme=dark] .admin-site {
     --admin-logo-accent:var(--site-gold);
     --admin-selected:var(--admin-primary);
     --admin-success:var(--theme-success);
-    --admin-success-soft:var(--site-tint);
+    --admin-success-soft:#173627;
     --admin-warning:var(--site-gold);
+    --admin-warning-soft:#382c15;
     --admin-danger:var(--theme-error);
     --admin-link:var(--site-red);
     --admin-link-hover:var(--site-deep-red);
@@ -343,8 +344,6 @@ html[data-theme=dark] .admin-dashboard {
    .forgot-password, .submit-button and .login-prompt. Scoped to Admin Login
    because importing auth.css would also apply its global page/form rules. */
 .admin-login-main { min-height:100vh; min-height:100dvh; min-width:0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:20px; padding:24px 32px; }
-.admin-login-theme { display:flex; align-items:center; justify-content:center; gap:3px; color:var(--admin-text-muted); font:400 9px/1.5 var(--site-sans); }
-.admin-login-theme>span { margin-right:4px; }
 .admin-login-card { flex:none; width:100%; max-width:480px; padding:16px; border:1.5px solid var(--admin-card-border); border-top:3px solid var(--admin-primary); border-radius:var(--admin-radius); background:var(--admin-surface); box-shadow:var(--admin-card-shadow); }
 .admin-login-wordmark { display:flex; align-items:center; gap:10px; margin:0; }
 .admin-login-page .admin-login-wordmark .wordmark { font-size:28px; }
@@ -555,8 +554,8 @@ html[data-theme=dark] .admin-site input:autofill { box-shadow:0 0 0 1000px var(-
 }
 .admin-site .admin-table thead th {
     color:var(--admin-text);
-    background:color-mix(in srgb,var(--admin-accent) 9%,var(--admin-surface-muted));
-    font-size:13px;
+    background:var(--admin-surface-muted);
+    font-size:14px;
     font-weight:600;
     vertical-align:middle;
 }
@@ -574,7 +573,7 @@ html[data-theme=dark] .admin-site input:autofill { box-shadow:0 0 0 1000px var(-
 .admin-site .admin-table.catalog-table th:last-child { min-width:190px; }
 .admin-site .admin-table.admin-user-table { min-width:760px; }
 .admin-site .admin-table.insight-destinations { min-width:640px; }
-.admin-site .admin-table.admin-audit-table { min-width:1060px; table-layout:fixed; }
+.admin-site .admin-table.admin-audit-table { min-width:980px; table-layout:auto; }
 .admin-site .admin-audit-table thead th:nth-child(1) { width:15%; }
 .admin-site .admin-audit-table thead th:nth-child(2) { width:22%; }
 .admin-site .admin-audit-table thead th:nth-child(3) { width:14%; }
@@ -631,19 +630,19 @@ html[data-theme=dark] .admin-site .admin-audit-action-archive { color:#d3b4f6; b
 /* One control language for every Admin page, including standalone login.
    Existing classes keep their actions; local state variables define variants. */
 .admin-site :is(button,.button,.secondary-button,.admin-ui-button,.status-filters a,:where(.admin-header) summary) {
-    --control-bg:var(--admin-surface-muted);
-    --control-ink:var(--admin-link);
+    --control-bg:var(--admin-surface);
+    --control-ink:var(--admin-text);
     --control-border:var(--admin-border);
     --control-hover:var(--admin-primary-soft);
     display:inline-flex;
     align-items:center;
     justify-content:center;
     gap:8px;
-    min-height:44px;
+    min-height:40px;
     max-width:100%;
-    padding:10px 16px;
+    padding:8px 13px;
     border:1px solid var(--control-border);
-    border-radius:var(--admin-pill-radius);
+    border-radius:var(--admin-control-radius);
     background:var(--control-bg);
     color:var(--control-ink);
     box-shadow:var(--admin-button-shadow);
@@ -697,7 +696,6 @@ html[data-theme=dark] .admin-site .admin-audit-action-archive { color:#d3b4f6; b
 }
 .admin-site :is(button,.button,.secondary-button,.admin-ui-button)[hidden] { display:none; }
 .admin-site .admin-password-toggle { min-height:0; padding:0 8px; border-radius:8px; box-shadow:none; }
-.admin-site .admin-login-theme button { min-height:44px; padding:8px 12px; }
 .admin-site .admin-header :is(button,summary) { min-width:44px; padding:8px 12px; white-space:nowrap; }
 .admin-site .admin-header .ui-icon { flex:none; }
 .admin-site .admin-header .admin-appearance { width:44px; height:44px; padding:0; border-radius:50%; }

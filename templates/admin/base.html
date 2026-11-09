@@ -19,17 +19,15 @@
 <body class="admin-site admin-shell">
 <a class="skip-link" href="#main-content">Skip to content</a>
 <aside class="admin-sidebar" aria-label="Administration sidebar">
-    <div class="admin-brand"><a class="wordmark" href="{{ url_for('admin.index') }}" aria-label="RosaGo Admin"><span>Rosa</span><span>Go</span></a><span class="admin-badge">ADMIN</span></div>
-    <p class="admin-nav-label" id="admin-primary-label">Workspace</p>
+    <p class="visually-hidden" id="admin-primary-label">Workspace</p>
     <nav class="admin-desktop-nav" aria-label="Admin navigation" aria-describedby="admin-primary-label">{{ admin_links() }}</nav>
     <div class="admin-sidebar-bottom">
-        <p class="admin-nav-label" id="admin-utility-label">Administration</p>
+        <p class="visually-hidden" id="admin-utility-label">Administration</p>
         <nav class="admin-secondary-nav" aria-label="Admin utilities" aria-describedby="admin-utility-label">{{ admin_utility_links() }}</nav>
-        <p class="admin-sidebar-caption">RosaGo Administration<span>Santa Rosa, Laguna</span></p>
     </div>
 </aside>
 <header class="admin-header">
-    <div class="admin-topbar-title"><span class="admin-console-mark" aria-hidden="true">{{ icon('Dashboard') }}</span><span>Administration workspace</span></div>
+    <div class="admin-brand"><a class="wordmark" href="{{ url_for('admin.index') }}" aria-label="RosaGo Admin"><span>Rosa</span><span>Go</span></a></div>
 
     <div class="admin-header-actions">
         <button class="admin-appearance" type="button" data-toggle-theme aria-label="Dark mode" aria-pressed="false" title="Switch to Dark Mode">
@@ -45,7 +43,7 @@
         <details class="admin-mobile-menu">
             <summary>Menu <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 6h16 M4 12h16 M4 18h16"/></svg></summary>
             <div class="admin-mobile-panel">
-                <div class="admin-brand"><a class="wordmark" href="{{ url_for('admin.index') }}" aria-label="RosaGo Admin"><span>Rosa</span><span>Go</span></a><span class="admin-badge">ADMIN</span></div>
+                <div class="admin-brand"><a class="wordmark" href="{{ url_for('admin.index') }}" aria-label="RosaGo Admin"><span>Rosa</span><span>Go</span></a></div>
                 <nav aria-label="Mobile Admin navigation">{{ admin_links() }}</nav>
                 <nav class="admin-secondary-nav" aria-label="Mobile Admin utilities">{{ admin_utility_links() }}</nav>
             </div>

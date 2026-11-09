@@ -123,6 +123,44 @@ class RegistrationTests(unittest.TestCase):
         self.assertEqual(self.client.get("/auth/callback").status_code, 200)
         self.supabase.auth.sign_up.assert_not_called()
 
+    def test_admin_entry_keeps_navigation_context_after_validation(self):
+        path = '/register?workspace=admin'
+        for response in (self.client.get(path), post_public_form(self, path, data={})):
+            self.assertIn(b'Create an Admin account', response.data)
+            self.assertIn(b'action="/register?workspace=admin"', response.data)
+            self.assertIn(b'href="/admin/login">Admin log in</a>', response.data)
+            self.assertIn(b'ordinary User permissions', response.data)
+        self.supabase.auth.sign_up.assert_not_called()
+        regular = self.client.get('/register')
+        self.assertIn(b'href="/login">Log in</a>', regular.data)
+        self.assertNotIn(b'Create an Admin account', regular.data)
+
+    def test_admin_registration_context_never_enters_signup_metadata(self):
+        response = post_public_form(self, '/register?workspace=admin', data=self.valid | {
+            'role': 'admin', 'is_admin': 'true'})
+        self.assertEqual(response.status_code, 303)
+        payload = self.supabase.auth.sign_up.call_args.args[0]
+        self.assertEqual(payload['options']['data'], {'first_name': 'Ana', 'last_name': 'Cruz'})
+        self.assertEqual(set(payload), {'email', 'password', 'options'})
+        self.assertEqual(response.location, '/verify-email?workspace=admin')
+        pending = self.client.get(response.location)
+        self.assertIn(b'href="/admin/login"', pending.data)
+        self.assertIn(b'action="/verify-email?workspace=admin"', pending.data)
+        self.assertIn(b'action="/verify-email/resend?workspace=admin"', pending.data)
+
+    def test_duplicate_and_new_signup_share_neutral_verification_guidance(self):
+        path = '/register?workspace=admin'
+        for outcome in (None, AuthApiError('private-provider-detail', 422, 'user_already_exists')):
+            self.supabase.auth.sign_up.side_effect = outcome
+            response = post_public_form(self, path, data=self.valid)
+            self.assertEqual(response.status_code, 303)
+            page = self.client.get(response.location)
+            self.assertIn(b'If this address needs verification', page.data)
+            self.assertIn(b'Sign in with your existing account', page.data)
+            self.assertIn(b'href="/admin/login"', page.data)
+            self.assertNotIn(b'We sent a verification code', page.data)
+            self.assertNotIn(b'private-provider-detail', page.data)
+
     def test_invalid_input_never_calls_supabase(self):
         cases = [{field: ""} for field in self.valid]
         cases += [

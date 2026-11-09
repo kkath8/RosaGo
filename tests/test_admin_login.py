@@ -32,6 +32,42 @@ class AdminLoginTests(unittest.TestCase):
         return VerifiedLoginCredentials('user-123', 'admin@example.invalid', 'fixture-access',
             'fixture-refresh', time.time() + 3600, 'fixture-session')
 
+    def test_restart_then_fresh_login_then_stale_repost_is_403_303_403(self):
+        from session_realms import AdminWebStore, LoginChallenges
+        data=self.payload()
+        old_cookie=self.client.get_cookie('rosago_admin_session_dev',path='/admin').value
+        # A reloader/restart discards both process-local browser and challenge state.
+        self.app.session_interface.store=AdminWebStore()
+        self.app.extensions['rosago_login_challenges']=LoginChallenges()
+        self.value=True
+        with self.assertLogs(self.app.logger,level='INFO') as logs, \
+                patch.object(self.dependencies.adapters,'password_login',return_value=self.credentials()) as login:
+            rejected=self.client.post('/admin/login',data=data,headers=ORIGIN)
+            self.protected(rejected,403);login.assert_not_called()
+            fresh=data.copy()
+            fresh['csrf_token']=Document(rejected.get_data(as_text=True)).find('input',name='csrf_token')[0].attrs['value']
+            accepted=self.client.post('/admin/login',data=fresh,headers=ORIGIN)
+            self.protected(accepted,303);self.assertEqual(accepted.location,'/admin')
+            replay=self.client.post('/admin/login',data=fresh,headers=ORIGIN)
+            self.protected(replay,403);login.assert_called_once()
+        text='\n'.join(logs.output)
+        self.assertIn('reason=csrf_session_missing',text)
+        self.assertIn('reason=membership_verified',text)
+        for secret in (*data.values(),fresh['csrf_token'],old_cookie,'fixture-access','fixture-refresh','fixture-session'):
+            self.assertNotIn(secret,text)
+        self.protected(self.client.get('/admin'),200)  # Rejected replay does not destroy legitimate authority.
+
+    def test_consumed_challenge_and_host_origin_errors_are_distinct_and_never_authenticate(self):
+        data=self.payload()
+        self.assertTrue(self.app.extensions['rosago_login_challenges'].valid('admin',data['csrf_token'],consume=True))
+        with self.assertLogs(self.app.logger,level='WARNING') as logs, \
+                patch.object(self.dependencies.adapters,'password_login') as login:
+            self.protected(self.client.post('/admin/login',data=data,headers=ORIGIN),403)
+            self.protected(self.client.post('/admin/login',data=data,headers={'Origin':'http://127.0.0.1:5000'}),403)
+            login.assert_not_called()
+        self.assertIn('reason=challenge_missing_expired_or_consumed','\n'.join(logs.output))
+        self.assertIn('reason=origin_mismatch_or_missing','\n'.join(logs.output))
+
     def test_login_success_uses_admin_session_and_candidate_then_fresh_membership(self):
         data = self.payload()
         self.value = True
