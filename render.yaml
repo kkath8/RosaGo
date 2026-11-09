@@ -13,6 +13,44 @@ services:
         value: 3.13.18
       - key: ROSAGO_AUTH_MODE
         value: production
+      - key: ROSAGO_SESSION_BACKEND
+        value: independent-postgres
+      - key: ROSAGO_PROXY_HOPS
+        value: "1"
+      # Each field below is independently provisioned/reviewed. Empty or invalid
+      # values refuse startup. Never paste test signing keys or an operator token.
+      - key: ROSAGO_PROXY_HEADERS_SANITIZED
+        sync: false
+      - key: ROSAGO_SESSION_DATABASE_URL
+        sync: false
+      - key: ROSAGO_SESSION_KEYRING
+        sync: false
+      - key: ROSAGO_SESSION_NAMESPACE
+        sync: false
+      - key: ROSAGO_USER_SESSION_EPOCH
+        sync: false
+      - key: ROSAGO_ADMIN_SESSION_EPOCH
+        sync: false
+      - key: ROSAGO_AUTHORITY_ORIGIN
+        sync: false
+      - key: ROSAGO_AUTHORITY_ID
+        sync: false
+      - key: ROSAGO_AUTHORITY_INCARNATION
+        sync: false
+      - key: ROSAGO_AUTHORITY_MIN_SEQUENCE
+        sync: false
+      - key: ROSAGO_AUTHORITY_CLIENT_TOKEN
+        sync: false
+      - key: ROSAGO_PROVIDER_ENROLL_TOKEN
+        sync: false
+      - key: ROSAGO_PROVIDER_CHECK_TOKEN
+        sync: false
+      - key: ROSAGO_PROVIDER_REVOKE_TOKEN
+        sync: false
+      - key: ROSAGO_SECURITY_RELEASE_VERIFY_KEY
+        sync: false
+      - key: ROSAGO_SECURITY_RELEASE_JWT
+        sync: false
       - key: ROSAGO_PUBLIC_ORIGIN
         sync: false
       - key: FLASK_SECRET_KEY
