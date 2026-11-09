@@ -4,13 +4,21 @@
     if (!container) return;
     const failure = document.getElementById("map-failure");
     const tileFailure = document.getElementById("map-tile-failure");
-    const categories = Object.freeze({
+    let categories = Object.freeze({
         attraction: "Attractions", dining: "Dining", shopping: "Shopping",
         accommodation: "Accommodation", nature: "Nature", heritage: "Heritage", industrial: "Industrial Tourism",
     });
     const fields = ["name", "detail_url", "category", "address", "latitude", "longitude"];
     let map;
     try {
+        const registry = document.getElementById('category-registry-data');
+        if (registry) {
+            const labels = JSON.parse(registry.textContent);
+            if (!labels || typeof labels !== 'object' || Array.isArray(labels) ||
+                Object.entries(labels).some(([key, value]) => !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(key) ||
+                    typeof value !== 'string' || !value.trim() || value.length > 250)) throw new Error('Invalid category labels');
+            categories = Object.freeze(labels);
+        }
         const data = document.getElementById("map-data");
         if (!data || !window.L) throw new Error("Map resources unavailable");
         const markers = JSON.parse(data.textContent);

@@ -1,0 +1,6 @@
+<header class="site-header" aria-label="Local preview navigation"><div class="header-utilities">
+<a class="site-brand" href="{{ url_for('places_list') }}">Rosa<span>Go</span></a>
+<nav class="site-nav" aria-label="Preview pages">{% if catalog_preview_integrated %}<a href="{{ url_for('index') }}">User dashboard</a>{% endif %}<a href="{{ url_for('places_list') }}">Explore preview</a><a href="{{ url_for(preview_planner_endpoint or 'planner') }}">Planner simulation</a>{% if catalog_preview_integrated %}<a href="{{ url_for('admin.index') }}">Admin</a>{% endif %}</nav>
+<button class="secondary-button" type="button" data-toggle-theme aria-pressed="false" aria-label="Toggle dark appearance">Appearance</button>
+</div></header>
+<aside class="preview-banner" aria-label="Development preview notice"><strong>Local catalog preview — not published</strong><p>All 98 destinations, including Draft and unresolved records. Visual review only; nothing is saved.</p></aside>

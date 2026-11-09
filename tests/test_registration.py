@@ -12,6 +12,12 @@ import socket
 from supabase_auth.errors import AuthApiError
 
 
+def post_public_form(test, path, **kwargs):
+    """Model the Origin header sent by normal same-origin browser form POSTs."""
+    kwargs.setdefault('headers', {'Origin': 'http://localhost'})
+    return test.client.post(path, **kwargs)
+
+
 def seed_normal_session(test, email='ana@example.com'):
     handle = test.app.extensions['rosago_normal_auth'].store.create(
         user_id='user-123', user_email=email, access_token='fixture-access',
@@ -20,6 +26,40 @@ def seed_normal_session(test, email='ana@example.com'):
     with test.client.session_transaction() as current:
         current['auth_session_id'] = handle
     return handle
+
+
+def seed_admin_session(test, email='ana@example.com'):
+    dependencies = test.app.extensions['rosago_admin_auth']
+    handle = dependencies.store.create(
+        user_id='user-123', user_email=email, access_token='fixture-access',
+        refresh_token='fixture-refresh', access_expires_at=time.time() + 3600,
+        session_id='fixture-admin-session')
+    with test.client.session_transaction(path='/admin') as current:
+        current['auth_session_id'] = handle
+    return handle
+
+
+def post_user_login(test, *, data, client=None, **kwargs):
+    client = client or test.client
+    token = test.app.extensions['rosago_login_challenges'].issue('user')
+    with client.session_transaction() as current:
+        current['user_login_csrf'] = token
+    form = data.copy()
+    form['csrf_token'] = token
+    return client.post('/login', data=form, headers={'Origin': 'http://localhost'}, **kwargs)
+
+
+def post_user_logout(test, *, client=None, **kwargs):
+    client = client or test.client
+    with client.session_transaction() as current:
+        handle = current.get('auth_session_id')
+        record = test.app.extensions['rosago_normal_auth'].store.resolve(handle)
+        if record:
+            token = record.csrf
+        else:
+            token = current.get('user_logout_csrf') or secrets.token_urlsafe(32)
+            current['user_logout_csrf'] = token
+    return client.post('/logout', data={'csrf_token': token}, headers={'Origin': 'http://localhost'}, **kwargs)
 
 
 class RegistrationTests(unittest.TestCase):
@@ -83,6 +123,44 @@ class RegistrationTests(unittest.TestCase):
         self.assertEqual(self.client.get("/auth/callback").status_code, 200)
         self.supabase.auth.sign_up.assert_not_called()
 
+    def test_admin_entry_keeps_navigation_context_after_validation(self):
+        path = '/register?workspace=admin'
+        for response in (self.client.get(path), post_public_form(self, path, data={})):
+            self.assertIn(b'Create an Admin account', response.data)
+            self.assertIn(b'action="/register?workspace=admin"', response.data)
+            self.assertIn(b'href="/admin/login">Admin log in</a>', response.data)
+            self.assertIn(b'ordinary User permissions', response.data)
+        self.supabase.auth.sign_up.assert_not_called()
+        regular = self.client.get('/register')
+        self.assertIn(b'href="/login">Log in</a>', regular.data)
+        self.assertNotIn(b'Create an Admin account', regular.data)
+
+    def test_admin_registration_context_never_enters_signup_metadata(self):
+        response = post_public_form(self, '/register?workspace=admin', data=self.valid | {
+            'role': 'admin', 'is_admin': 'true'})
+        self.assertEqual(response.status_code, 303)
+        payload = self.supabase.auth.sign_up.call_args.args[0]
+        self.assertEqual(payload['options']['data'], {'first_name': 'Ana', 'last_name': 'Cruz'})
+        self.assertEqual(set(payload), {'email', 'password', 'options'})
+        self.assertEqual(response.location, '/verify-email?workspace=admin')
+        pending = self.client.get(response.location)
+        self.assertIn(b'href="/admin/login"', pending.data)
+        self.assertIn(b'action="/verify-email?workspace=admin"', pending.data)
+        self.assertIn(b'action="/verify-email/resend?workspace=admin"', pending.data)
+
+    def test_duplicate_and_new_signup_share_neutral_verification_guidance(self):
+        path = '/register?workspace=admin'
+        for outcome in (None, AuthApiError('private-provider-detail', 422, 'user_already_exists')):
+            self.supabase.auth.sign_up.side_effect = outcome
+            response = post_public_form(self, path, data=self.valid)
+            self.assertEqual(response.status_code, 303)
+            page = self.client.get(response.location)
+            self.assertIn(b'If this address needs verification', page.data)
+            self.assertIn(b'Sign in with your existing account', page.data)
+            self.assertIn(b'href="/admin/login"', page.data)
+            self.assertNotIn(b'We sent a verification code', page.data)
+            self.assertNotIn(b'private-provider-detail', page.data)
+
     def test_invalid_input_never_calls_supabase(self):
         cases = [{field: ""} for field in self.valid]
         cases += [
@@ -95,13 +173,13 @@ class RegistrationTests(unittest.TestCase):
         ]
         for changes in cases:
             with self.subTest(changes=list(changes)):
-                response = self.client.post("/register", data=self.valid | changes)
+                response = post_public_form(self, "/register", data=self.valid | changes)
                 self.assertEqual(response.status_code, 400)
                 self.assertNotIn(self.valid["password"].encode(), response.data)
         self.supabase.auth.sign_up.assert_not_called()
 
     def test_signup_metadata_redirect_and_no_session(self):
-        response = self.client.post("/register", data=self.valid | {
+        response = post_public_form(self, "/register", data=self.valid | {
             "role": "admin", "is_admin": "true", "first_name": " Ana ",
             "email_redirect_to": "https://example.com/untrusted",
         })
@@ -123,7 +201,6 @@ class RegistrationTests(unittest.TestCase):
 
     def test_errors_are_safe_and_passwords_are_not_repopulated(self):
         cases = [
-            (AuthApiError("sensitive-provider-detail", 422, "user_already_exists"), 400, b"already exists"),
             (AuthApiError("sensitive-provider-detail", 422, "weak_password"), 400, b"stronger password"),
             (AuthApiError("sensitive-provider-detail", 429, "over_email_send_rate_limit"), 429, b"Please wait"),
             (AuthApiError("sensitive-provider-detail", 500, "unexpected_failure"), 400, b"try again later"),
@@ -132,7 +209,7 @@ class RegistrationTests(unittest.TestCase):
         for error, status, message in cases:
             with self.subTest(error=type(error).__name__, status=status):
                 self.supabase.auth.sign_up.side_effect = error
-                response = self.client.post("/register", data=self.valid)
+                response = post_public_form(self, "/register", data=self.valid)
                 self.assertEqual(response.status_code, status)
                 self.assertIn(message, response.data)
                 self.assertNotIn(b"sensitive-provider-detail", response.data)
@@ -141,7 +218,7 @@ class RegistrationTests(unittest.TestCase):
                 self.assertFalse(response.headers.getlist("Set-Cookie"))
 
     def test_repopulated_values_are_escaped(self):
-        response = self.client.post("/register", data=self.valid | {
+        response = post_public_form(self, "/register", data=self.valid | {
             "first_name": '<script>alert("test")</script>', "terms": "",
         })
         self.assertNotIn(b'<script>alert("test")</script>', response.data)

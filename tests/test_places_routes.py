@@ -296,13 +296,18 @@ class PlacesRouteTests(unittest.TestCase):
         self.assertEqual([n.attrs['href'] for n in page.find('a') if n.text == 'Add to Trip'],
                          ['/user/trips/add-place/synthetic-place'])
         self.assertTrue(page.find('a', href='/places', **{'class': 'secondary-button back-link'}))
+        self.assertFalse(page.find('nav', **{'aria-label': 'Breadcrumb'}))
+        navigation = page.find('nav', **{'aria-label': 'Destination navigation'})[0]
+        self.assertEqual([(link.text, link.attrs['href']) for link in page.find('a')
+            if navigation in link.ancestors], [('Back to Explore', '/places'), ('Dashboard', '/')])
         for unsupported in ('Entrance cost', 'Good for'):
             self.assertNotIn(unsupported, body)
         for category in CATEGORIES:
             self.service.get_published_by_slug.return_value = replace(self.place, category=category)
             page = Document(self.get('/places/synthetic-place').get_data(as_text=True))
-            self.assertEqual(len([n for n in page.find('svg', **{'aria-hidden': 'true'}) if page.find('article')[0] in n.ancestors]), 1)
-            self.assertEqual(page.find('img'), [])
+            images=page.find('img', **{'data-destination-image':None})
+            self.assertEqual([n.attrs['src'] for n in images], ['/static/img/destination-placeholder.svg'])
+            self.assertIn('destination-photo-placeholder', images[0].attrs['class'])
 
     def test_valid_stale_and_legacy_sessions_do_not_affect_either_route(self):
         for state in ({'auth_session_id': self.handle}, {'auth_session_id': 'stale-handle'},
@@ -413,7 +418,7 @@ class PlacesRouteTests(unittest.TestCase):
             self.assertEqual(url_for('places_list'), '/places')
             self.assertEqual(url_for('places_detail', slug='synthetic-place'), '/places/synthetic-place')
 
-    def test_html_escaping_no_images_scripts_or_sensitive_data(self):
+    def test_html_escaping_local_placeholder_and_no_sensitive_data(self):
         unsafe = '<script>synthetic & text</script>'
         place = replace(self.place, name=unsafe, description=unsafe, address=unsafe)
         self.service.list_published.return_value = (place,)
@@ -423,7 +428,10 @@ class PlacesRouteTests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'&lt;script&gt;synthetic &amp; text&lt;/script&gt;', response.data)
             assert_shared_scripts(self,Document(response.get_data(as_text=True)))
-            for forbidden in (b'<img', b'images.invalid', b'sb_publishable_',
+            images=Document(response.get_data(as_text=True)).find('img', **{'data-destination-image': None})
+            self.assertEqual(len(images),1)
+            self.assertEqual(images[0].attrs['src'],'/static/img/destination-placeholder.svg')
+            for forbidden in (b'images.invalid', b'sb_publishable_',
                               b'private-access-token', b'private-refresh-token'):
                 self.assertNotIn(forbidden, response.data)
 

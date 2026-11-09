@@ -1,0 +1,40 @@
+{
+  "review_only": true,
+  "executable": false,
+  "target_project_ref": "brnkigrrqdrywahvcbvc",
+  "input_sha256": {
+    "production-mapped-publication-v4.review.json": "5109d96c675e2e4d5f7c3c7e76df3f91dda59cc476182d0f6da3e7cfaff17eee",
+    "location-verification.review.json": "269b95d3e0c0c2a67e48f4b3b7e4d1355eaffe5c362ae771ba004a1252f3420c",
+    "destination-images.final-mapping.review.json": "0c41a58c76d38028feeaf8916dfb20a909cd79ba78fb5879da484610539ac8d1",
+    "category-registry.review.json": "ac84b8063a5d87bef3ab417ef374b1ca89c9b1e0792e2fb21a3a167b601acd1e",
+    "category-parent-mapping.proposed.review.json": "811d6d3c0b07baf216265da344f9576c85097ca03ccd9b4af045e35d8a7d6263"
+  },
+  "files": [
+    {
+      "file": "destinations-98.csv",
+      "rows": 98,
+      "initial_sha256": "ba916fe64d130d46ec6389eaaf8d5cad5bd68b10a0c255a4f13839050367ff42"
+    },
+    {
+      "file": "aliases.csv",
+      "rows": 10,
+      "initial_sha256": "dc44375aea40d62ba23c282856f8305053a3e03628dcef8a54f6601d47275890"
+    },
+    {
+      "file": "proposed-archives.csv",
+      "rows": 7,
+      "initial_sha256": "3d75aa1e0c550e1b0d02d5bf06eba5871d44bf7a8eda276b69450f3011fb0ff5"
+    },
+    {
+      "file": "category-conflicts.csv",
+      "rows": 2,
+      "initial_sha256": "512cf4910aeb663b63d4df541f6d1f33f7e13c3e3b9b904b98d5eb1f02671c13"
+    },
+    {
+      "file": "category-parents.csv",
+      "rows": 73,
+      "initial_sha256": "9ddc5c5660a4a8973bbe64993096d0e83650d2b2a0eb622a288ca6472ba668ea"
+    }
+  ],
+  "note": "Initial worksheet hashes for traceability only; owner edits are expected. No importer or hosted mutation is provided."
+}

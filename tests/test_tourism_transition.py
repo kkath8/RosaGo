@@ -16,7 +16,7 @@ from tourism_catalog_transition import (CATEGORY_MAPPING, SOURCE, SOURCE_FIELDS,
 from test_recommendation_engine import preferences
 
 ROOT = Path(__file__).resolve().parents[1]
-FOLDER = ROOT / 'data/santa_rosa_places'
+FOLDER = ROOT / 'data/santa_rosa_places/archive'
 
 
 class TourismTransitionTests(unittest.TestCase):

@@ -1,0 +1,34 @@
+# PREPARED ONLY / NOT QUALIFIED / DO NOT APPLY OR DEPLOY.
+# Always use a NEW service; no linked production environment groups.
+services:
+  - type: web
+    name: rosago-isolated-evaluation
+    runtime: docker
+    dockerfilePath: ./Dockerfile.evaluation
+    dockerContext: .
+    autoDeployTrigger: "off"
+    healthCheckPath: /health/ready
+    envVars:
+      - key: ROSAGO_EVALUATION
+        value: "true"
+      - key: ROSAGO_AUTH_MODE
+        value: production
+      - key: ROSAGO_EVALUATION_EMAIL_MODE
+        value: disabled
+      - key: ROUTING_PROVIDER
+        value: disabled
+      - key: ROSAGO_EVALUATION_PROJECT_REF
+        value: jfaufpfzfhysqkhcdsrs
+      - key: SUPABASE_URL
+        value: https://jfaufpfzfhysqkhcdsrs.supabase.co
+      - key: SUPABASE_KEY
+        sync: false
+      - key: ROSAGO_PUBLIC_ORIGIN
+        sync: false
+      - key: ROSAGO_EVALUATION_PROXY_HOPS
+        value: "1"
+      - key: ROSAGO_PROXY_HEADERS_SANITIZED
+        sync: false
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+

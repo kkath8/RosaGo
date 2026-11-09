@@ -1,0 +1,66 @@
+﻿csv_number,name,action,existing_id,latitude,longitude,category,tourism_type,proposed_final_status,image_status
+1,Enchanted Kingdom,Update,7544a303-a669-41ad-9723-21b440c8e1ff,14.2819473,121.0953936,Theme Park / Tourist Attraction,Local,Published after approval and security qualification,preserve_existing_hosted_image
+4,Paseo Outlets,Update,a984ad59-ed4d-43b8-89c1-33852877cfe0,14.24754,121.06361,Outlet Shopping / Dining,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+5,SM City Santa Rosa,Update,277837ea-06bf-43ab-a509-c6d88cb44956,14.3128,121.0986,Shopping Mall / Entertainment,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+6,Robinsons Sta. Rosa,Update,428a525e-259d-4a89-90f4-1c231c6d6eae,14.3189,121.0964,Shopping Mall / Retail,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+7,Vista Mall Sta. Rosa,Update,1f04e93e-6227-42fb-be7f-e19970476efb,14.24383,121.05812,Shopping Mall / Lifestyle,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+8,S&R Membership Shopping Nuvali,Add,,14.2357428,121.0544903,Warehouse Club / Supermarket,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+9,Landers Superstore Nuvali,Add,,14.23411,121.05675,Warehouse Supermarket,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+11,Balibago Complex,Add,,14.2944,121.1058,Commercial District / Shopping / Transport,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+13,Santa Rosa de Lima Parish Church,Update,2b258daf-2ede-4e12-8961-c36965d1f278,14.314024,121.111321,Religious Site / Heritage,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+14,Timezone Solenad 3,Add,,14.2364839,121.0577614,Arcade / Indoor Entertainment,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+15,SM Game Park - Santa Rosa,Add,,14.312778,121.097222,Arcade / Amusement Center,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+16,McDonald's Nuvali Santa Rosa,Add,,14.31346,121.11161,Fast Food / Burger Restaurant,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+17,Jollibee Balibago Crossing,Add,,14.2940258,121.104284,Fast Food / Filipino Fast Food,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+18,Jollibee Balibago Complex,Add,,14.29389,121.10417,Fast Food / Filipino Fast Food,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+19,Jollibee Sta. Rosa Bayan,Add,,14.3131,121.1115,Fast Food / Filipino Fast Food,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+20,Jollibee Golden City,Add,,14.289149,121.108634,Fast Food / Filipino Fast Food,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+21,Chowking Sta. Rosa Balibago,Update,9c745f18-aebc-43f3-96da-fdd1a9dd787d,14.2933684,121.1030992,Fast Food / Chinese-Filipino,Common,Published after approval and security qualification,preserve_existing_hosted_image
+23,Burger King - SM Sta. Rosa,Add,,14.3118166,121.0987853,Fast Food / Burger Restaurant,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+24,Pizza Hut - SM City Santa Rosa,Add,,14.3128,121.0986,Pizza Restaurant / Fast Casual,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+25,Nono's - SM Santa Rosa,Add,,14.31278,121.09861,Restaurant / Cafe / Bakery,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+26,Ipponyari Santa Rosa,Update,929c8840-9203-4ceb-929a-a47b80240305,14.249167,121.0625,Japanese Restaurant,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+27,Pho Saigon Vietnamese Restaurant - Sta. Rosa,Add,,14.2882,121.0968,Vietnamese Restaurant,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+28,Taste of Joy Sta. Rosa,Update,cc208fcc-bfff-4846-ad51-08915d0c3100,14.2950533,121.1063468,Filipino Restaurant,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+29,Three Monkeys Brews & Bites,Add,,14.2403506,121.0627297,Cafe / Coffee Shop / Casual Dining,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+30,Bad H Coffee Bar - Specialty Coffee,Add,,14.3114,121.11778,Cafe / Specialty Coffee,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+31,UCC Clockwork Nuvali,Add,,14.2368,121.0569,Cafe / Restaurant,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+32,Amare La Cucina Nuvali,Add,,14.236819,121.056869,Italian Restaurant / Pizzeria,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+33,Ebi 10,Add,,14.236516,121.057686,Japanese Restaurant / Tempura,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+34,The Café Mediterranean,Add,,14.236516,121.057686,Mediterranean Restaurant,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+35,Manam Comfort Filipino - Nuvali,Add,,14.2374,121.057,Filipino Restaurant,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+36,The Morning After,Add,,14.236819,121.056869,Breakfast Restaurant / Cafe,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+37,Nonna's Pasta and Pizzeria,Add,,14.2378,121.0567,Italian Restaurant / Pizzeria,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+38,Bistro Charlemagne,Add,,14.2374,121.057,Restaurant / Eurasian Cuisine,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+39,Gerry's Grill - Ayala Malls Solenad,Add,,14.2381,121.0565,Filipino Restaurant / Grill,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+40,TGI Fridays Nuvali,Add,,14.2378392,121.0571708,American Restaurant / Bar & Grill,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+41,Bites & Barrels Gastropub,Add,,14.2426483,121.0575532,Gastropub / Restaurant,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+45,Zavalla Ancestral House,Update,2ba8d0cb-5b67-4aeb-82b2-7fc702cd90ec,14.3130999,121.1114527,Heritage Site / Historical House,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+52,Santa Rosa City Auditorium,Update,2f344787-301d-426c-b5a1-83939848ce01,14.31509,121.11423,Auditorium / Civic Center,Local,Published after approval and security qualification,preserve_existing_hosted_image
+53,City of Santa Rosa Multi-Purpose Complex,Update,1a850644-f471-4cef-ab13-4d434cfe834c,14.311917,121.104778,Sports Complex / Events Arena,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+54,Laguna Central,Update,1205e2c0-1280-4503-9ce4-483a9be33a75,14.25012,121.06451,Shopping Mall / Commercial Center,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+55,Yamazaki Kitchen Laguna,Update,4a436763-acde-4968-94d9-c3453e1bfc44,14.3128843,121.1138483,Japanese Restaurant / Izakaya / Restobar,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+57,"ACES Badminton and Pickleball Center - Santa Rosa, Laguna",Add,,14.3001,121.1039,Badminton / Pickleball Court,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+61,Pickle G Society,Add,,14.2705,121.111,Pickleball Court,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+62,TCC - The Common Court,Add,,14.275,121.1122,Pickleball Court,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+63,Pickle Patio,Add,,14.2447,121.1098,Pickleball Court,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+64,Tagapo Basketball Court,Add,,14.319013,121.10289,Basketball Court,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+65,Mabuhay Homes Basketball Court,Add,,14.28828,121.12038,Basketball Court,Local,Published after approval and security qualification,placeholder_no_matching_photo
+66,Golden City Clubhouse Basketball Court,Add,,14.29143,121.11649,Basketball Court,Local,Published after approval and security qualification,placeholder_no_matching_photo
+67,Balibago Court,Add,,14.2946,121.1054,Basketball / Volleyball Court,Local,Published after approval and security qualification,placeholder_no_matching_photo
+68,Seda Nuvali,Add,,14.238454,121.059759,Hotel / Swimming Pool,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+69,Technopark Hotel,Add,,14.2536,121.0775,Hotel / Swimming Pool,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+71,Garden Villas 1 Clubhouse (Pool),Add,,14.3077242,121.1177737,Community Swimming Pool,Local,Published after approval and security qualification,placeholder_no_matching_photo
+74,Paseo Premiere Hotel,Add,,14.24763,121.06643,4-Star Hotel / Lodging,Local,Published after approval and security qualification,placeholder_no_matching_photo
+75,Hotel Sogo Santa rosa,Add,,14.3183,121.1119,2-Star Hotel / Motel / Lodging,Common,Published after approval and security qualification,placeholder_no_matching_photo
+76,El Cielito Hotel - Sta. Rosa,Add,,14.270426,121.081467,Tourist Inn,Common,Published after approval and security qualification,placeholder_no_matching_photo
+77,My Hotel Sta. Rosa,Add,,14.2843,121.0889,Budget Hotel / Inn,Common,Published after approval and security qualification,placeholder_no_matching_photo
+78,Sans Hotel,Add,,14.28895,121.09986,3-Star Modern Economy Hotel / Lodging,Common,Published after approval and security qualification,placeholder_no_matching_photo
+79,Mariposa Budget Hotel Sta. Rosa,Add,,14.32135,121.0973,Budget Hotel / Motel / Lodging,Common,Published after approval and security qualification,proposed_attachment_requires_approval
+80,Candy Inn Motel,Add,,14.30695,121.10169,Motel,Local,Published after approval and security qualification,placeholder_no_matching_photo
+81,E.M. Drive Inn,Add,,14.3079,121.1095,Motel,Local,Published after approval and security qualification,placeholder_no_matching_photo
+82,Golden Gate Inn,Add,,14.32005,121.09686,Inn,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+83,Madie's Place,Add,,14.266336,121.104738,Bed & Breakfast / Transcient Guest House / Private Stay Venue,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+84,Amethyst Econotel,Add,,14.2933,121.1054,Economy Hotel,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+85,Asiatel Econo Hotel,Add,,14.3013,121.0824,Economy Hotel,Local,Published after approval and security qualification,proposed_attachment_requires_approval
+86,Calypso Resort Hotel,Add,,14.30179,121.10422,Resort Hotel,Local,Published after approval and security qualification,proposed_attachment_requires_approval

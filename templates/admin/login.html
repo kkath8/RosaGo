@@ -1,18 +1,42 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="same-origin"><title>Admin Login · RosaGo</title>{% include 'admin/head_assets.html' %}</head>
-<body class="admin-site login-page"><main class="login-card" id="main-content">
-<a class="wordmark" href="{{ url_for('index') }}" aria-label="RosaGo"><span>Rosa</span><span>Go</span></a><span class="admin-badge">ADMIN</span>
-<p class="eyebrow">Tourism administration</p><h1>Admin sign in</h1><p class="intro">Access the RosaGo administration workspace.</p>
-{% if message %}<p class="notice" role="alert">{{ message }}</p>{% endif %}
-{% if signed_in %}
-<a class="button" href="{{ url_for('user_index') }}">Continue to User side</a>
-<form method="post" action="{{ url_for('admin.logout') }}"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><button class="secondary-button" type="submit">Log out</button></form>
-{% else %}
-<form method="post" action="{{ url_for('admin.login') }}">
-<input type="hidden" name="csrf_token" value="{{ login_csrf }}">
-<label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="username" value="{{ email }}" required>
-<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required>
-<button class="button" type="submit">Sign in to Admin</button>
-</form><a class="text-link" href="{{ url_for('forgot_password') }}">Forgot password?</a>
-{% endif %}
-<a class="text-link" href="{{ url_for('login') }}">Looking for User sign in?</a>
-</main></body></html>
+{% from 'partials/icons.html' import icon %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="same-origin"><title>Admin Login &middot; RosaGo</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% include 'admin/head_assets.html' %}
+<script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
+</head>
+<body class="admin-site auth-site admin-login-page">
+<a class="skip-link" href="#main-content">Skip to sign in</a>
+<main class="registration-layout">
+    <section class="welcome" aria-labelledby="welcome-title">
+        <a class="brand admin-login-wordmark" href="{{ url_for('index') }}" aria-label="RosaGo">Rosa<span>Go</span></a>
+        <div class="welcome-copy"><h1 id="welcome-title">Welcome back to the <span>Lion City.</span></h1></div>
+    </section>
+    <section class="form-panel" id="main-content" tabindex="-1" aria-labelledby="admin-login-title">
+        <section class="registration-card admin-login-card" aria-labelledby="admin-login-title">
+            <div class="admin-login-card-heading"><span class="admin-entry-label">Admin access</span><h1 id="admin-login-title">Admin sign in</h1><p class="admin-login-intro">Your Admin and User sessions are separate.</p></div>
+            {% if message %}<p class="admin-login-message" id="admin-login-message" role="alert">{{ icon('Alerts') }}<span>{{ message }}</span></p>{% endif %}
+            {% if signed_in %}
+            <div class="admin-login-account-actions"><a class="submit-button admin-login-submit" href="{{ url_for('user_index') }}">Continue to User side <span aria-hidden="true">&rarr;</span></a>
+            <form method="post" action="{{ url_for('admin.logout') }}"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><button class="admin-login-logout" type="submit">Log out</button></form></div>
+            {% else %}
+            <form class="admin-login-form" method="post" action="{{ url_for('admin.login') }}" aria-label="Admin sign in"{% if message %} aria-describedby="admin-login-message"{% endif %}>
+                <input type="hidden" name="csrf_token" value="{{ login_csrf }}">
+                <div class="field admin-login-field"><label for="email">Email address <span class="admin-required-mark" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span></label><div class="admin-login-input"><input id="email" name="email" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" value="{{ email }}" aria-describedby="admin-login-required" required></div></div>
+                <div class="field admin-login-field"><label for="password">Password <span class="admin-required-mark" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span></label><div class="password-input admin-login-input admin-login-password"><input id="password" name="password" type="password" autocomplete="current-password" aria-describedby="admin-login-required" required><button class="password-toggle admin-password-toggle" type="button" aria-controls="password" aria-label="Show password" aria-pressed="false" data-admin-password-toggle hidden>Show</button></div></div>
+                <div class="admin-login-options"><a class="admin-login-forgot" href="{{ url_for('forgot_password') }}">Forgot password?</a><p class="admin-login-required" id="admin-login-required"><span class="admin-required-mark" aria-hidden="true">*</span> Required fields</p></div>
+                <button class="submit-button admin-login-submit" type="submit">Sign in to Admin <span aria-hidden="true">&rarr;</span></button>
+            </form>
+            <p class="login-prompt">Don't have an account? <a href="{{ url_for('register', workspace='admin') }}">Create account</a></p>
+            <p class="admin-account-approval-note">Create an account and verify your email, then ask the project owner to approve Admin access. Registration alone does not provide Admin permissions.</p>
+            {% endif %}
+            <p class="admin-login-user-link">Looking for the RosaGo user site? <a href="{{ url_for('login') }}">User sign in <span aria-hidden="true">&rarr;</span></a></p>
+        </section>
+        <p class="footer-note">Made for discovering Santa Rosa.</p>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "project_ref": "jfaufpfzfhysqkhcdsrs",
+  "table": "public.places",
+  "mode": "offline_review_only",
+  "hosted_writes_enabled": false,
+  "snapshot_file": "snapshot.json",
+  "catalog_file": "catalog.json"
+}

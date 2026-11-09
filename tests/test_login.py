@@ -60,7 +60,7 @@ class LoginTests(unittest.TestCase):
                         self.assertEqual(response.json, {'authenticated': False})
 
     def test_opaque_authority_access_and_logout_revocation(self):
-        response = self.client.post('/login', data=self.credentials)
+        response = test_registration.post_user_login(self, data=self.credentials)
         self.assertEqual(response.status_code, 303)
         with self.client.session_transaction() as current:
             self.assertEqual(set(current), {'auth_session_id'})
@@ -68,7 +68,7 @@ class LoginTests(unittest.TestCase):
         self.assertIsNotNone(self.store.resolve(handle))
         self.assertEqual(self.client.get('/user').status_code, 200)
         self.assertTrue(self.client.get('/auth/status').json['authenticated'])
-        self.client.post('/logout')
+        test_registration.post_user_logout(self)
         self.assertIsNone(self.store.resolve(handle))
         self.assertEqual(self.client.get('/user').status_code, 302)
         self.assertEqual(self.client.get('/auth/status').json, {'authenticated': False})
@@ -191,10 +191,10 @@ class LoginTests(unittest.TestCase):
     def test_post_login_replaces_handle_and_failure_rolls_back(self):
         old = test_registration.seed_normal_session(self)
         other = self.app.test_client()
-        other.post('/login', data=self.credentials)
+        test_registration.post_user_login(self, client=other, data=self.credentials)
         with other.session_transaction() as current:
             unrelated = current['auth_session_id']
-        response = self.client.post('/login', data=self.credentials)
+        response = test_registration.post_user_login(self, data=self.credentials)
         self.assertEqual(response.status_code, 303)
         with self.client.session_transaction() as current:
             new = current['auth_session_id']
@@ -212,7 +212,7 @@ class LoginTests(unittest.TestCase):
                 raise RuntimeError('private-provider-error')
             return result
         with patch.object(SecureCookieSession, 'pop', fail_mutation):
-            response = self.client.post('/login', data=self.credentials)
+            response = test_registration.post_user_login(self, data=self.credentials)
         self.assertEqual(response.status_code, 503)
         self.assertNotIn(b'private-provider-error', response.data)
         self.assertEqual(set(self.store._records), before)
@@ -221,7 +221,7 @@ class LoginTests(unittest.TestCase):
         self.assertIsNotNone(self.store.resolve(new))
 
     def test_cookie_secrecy_and_logout_recovery_policy_without_provider(self):
-        self.client.post('/login', data=self.credentials)
+        test_registration.post_user_login(self, data=self.credentials)
         with self.client.session_transaction() as current:
             handle = current['auth_session_id']
             current.update(pending_recovery_id='pending', password_recovery_id='grant')
@@ -233,7 +233,7 @@ class LoginTests(unittest.TestCase):
         dependencies = self.app.extensions['rosago_normal_auth']
         with patch.object(dependencies.coordinator, 'authenticated', side_effect=AssertionError('No coordinator')), \
              patch.object(dependencies.adapters, '_client', side_effect=AssertionError('No provider')):
-            self.assertEqual(self.client.post('/logout').status_code, 303)
+            self.assertEqual(test_registration.post_user_logout(self).status_code, 303)
         self.assertIsNone(self.store.resolve(handle))
         with self.client.session_transaction() as current:
             self.assertEqual(dict(current), {})
@@ -254,7 +254,9 @@ class LoginTests(unittest.TestCase):
         for secret in (b"private-password", b"private-access-token", b"private-refresh-token", b"private-provider-error"):
             self.assertNotIn(secret, response.data)
         if not session_created:
-            self.assertFalse(response.headers.getlist("Set-Cookie"))
+            # Pre-login CSRF state is now issued even while unauthenticated.
+            with self.client.session_transaction() as state:
+                self.assertNotIn('auth_session_id', state)
             self.assertEqual(self.client.get("/auth/status").json, {"authenticated": False})
         self.assertEqual(response.headers["Cache-Control"], "no-store")
         if not session_created:
@@ -274,7 +276,7 @@ class LoginTests(unittest.TestCase):
         for data in ({}, {"email": ""}, {"email": "a@b"}, {"email": "bad email@example.com"}, {"password": ""}, {"password": "   "}):
             with self.subTest(fields=list(data)):
                 payload = self.credentials | data if data else {}
-                response = self.client.post("/login", data=payload)
+                response = test_registration.post_user_login(self, data=payload)
                 self.assertEqual(response.status_code, 400)
                 self.assert_safe_response(response)
         self.create_client.assert_not_called()
@@ -283,7 +285,7 @@ class LoginTests(unittest.TestCase):
         with self.client.session_transaction() as previous:
             previous["user_id"] = "legacy"
             previous["user_email"] = "legacy@example.invalid"
-        response = self.client.post("/login", data=self.credentials | {
+        response = test_registration.post_user_login(self, data=self.credentials | {
             "email": "  ana@example.com  ", "remember_me": "on", "role": "admin",
         })
         self.assertEqual(response.status_code, 303)
@@ -314,12 +316,12 @@ class LoginTests(unittest.TestCase):
         self.assertEqual(self.app.test_client().get("/auth/status").json, {"authenticated": False})
 
     def test_logout_clears_entire_session_and_stays_logged_out(self):
-        self.client.post("/login", data=self.credentials)
+        test_registration.post_user_login(self, data=self.credentials)
         with self.client.session_transaction() as current:
             current["stale"] = "must-be-removed"
         self.assertIn(b'method="post" action="/logout"', self.client.get("/user").data)
 
-        response = self.client.post("/logout")
+        response = test_registration.post_user_logout(self)
         self.assertEqual(response.status_code, 303)
         self.assertEqual(response.headers["Location"], "/login?logged_out=1")
         self.assertEqual(response.headers["Cache-Control"], "no-store")
@@ -334,7 +336,9 @@ class LoginTests(unittest.TestCase):
             page = self.client.get(response.headers["Location"])
             self.assertIn(b"You have been logged out successfully.", page.data)
             self.assertNotIn(b'action="/logout"', page.data)
-            self.assertFalse(page.headers.getlist("Set-Cookie"))
+            # The login page now issues a pre-login CSRF challenge.
+            with self.client.session_transaction() as state:
+                self.assertNotIn('auth_session_id', state)
             self.assertEqual(self.client.get("/auth/status").json, {"authenticated": False})
         self.login_client.auth.sign_out.assert_not_called()
         self.assertEqual(self.supabase.mock_calls, [])
@@ -351,7 +355,7 @@ class LoginTests(unittest.TestCase):
         self.create_client.assert_not_called()
 
     def test_authenticated_user_page_and_auth_page_redirects(self):
-        self.client.post("/login", data=self.credentials)
+        test_registration.post_user_login(self, data=self.credentials)
         self.create_client.reset_mock()
         response = self.client.get("/user")
         self.assertEqual(response.status_code, 200)
@@ -362,7 +366,8 @@ class LoginTests(unittest.TestCase):
         self.assertEqual(response.headers["Cache-Control"], "no-store")
         for path in ("/login", "/register"):
             for method in (("GET",) if path == "/login" else ("GET", "POST")):
-                response = self.client.open(path, method=method)
+                response = self.client.open(path, method=method,
+                    headers={'Origin': 'http://localhost'} if method == 'POST' else {})
                 self.assertEqual(response.status_code, 303)
                 self.assertEqual(response.headers["Location"], "/user")
         self.create_client.assert_not_called()
@@ -375,7 +380,7 @@ class LoginTests(unittest.TestCase):
         self.assertNotIn(b"<script>alert(1)</script>", response.data)
 
     def test_get_logout_does_not_log_out(self):
-        self.client.post("/login", data=self.credentials)
+        test_registration.post_user_login(self, data=self.credentials)
         for method in ("GET", "HEAD"):
             response = self.client.open("/logout", method=method)
             self.assertEqual(response.status_code, 405)
@@ -383,7 +388,7 @@ class LoginTests(unittest.TestCase):
 
     def test_logout_is_safe_when_already_logged_out(self):
         for _ in range(2):
-            response = self.client.post("/logout", follow_redirects=True)
+            response = test_registration.post_user_logout(self, follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b"You have been logged out successfully.", response.data)
             self.assertNotIn(b'action="/logout"', response.data)
@@ -393,14 +398,14 @@ class LoginTests(unittest.TestCase):
 
     def test_logout_does_not_affect_another_browser(self):
         other = self.app.test_client()
-        other.post("/login", data=self.credentials)
-        self.client.post("/login", data=self.credentials)
-        self.client.post("/logout")
+        test_registration.post_user_login(self, client=other, data=self.credentials)
+        test_registration.post_user_login(self, data=self.credentials)
+        test_registration.post_user_logout(self)
         self.assertEqual(self.client.get("/auth/status").json, {"authenticated": False})
         self.assertTrue(other.get("/auth/status").json["authenticated"])
 
     def test_tampered_session_cookie_is_not_authenticated(self):
-        self.client.post("/login", data=self.credentials)
+        test_registration.post_user_login(self, data=self.credentials)
         cookie_name = self.app.config["SESSION_COOKIE_NAME"]
         cookie = self.client.get_cookie(cookie_name)
         self.client.set_cookie(cookie_name, cookie.value + "tampered")
@@ -437,7 +442,7 @@ class LoginTests(unittest.TestCase):
             cases.append(result)
         for result in cases:
             self.login_client.auth.sign_in_with_password.return_value = result
-            response = self.client.post("/login", data=self.credentials)
+            response = test_registration.post_user_login(self, data=self.credentials)
             self.assertEqual(response.status_code, 401)
             self.assertNotIn(b"Login successful!", response.data)
             self.assert_safe_response(response)
@@ -452,7 +457,7 @@ class LoginTests(unittest.TestCase):
         ]
         for error, status, message in cases:
             self.login_client.auth.sign_in_with_password.side_effect = error
-            response = self.client.post("/login", data=self.credentials)
+            response = test_registration.post_user_login(self, data=self.credentials)
             self.assertEqual(response.status_code, status)
             self.assertIn(message, response.data)
             self.assert_safe_response(response)

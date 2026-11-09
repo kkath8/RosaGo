@@ -1,0 +1,29 @@
+[
+  {
+    "independent_provider_authority_preflight_json": {
+      "http": {
+        "installed_schema": null,
+        "available_version": "1.6",
+        "installed_version": null
+      },
+      "vault": {
+        "available_version": "0.3.1",
+        "installed_version": "0.3.1"
+      },
+      "read_only": true,
+      "auth_sessions": {
+        "owner": "supabase_auth_admin",
+        "postgres_inherits_owner": false,
+        "postgres_trigger_privilege": true
+      },
+      "http_execution": null,
+      "postgres_attributes": {
+        "bypassrls": true,
+        "superuser": false
+      },
+      "expected_project_ref": "jfaufpfzfhysqkhcdsrs",
+      "existing_auth_session_triggers": null,
+      "evaluation_helper_issuer_present": true
+    }
+  }
+]

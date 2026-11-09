@@ -3,6 +3,7 @@
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recommendations.css') }}"><script src="{{ url_for('static', filename='js/recommendations.js') }}" defer></script>{% endblock %}
 {% block content %}
 {% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'industrial': 'Industrial Tourism'} %}
+{% set labels = dict(labels, **category_labels) %}
 {% macro destination(card, number=none) %}
 {% set place = card.place %}
 <li><article class="recommendation-card" data-recommendation-card data-place-id="{{ place.id }}">

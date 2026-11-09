@@ -61,7 +61,7 @@ class ManagementServiceTests(unittest.TestCase):
 
     def test_operational_projection_rejects_extra_secrets_and_malformed_counts(self):
         client=Mock(); query=client.rpc.return_value; query.retry.return_value=query
-        context=AuthenticatedContext('handle','actor','email',client)
+        context=AuthenticatedContext('handle','actor','email',client, realm='admin')
         query.execute.return_value=SimpleNamespace(data=overview())
         self.assertEqual(operational_overview(context)['trips_total'],2)
         for bad in (overview()|dict(password='secret'),overview()|dict(users_total=True),
@@ -72,7 +72,7 @@ class ManagementServiceTests(unittest.TestCase):
 
     def test_mutation_result_and_action_are_strict(self):
         client=Mock(); query=client.rpc.return_value; query.retry.return_value=query
-        context=AuthenticatedContext('handle','actor','email',client)
+        context=AuthenticatedContext('handle','actor','email',client, realm='admin')
         for action in ('delete','published','disable'):
             with self.assertRaises(DestinationValidationError): mutate_destination(context,action=action)
         query.execute.return_value=SimpleNamespace(data=dict(slug='valid',status='draft',token='secret'))
@@ -120,7 +120,7 @@ class ManagementRouteTests(unittest.TestCase):
                     index=len(self.records)+1
                     record=dict(id=f'11111111-1111-4111-8111-{index:012}',
                         slug='fixture-destination' if index==1 else f'fixture-destination-{index}',
-                        status='draft',image_url=None,created_at=stamp,updated_at=stamp,
+                        status='draft',image_url=None,environment=None,created_at=stamp,updated_at=stamp,
                         tourism_source=None,tourism_source_row=None)|values
                     self.records.append(record)
                 elif not record or datetime.fromisoformat(args['p_expected_updated_at'])!=datetime.fromisoformat(record['updated_at']):
@@ -142,7 +142,7 @@ class ManagementRouteTests(unittest.TestCase):
         def factory(**kwargs):
             client=httpx.Client(transport=httpx.MockTransport(respond),**kwargs); self.clients.append(client); return client
         self.dependencies.adapters._http_factory=factory
-        handle=test_registration.seed_normal_session(self)
+        handle=test_registration.seed_admin_session(self)
         self.csrf=self.dependencies.store.resolve(handle).csrf
         return handle
 

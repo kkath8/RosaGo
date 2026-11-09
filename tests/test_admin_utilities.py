@@ -20,7 +20,7 @@ class AdminUtilityTests(unittest.TestCase):
     protected = foundation.AdminBoundaryTests.protected
 
     def install_account(self, *, missing=False, failure=False, no_names=False):
-        handle = test_registration.seed_normal_session(self)
+        handle = test_registration.seed_admin_session(self)
         self.value = True
         self.profile_row = dict(id='user-123', first_name=None if no_names else 'Admin <Name>',
                                 last_name=None if no_names else 'Fixture', created_at='2026-10-19T04:00:00Z')
@@ -111,11 +111,35 @@ class AdminUtilityTests(unittest.TestCase):
         statuses = [n for n in page.find('p') if 'data-theme-status' in n.attrs]
         self.assertEqual(len(statuses), 1)
         self.assertIn('settings-theme-status', statuses[0].attrs['class'])
+        toggles = [n for n in page.find('button') if 'data-toggle-theme' in n.attrs]
+        self.assertEqual(len(toggles), 1)
+        self.assertEqual(toggles[0].attrs['type'], 'button')
+        self.assertEqual(toggles[0].attrs['aria-label'], 'Dark mode')
+        self.assertEqual(toggles[0].attrs['aria-pressed'], 'false')
         self.assertEqual(page.find('input', type='text'), [])
         self.assertFalse(any(r.url.path.endswith('/profiles') for r in self.requests))
         for forbidden in (b'travel interests', b'Traveler Type', b'Budget Planner', b'itinerary pace',
                           b'personal-state.js', b'account-management.js', b'Compact table density'):
             self.assertNotIn(forbidden, response.data)
+
+    def test_settings_uses_local_preferences_and_only_success_flashes_can_be_hidden(self):
+        self.install_account()
+        with self.client.session_transaction(path='/admin') as current:
+            current['_flashes'] = [('success','Synthetic saved confirmation'),('error','Synthetic security error')]
+        response = self.client.get('/admin/settings')
+        self.protected(response,200)
+        page = Document(response.get_data(as_text=True))
+        self.assertIn(b'js/admin-preferences.js',response.data)
+        self.assertEqual(len([f for f in page.find('form') if 'data-admin-preferences-form' in f.attrs]),1)
+        self.assertTrue(page.find('form',method='post',action='/admin/logout'))
+        self.assertTrue(page.find('input',name='csrf_token'))
+        for name in ('density','reduceMotion','reviewAlerts','successNotices','sort','pageSize','status','timeFormat','dateFormat'):
+            self.assertTrue(page.find('input',name=name) or page.find('select',name=name))
+        flashes=[p for p in page.find('p') if 'data-admin-success-notice' in p.attrs]
+        self.assertEqual([p.text for p in flashes],['Synthetic saved confirmation'])
+        errors=[p for p in page.find('p') if p.text=='Synthetic security error']
+        self.assertEqual(len(errors),1)
+        self.assertNotIn('data-admin-success-notice',errors[0].attrs)
 
     def test_account_menu_links_valid_and_main_navigation_stays_focused(self):
         self.install_account()
@@ -165,7 +189,37 @@ class AdminUtilityTests(unittest.TestCase):
 
     def test_user_logout_still_uses_its_existing_route_and_revokes_normal_session(self):
         handle = self.install_account()
-        response = self.client.post('/logout', headers=ORIGIN)
+        response = test_registration.post_user_logout(self)
         self.assertEqual(response.status_code, 303)
-        self.assertIsNone(self.dependencies.store.resolve(handle))
-        self.protected(self.client.get('/admin/account'), 302)
+        self.assertIsNotNone(self.dependencies.store.resolve(handle))
+        self.protected(self.client.get('/admin/account'), 200)
+
+    def test_admin_account_logout_preserves_concurrent_user_session_and_blocks_history_requests(self):
+        admin_handle = self.install_account()
+        user_handle = test_registration.seed_normal_session(self)
+        normal = self.app.extensions['rosago_normal_auth']
+        with self.client.session_transaction() as current:
+            user_cookie_state = dict(current)
+        csrf = self.dependencies.store.resolve(admin_handle).csrf
+        self.protected(self.client.get('/admin/account'), 200)
+        self.protected(self.client.post('/admin/logout', data={'csrf_token': csrf}, headers=ORIGIN), 303)
+        self.assertIsNone(self.dependencies.store.resolve(admin_handle))
+        self.assertIsNotNone(normal.store.resolve(user_handle))
+        with self.client.session_transaction() as current:
+            self.assertEqual(dict(current), user_cookie_state)
+        for path in ('/admin/account','/admin/settings','/admin'):
+            response = self.client.get(path)
+            self.protected(response, 302)
+            self.assertIn('/admin/login', response.location)
+
+    def test_account_password_action_opens_existing_recovery_without_sending_email(self):
+        self.install_account()
+        page = Document(self.client.get('/admin/account').get_data(as_text=True))
+        action = next(a for a in page.find('a') if a.text == 'Change Password')
+        self.assertEqual(action.attrs['href'], '/forgot-password')
+        response = self.client.get(action.attrs['href'])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+        form = Document(response.get_data(as_text=True)).find('form', id='forgot-password-form')[0]
+        self.assertEqual((form.attrs['method'], form.attrs['action']), ('post','/forgot-password'))
+        self.assertNotIn(b'fixture-access', response.data)

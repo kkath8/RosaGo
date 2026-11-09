@@ -2,6 +2,7 @@
 import unittest
 
 import test_registration as registration
+import test_registration
 from test_public_layout import Document
 
 
@@ -9,7 +10,7 @@ class RegistrationValidationTests(unittest.TestCase):
     setUp = registration.RegistrationTests.setUp
 
     def test_consent_only_error_is_local_and_not_duplicated(self):
-        response = self.client.post('/register', data=self.valid | {'terms': ''})
+        response = test_registration.post_public_form(self, '/register', data=self.valid | {'terms': ''})
         self.assertEqual(response.status_code, 400)
         page = Document(response.get_data(as_text=True))
         error = page.find('p', id='terms-error')[0]
@@ -26,7 +27,7 @@ class RegistrationValidationTests(unittest.TestCase):
 
     def test_multiple_errors_remain_field_specific_and_consent_clears_when_checked(self):
         for consent in ('', 'accepted'):
-            response = self.client.post('/register', data=self.valid | {'email': 'bad', 'terms': consent})
+            response = test_registration.post_public_form(self, '/register', data=self.valid | {'email': 'bad', 'terms': consent})
             self.assertEqual(response.status_code, 400)
             page = Document(response.get_data(as_text=True))
             self.assertNotIn('hidden', page.find('p', id='email-error')[0].attrs)
@@ -37,7 +38,7 @@ class RegistrationValidationTests(unittest.TestCase):
     def test_short_blank_and_unicode_short_passwords_are_rejected_before_signup(self):
         for password in ('short', '        ', '🐱' * 4):
             with self.subTest(password_length=len(password)):
-                response = self.client.post('/register', data=self.valid | {
+                response = test_registration.post_public_form(self, '/register', data=self.valid | {
                     'password': password, 'confirm_password': password})
                 self.assertEqual(response.status_code, 400)
                 error = Document(response.get_data(as_text=True)).find('p', id='password-error')[0]
@@ -52,7 +53,7 @@ class RegistrationValidationTests(unittest.TestCase):
                  ('Abcdef1\U0001f431', 'special character')]
         for password, requirement in cases:
             with self.subTest(requirement=requirement):
-                response = self.client.post('/register', data=self.valid | {
+                response = test_registration.post_public_form(self, '/register', data=self.valid | {
                     'password': password, 'confirm_password': password})
                 self.assertEqual(response.status_code, 400)
                 error = Document(response.get_data(as_text=True)).find('p', id='password-error')[0]
@@ -62,7 +63,7 @@ class RegistrationValidationTests(unittest.TestCase):
 
     def test_valid_strong_password_keeps_existing_otp_flow(self):
         password = 'Abcdef1!'
-        response = self.client.post('/register', data=self.valid | {
+        response = test_registration.post_public_form(self, '/register', data=self.valid | {
             'password': password, 'confirm_password': password})
         self.assertEqual((response.status_code, response.location), (303, '/verify-email'))
         self.supabase.auth.sign_up.assert_called_once()
@@ -72,7 +73,7 @@ class RegistrationValidationTests(unittest.TestCase):
         self.assertIn(b'Verification Code', self.client.get(response.location).data)
 
     def test_confirmation_mismatch_is_specific_and_never_creates_account(self):
-        response = self.client.post('/register', data=self.valid | {'confirm_password': 'other-password'})
+        response = test_registration.post_public_form(self, '/register', data=self.valid | {'confirm_password': 'other-password'})
         self.assertEqual(response.status_code, 400)
         page = Document(response.get_data(as_text=True))
         self.assertEqual(page.find('p', id='confirm-password-error')[0].text, 'Passwords do not match.')

@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "project_ref": "brnkigrrqdrywahvcbvc",
+  "approved": false,
+  "categories": [
+    {
+      "key": "attraction",
+      "label": "Attractions",
+      "parent_key": null
+    },
+    {
+      "key": "dining",
+      "label": "Dining",
+      "parent_key": null
+    },
+    {
+      "key": "shopping",
+      "label": "Shopping",
+      "parent_key": null
+    },
+    {
+      "key": "accommodation",
+      "label": "Accommodation",
+      "parent_key": null
+    },
+    {
+      "key": "nature",
+      "label": "Nature",
+      "parent_key": null
+    },
+    {
+      "key": "heritage",
+      "label": "Heritage",
+      "parent_key": null
+    },
+    {
+      "key": "industrial",
+      "label": "Industrial Tourism",
+      "parent_key": null
+    },
+    {
+      "key": "2-star-hotel-motel-lodging",
+      "label": "2-Star Hotel / Motel / Lodging",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "3-star-modern-economy-hotel-lodging",
+      "label": "3-Star Modern Economy Hotel / Lodging",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "4-star-hotel-lodging",
+      "label": "4-Star Hotel / Lodging",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "american-restaurant-bar-and-grill",
+      "label": "American Restaurant / Bar & Grill",
+      "parent_key": "dining"
+    },
+    {
+      "key": "arcade-amusement-center",
+      "label": "Arcade / Amusement Center",
+      "parent_key": "attraction"
+    },
+    {
+      "key": "arcade-indoor-entertainment",
+      "label": "Arcade / Indoor Entertainment",
+      "parent_key": "attraction"
+    },
+    {
+      "key": "auditorium-civic-center",
+      "label": "Auditorium / Civic Center",
+      "parent_key": "attraction"
+    },
+    {
+      "key": "badminton-pickleball-court",
+      "label": "Badminton / Pickleball Court",
+      "parent_key": "attraction"
+    },
+    {
+      "key": "basketball-volleyball-court",
+      "label": "Basketball / Volleyball Court",
+      "parent_key": "attraction"
+    },
+    {
+      "key": "basketball-court",
+      "label": "Basketball Court",
+      "parent_key": "attraction"
+    },
+    {
+      "key": "bed-and-breakfast-transcient-guest-house-private-stay-venue",
+      "label": "Bed & Breakfast / Transcient Guest House / Private Stay Venue",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "breakfast-restaurant-cafe",
+      "label": "Breakfast Restaurant / Cafe",
+      "parent_key": "dining"
+    },
+    {
+      "key": "budget-hotel-inn",
+      "label": "Budget Hotel / Inn",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "budget-hotel-motel-lodging",
+      "label": "Budget Hotel / Motel / Lodging",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "cafe-coffee-shop-casual-dining",
+      "label": "Cafe / Coffee Shop / Casual Dining",
+      "parent_key": "dining"
+    },
+    {
+      "key": "cafe-restaurant",
+      "label": "Cafe / Restaurant",
+      "parent_key": "dining"
+    },
+    {
+      "key": "cafe-specialty-coffee",
+      "label": "Cafe / Specialty Coffee",
+      "parent_key": "dining"
+    },
+    {
+      "key": "commercial-district-shopping-transport",
+      "label": "Commercial District / Shopping / Transport",
+      "parent_key": "shopping"
+    },
+    {
+      "key": "community-swimming-pool",
+      "label": "Community Swimming Pool",
+      "parent_key": "attraction"
+    },
+    {
+      "key": "economy-hotel",
+      "label": "Economy Hotel",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "fast-food-burger-restaurant",
+      "label": "Fast Food / Burger Restaurant",
+      "parent_key": "dining"
+    },
+    {
+      "key": "fast-food-chinese-filipino",
+      "label": "Fast Food / Chinese-Filipino",
+      "parent_key": "dining"
+    },
+    {
+      "key": "fast-food-filipino-fast-food",
+      "label": "Fast Food / Filipino Fast Food",
+      "parent_key": "dining"
+    },
+    {
+      "key": "filipino-restaurant",
+      "label": "Filipino Restaurant",
+      "parent_key": "dining"
+    },
+    {
+      "key": "filipino-restaurant-grill",
+      "label": "Filipino Restaurant / Grill",
+      "parent_key": "dining"
+    },
+    {
+      "key": "gastropub-restaurant",
+      "label": "Gastropub / Restaurant",
+      "parent_key": "dining"
+    },
+    {
+      "key": "heritage-site-historical-house",
+      "label": "Heritage Site / Historical House",
+      "parent_key": "heritage"
+    },
+    {
+      "key": "hotel-swimming-pool",
+      "label": "Hotel / Swimming Pool",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "inn",
+      "label": "Inn",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "italian-restaurant-pizzeria",
+      "label": "Italian Restaurant / Pizzeria",
+      "parent_key": "dining"
+    },
+    {
+      "key": "japanese-restaurant",
+      "label": "Japanese Restaurant",
+      "parent_key": "dining"
+    },
+    {
+      "key": "japanese-restaurant-izakaya-restobar",
+      "label": "Japanese Restaurant / Izakaya / Restobar",
+      "parent_key": "dining"
+    },
+    {
+      "key": "japanese-restaurant-tempura",
+      "label": "Japanese Restaurant / Tempura",
+      "parent_key": "dining"
+    },
+    {
+      "key": "mediterranean-restaurant",
+      "label": "Mediterranean Restaurant",
+      "parent_key": "dining"
+    },
+    {
+      "key": "motel",
+      "label": "Motel",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "outlet-shopping-dining",
+      "label": "Outlet Shopping / Dining",
+      "parent_key": "shopping"
+    },
+    {
+      "key": "pickleball-court",
+      "label": "Pickleball Court",
+      "parent_key": "attraction"
+    },
+    {
+      "key": "pizza-restaurant-fast-casual",
+      "label": "Pizza Restaurant / Fast Casual",
+      "parent_key": "dining"
+    },
+    {
+      "key": "religious-site-heritage",
+      "label": "Religious Site / Heritage",
+      "parent_key": "heritage"
+    },
+    {
+      "key": "resort-hotel",
+      "label": "Resort Hotel",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "restaurant-cafe-bakery",
+      "label": "Restaurant / Cafe / Bakery",
+      "parent_key": "dining"
+    },
+    {
+      "key": "restaurant-eurasian-cuisine",
+      "label": "Restaurant / Eurasian Cuisine",
+      "parent_key": "dining"
+    },
+    {
+      "key": "shopping-mall-commercial-center",
+      "label": "Shopping Mall / Commercial Center",
+      "parent_key": "shopping"
+    },
+    {
+      "key": "shopping-mall-entertainment",
+      "label": "Shopping Mall / Entertainment",
+      "parent_key": "shopping"
+    },
+    {
+      "key": "shopping-mall-lifestyle",
+      "label": "Shopping Mall / Lifestyle",
+      "parent_key": "shopping"
+    },
+    {
+      "key": "shopping-mall-retail",
+      "label": "Shopping Mall / Retail",
+      "parent_key": "shopping"
+    },
+    {
+      "key": "sports-complex-events-arena",
+      "label": "Sports Complex / Events Arena",
+      "parent_key": "attraction"
+    },
+    {
+      "key": "theme-park-tourist-attraction",
+      "label": "Theme Park / Tourist Attraction",
+      "parent_key": "attraction"
+    },
+    {
+      "key": "tourist-inn",
+      "label": "Tourist Inn",
+      "parent_key": "accommodation"
+    },
+    {
+      "key": "vietnamese-restaurant",
+      "label": "Vietnamese Restaurant",
+      "parent_key": "dining"
+    },
+    {
+      "key": "warehouse-club-supermarket",
+      "label": "Warehouse Club / Supermarket",
+      "parent_key": "shopping"
+    },
+    {
+      "key": "warehouse-supermarket",
+      "label": "Warehouse Supermarket",
+      "parent_key": "shopping"
+    }
+  ]
+}

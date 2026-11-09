@@ -1,0 +1,33 @@
+{
+  "review_only": true,
+  "hosted_application_qualified": false,
+  "security_blocker_resolved": false,
+  "previous_generated_manifest_sha256": "00fb874a1fa347c7be11fee5b6d978d4d66ff37f248def0c38b131e21debb28b",
+  "target_project_ref": "brnkigrrqdrywahvcbvc",
+  "inventory_exported_at": "2026-11-08T07:36:05.464742+00:00",
+  "source_csv_sha256": "c55ed7076b59d611bc57eb0d59b0c6c425b301e4999655b01a17a9a8ca87ed2a",
+  "baseline_file": "production-destinations-latest-owner-export.json",
+  "baseline_sha256": "7da487c17e0d433ba3cc64718dd413e402c07b5ece74faa6cbba651a5380d8b0",
+  "files": [
+    {
+      "file": "change-set.review.json",
+      "sha256": "67d6b9d8193a292ebb2d0a8835375c64d6ab49ac837657ee745eac1bfc83bbad"
+    },
+    {
+      "file": "category-registry.review.json",
+      "sha256": "2e0038fb307de60aaff2a45451dfdafadc878429be9cff91816f82241148d02d"
+    },
+    {
+      "file": "image-uploads.review.json",
+      "sha256": "794f4de131b8b987c09de3de09992305d91a8b78a86a0fcc1c9a68a003f8458b"
+    },
+    {
+      "file": "prepare-cutover.review.sql",
+      "sha256": "69d544190790c5d90c2050366fa42a7da77122295722c071a909997dc7de4b83"
+    },
+    {
+      "file": "registry.review.sql",
+      "sha256": "eb0c4f1548a9c0227741f92e1720d59f1a25d99c6e822c009734dd05dab49496"
+    }
+  ]
+}

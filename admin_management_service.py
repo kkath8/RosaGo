@@ -4,12 +4,18 @@ import re
 from datetime import datetime
 
 from admin_places_service import _context, _execute, AdminPlacesError
-from place_model import CATEGORIES, TOURISM_TYPES, TOURISM_HOURS_STATUSES
+from place_model import CATEGORIES, TOURISM_TYPES, TOURISM_HOURS_STATUSES, ENVIRONMENTS
+from admin_photo_service import valid_photo_url
+from destination_categories import flexible_catalog_enabled
 
 BASIC_FIELDS = ('name', 'category', 'description', 'address', 'latitude', 'longitude')
 TOURISM_FIELDS = ('tourism_type', 'tourism_category', 'tourism_opening_hours_raw',
                   'tourism_closing_hours_raw', 'tourism_hours_status')
 ACTIONS = ('publish', 'draft', 'archive', 'restore')
+PHOTO_FIELDS = ('image_url',)
+ENVIRONMENT_FIELDS = ('environment',)
+SCHEDULE_FIELDS = ('operating_days_raw',)
+SOURCE_FIELDS = ('tourism_source', 'tourism_source_row')
 
 
 class DestinationValidationError(ValueError):
@@ -19,9 +25,34 @@ class DestinationValidationError(ValueError):
 def validate_destination(values, *, tourism_enabled):
     """Validate an exact allowlist; absent optional metadata stays NULL."""
     allowed = set(BASIC_FIELDS + (TOURISM_FIELDS if tourism_enabled else ()))
-    if set(values) != allowed or any(type(v) is not str for v in values.values()):
+    optional_fields = PHOTO_FIELDS + ENVIRONMENT_FIELDS + (SCHEDULE_FIELDS + SOURCE_FIELDS if flexible_catalog_enabled() else ())
+    if (set(values) - set(optional_fields) != allowed
+            or any(type(value) is not str for key, value in values.items() if key not in optional_fields)):
         raise DestinationValidationError('Invalid destination fields. Reload the form.')
     result = {}
+    if any(field in values for field in SOURCE_FIELDS):
+        if not all(field in values for field in SOURCE_FIELDS):
+            raise DestinationValidationError('Source label and source row must be supplied together.')
+        label, source_row = (values[field] for field in SOURCE_FIELDS)
+        if ((label is None) != (source_row is None)
+                or (label is not None and (type(label) is not str or not 1 <= len(label) <= 500 or not label.strip()))
+                or (source_row is not None and (type(source_row) is not int or not 2 <= source_row <= 1048576))):
+            raise DestinationValidationError('Invalid source provenance.')
+        result.update(tourism_source=label, tourism_source_row=source_row)
+    if 'operating_days_raw' in values:
+        days = values['operating_days_raw']
+        if days is not None and (type(days) is not str or not 1 <= len(days) <= 2000 or not days.strip()):
+            raise DestinationValidationError('Operating days must contain at most 2000 characters or be blank.')
+        result['operating_days_raw'] = days
+    if 'environment' in values:
+        value = values['environment']
+        if value is not None and (type(value) is not str or value not in ENVIRONMENTS):
+            raise DestinationValidationError('Choose Indoor, Outdoor, Mix of Both, or Not recorded.')
+        result['environment'] = value
+    if 'image_url' in values:
+        if values['image_url'] is not None and not valid_photo_url(values['image_url']):
+            raise DestinationValidationError('The destination photo URL is invalid.')
+        result['image_url'] = values['image_url']
     for field, maximum in (('name', 150), ('description', 3000), ('address', 500)):
         value = values[field].strip()
         if not 1 <= len(value) <= maximum or any(ord(c) < 32 and c not in '\n\r\t' for c in value):

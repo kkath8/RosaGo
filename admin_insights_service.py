@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from admin_places_service import read_catalog
 from destination_weather_metadata import EXPOSURES, load_weather_catalog
+from destination_categories import CATEGORY_LABELS
 
 SCOPES = ('published', 'all', 'draft', 'archived')
 ISSUES = {
@@ -21,9 +22,6 @@ ISSUES = {
 }
 ATTENTION_PAGE_SIZE = 10
 LIST_PREVIEW_SIZE = 10
-CATEGORY_LABELS = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping',
-                   'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage',
-                   'industrial': 'Industrial Tourism'}
 
 
 @dataclass(frozen=True)

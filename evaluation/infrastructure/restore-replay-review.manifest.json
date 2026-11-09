@@ -1,0 +1,84 @@
+{
+  "target_project_ref": "jfaufpfzfhysqkhcdsrs",
+  "status": "LOCAL_CANDIDATE_ONLY",
+  "hosted_execution_authorized": false,
+  "architecture_adoption_approved": false,
+  "deployment_authorized": false,
+  "data_api_disable_authorized": false,
+  "credential_change_authorized": false,
+  "full_auth_restore_replay_resolved": false,
+  "installed_security_sql_preserved_not_to_rerun": {
+    "private_sessions.review.sql": "59899c43c3d3bfe232b9b91e87b979a3fa3338e2dd8ed7d070768fc6b05555ea",
+    "provider_access_guards.review.sql": "4136cd079ad39201e3fb185c0de8410374a556cb38631f25ac51e81c19983307"
+  },
+  "files": [
+    {
+      "file": "server_data_gateway.py",
+      "sha256": "c990e4c94e7b25805f8ba0cba0af836d68deb4d57e5870fd80159a9d310260cb"
+    },
+    {
+      "file": "evaluation_sql_credentials.py",
+      "sha256": "543bb8a0d72339edbad24c031cd56de11c630b54cbd19d4d9d6647cac5ea7c06"
+    },
+    {
+      "file": "normal_auth_coordinator.py",
+      "sha256": "49c9ae492c5490c0058e395b5d149de7c14b2fa7d8e24d7b2914b169516ff0d5"
+    },
+    {
+      "file": "evaluation/infrastructure/sql/data_gateway.review.sql",
+      "sha256": "eb811c307aaf81c474599e58ffba725163e84f545ac0b2b977a20fedfcc250ad"
+    },
+    {
+      "file": "evaluation/infrastructure/gateway-requirements.review.txt",
+      "sha256": "97f431df2c6a4dd6a75086f83f0a5b8c43f15f7fd6f13686fda9d872316cc575"
+    },
+    {
+      "file": "evaluation/infrastructure/RESTORE_REPLAY_DECISION.md",
+      "sha256": "fbdf45a131553f4b1622c52444a2d376724dd74d96f12ca89e27a9f69674e674"
+    },
+    {
+      "file": "evaluation/infrastructure/PROVIDER_RECOVERY_QUESTIONS.md",
+      "sha256": "7f628651532a53d5985268bd4c20261beb50682336225ff1d7b0051c29cc3bd2"
+    },
+    {
+      "file": "evaluation/infrastructure/Dockerfile.gateway-local",
+      "sha256": "9db9c7295954e93fb5cb6e1f172ecd6ebb64d0782ebb9d45cd7178031f41d648"
+    },
+    {
+      "file": "evaluation/infrastructure/Dockerfile.gateway-local.dockerignore",
+      "sha256": "72c6f6dc7eb2f93de6dace01e695db56db6d3f84188a761b2da7d2da56131a30"
+    },
+    {
+      "file": "tools/qualify_restore_replay.py",
+      "sha256": "04d0feecbc0ce0a42978c14aea013b7adfab5c5f21e2e916914fcefdaa830229"
+    },
+    {
+      "file": "tools/qualify_restore_linux.py",
+      "sha256": "df824be90a430e1c1e9555e257c95c481268d05a32fc65e3d06175249d10af33"
+    },
+    {
+      "file": "tests/test_server_data_gateway.py",
+      "sha256": "bc0b20190c7671b34cbcc9eae9559f081b04a64858bbac0754f4986f34c584e9"
+    },
+    {
+      "file": "tests/test_evaluation_sql_credentials.py",
+      "sha256": "388d8440178a61eed46114c93a7026d4305d01529c1fd2caa95f32b5011b497c"
+    },
+    {
+      "file": "tests/test_provider_session_transport.py",
+      "sha256": "9f5d7a5429d9bded6f0004492b592e06ea6c3cf10708937b0843bc6db9f99c44"
+    }
+  ],
+  "new_sql": {
+    "file": "evaluation/infrastructure/sql/data_gateway.review.sql",
+    "sha256": "eb811c307aaf81c474599e58ffba725163e84f545ac0b2b977a20fedfcc250ad"
+  },
+  "local_results": {
+    "gateway_restore_cases": 9,
+    "offline_tests": 131,
+    "offline_subtests": 138,
+    "authority_cases": 3,
+    "linux_cases": 43
+  },
+  "note": "No hosting approval or security waiver. Data gateway covers only known app/observed revocations; provider quarantine and all API paths remain unqualified."
+}

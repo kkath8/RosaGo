@@ -1,25 +1,5 @@
-{# Decorative category artwork adapted from the supplied prototype SC / scene system. #}
+{# Render recorded photos only; the shared placeholder is presentation, never stored data. #}
+{% set has_photo = place.image_url and ((place.image_url.startswith('https://') and place.image_url | length > 8) or (catalog_preview and place.image_url.startswith('/preview/images/'))) %}
 <div class="destination-visual" data-category="{{ place.category }}">
-{% if place.image_url and place.image_url.startswith('https://') and place.image_url | length > 8 %}
-    <img src="{{ place.image_url }}" alt="{{ place.name }}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-{% else %}
-    <svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
-    {% if place.category == 'attraction' %}
-    <circle cx="100" cy="44" r="30" fill="none" stroke="#a3231a" stroke-width="3"/><path d="M100 14v60M70 44h60M79 23l42 42M121 23L79 65" stroke="#a3231a" stroke-width="2"/><g fill="#e8b21a"><circle cx="100" cy="14" r="4.5"/><circle cx="100" cy="74" r="4.5"/><circle cx="70" cy="44" r="4.5"/><circle cx="130" cy="44" r="4.5"/></g><path d="M82 100l18-56 18 56" stroke="#7a1710" stroke-width="3" fill="none"/>
-    {% elif place.category == 'nature' %}
-    <circle cx="150" cy="30" r="15" fill="#e8b21a"/><path d="M0 100V68q40-30 80-4t120-8v44z" fill="#eec35c"/><path d="M0 100V84q50-24 100-2t100-4v22z" fill="#a3231a"/><path d="M44 88l12-32 12 32zM64 88l9-24 9 24z" fill="#7a1710"/>
-    {% elif place.category == 'heritage' %}
-    <path d="M68 98V54l32-26 32 26v44z" fill="#a3231a"/><path d="M100 28V10M93 17h14" stroke="#7a1710" stroke-width="3"/><circle cx="100" cy="52" r="7" fill="#e8b21a"/><path d="M92 98V76a8 8 0 0 1 16 0v22z" fill="#f6e3a8"/>
-    {% elif place.category == 'dining' %}
-    <circle cx="100" cy="52" r="30" fill="#fff" stroke="#a3231a" stroke-width="4"/><circle cx="100" cy="52" r="17" fill="#e8b21a"/><path d="M52 22v58M46 22v14q0 8 6 8t6-8V22M148 22v58M148 22q15 12 0 36" stroke="#7a1710" stroke-width="3" fill="none"/>
-    {% elif place.category == 'shopping' %}
-    <path d="M72 42h56l6 56H66z" fill="#a3231a"/><path d="M86 42V32a14 14 0 0 1 28 0v10" stroke="#7a1710" stroke-width="4" fill="none"/><circle cx="100" cy="66" r="9" fill="#e8b21a"/>
-    {% elif place.category == 'accommodation' %}
-    <rect x="56" y="34" width="88" height="64" fill="#a3231a"/><g fill="#e8b21a"><rect x="66" y="44" width="14" height="14"/><rect x="93" y="44" width="14" height="14"/><rect x="120" y="44" width="14" height="14"/><rect x="66" y="68" width="14" height="14"/><rect x="120" y="68" width="14" height="14"/></g><rect x="93" y="68" width="14" height="30" fill="#f6e3a8"/>
-    {% else %}
-    {# Industrial uses the prototype accommodation building motif, without claiming a venue image. #}
-    <rect x="56" y="34" width="88" height="64" fill="#a3231a"/><path d="M56 34V20h16v14M93 98V68h14v30" fill="#7a1710"/><path d="M66 48h14m14 0h14m14 0h12M66 70h14m42 0h12" stroke="#e8b21a" stroke-width="6"/>
-    {% endif %}
-    </svg>
-{% endif %}
+    <img{% if not has_photo %} class="destination-photo-placeholder"{% endif %} data-destination-image data-placeholder-alt="Photo unavailable for {{ place.name }}" src="{{ place.image_url if has_photo else url_for('static', filename='img/destination-placeholder.svg') }}" alt="{{ place.name if has_photo else 'Photo unavailable for ' ~ place.name }}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
 </div>

@@ -1,0 +1,177 @@
+-- OWNER-ONLY REVIEW. Target brnkigrrqdrywahvcbvc. Not a public/Admin RPC.
+-- No fake JWT claims, Auth changes, service-role database importer or image upload.
+BEGIN;
+DO $owner98_gate$ BEGIN RAISE EXCEPTION 'UNAPPROVED_OWNER98_INSTALL'; END $owner98_gate$;
+CREATE SCHEMA rosago_owner_catalog98 AUTHORIZATION postgres;
+REVOKE ALL ON SCHEMA rosago_owner_catalog98 FROM PUBLIC,anon,authenticated,service_role;
+CREATE TABLE rosago_owner_catalog98.batches (
+ batch_id text PRIMARY KEY, plan_sha256 text NOT NULL, operator_name text NOT NULL,
+ applied_at timestamptz NOT NULL DEFAULT clock_timestamp(), baseline jsonb NOT NULL,
+ after_rows jsonb NOT NULL, status text NOT NULL CHECK(status IN ('applied','contained')),
+ contained_at timestamptz);
+CREATE TABLE rosago_owner_catalog98.events (
+ batch_id text NOT NULL REFERENCES rosago_owner_catalog98.batches(batch_id) DEFERRABLE INITIALLY DEFERRED,
+ ordinal integer NOT NULL, csv_record integer, destination_id uuid NOT NULL,
+ action text NOT NULL, operator_name text NOT NULL, before_row jsonb, after_row jsonb NOT NULL,
+ occurred_at timestamptz NOT NULL DEFAULT clock_timestamp(), PRIMARY KEY(batch_id,ordinal));
+CREATE TABLE rosago_owner_catalog98.upload_receipts (
+ object_name text PRIMARY KEY, sha256 text NOT NULL CHECK(sha256 ~ '^[0-9a-f]{64}$'),
+ bytes bigint NOT NULL CHECK(bytes>0), mime_type text NOT NULL CHECK(mime_type IN ('image/jpeg','image/png','image/webp')),
+ verified_by text NOT NULL CHECK(verified_by='postgres'), verified_at timestamptz NOT NULL DEFAULT clock_timestamp());
+CREATE TABLE rosago_owner_catalog98.verified_locations (
+ id uuid PRIMARY KEY REFERENCES public.places(id) ON DELETE RESTRICT,
+ name text NOT NULL,address text NOT NULL,latitude double precision NOT NULL,longitude double precision NOT NULL,
+ evidence_ref text NOT NULL,operator_name text NOT NULL CHECK(operator_name='postgres'));
+ALTER TABLE rosago_owner_catalog98.batches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rosago_owner_catalog98.events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rosago_owner_catalog98.upload_receipts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rosago_owner_catalog98.verified_locations ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON ALL TABLES IN SCHEMA rosago_owner_catalog98 FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION rosago_owner_catalog98.location_verified(uuid,text,text,double precision,double precision)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=''
+AS $verified$
+ SELECT EXISTS(SELECT 1 FROM rosago_owner_catalog98.verified_locations v
+   WHERE v.id=$1 AND v.name=$2 AND v.address=$3 AND v.latitude=$4 AND v.longitude=$5);
+$verified$;
+ALTER FUNCTION rosago_owner_catalog98.location_verified(uuid,text,text,double precision,double precision) OWNER TO postgres;
+REVOKE ALL ON FUNCTION rosago_owner_catalog98.location_verified(uuid,text,text,double precision,double precision)
+ FROM PUBLIC,anon,authenticated,service_role;
+-- Execution via stored policy/constraint OIDs only; private schema USAGE stays denied.
+GRANT EXECUTE ON FUNCTION rosago_owner_catalog98.location_verified(uuid,text,text,double precision,double precision)
+ TO anon,authenticated;
+
+CREATE FUNCTION rosago_owner_catalog98.apply()
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path=''
+AS $owner98$
+DECLARE
+ plan jsonb := @PLAN@;
+ item jsonb; old jsonb; actual public.places%ROWTYPE; before_row jsonb; after_row jsonb;
+ after_rows jsonb:='[]'; blocked integer[]; ordinal integer:=0; stats jsonb;
+BEGIN
+ IF SESSION_USER<>'postgres' OR CURRENT_USER<>'postgres' THEN
+  RAISE EXCEPTION 'Trusted owner connection required' USING ERRCODE='42501'; END IF;
+ IF current_setting('transaction_isolation')<>'serializable' THEN
+  RAISE EXCEPTION 'Serializable owner transaction required'; END IF;
+ IF plan->>'target_project_ref'<>'brnkigrrqdrywahvcbvc'
+   OR jsonb_array_length(plan->'records')<>98
+   OR (SELECT count(DISTINCT r->>'id') FROM jsonb_array_elements(plan->'records') r)<>98
+   OR (SELECT count(*) FROM jsonb_array_elements(plan->'records') r WHERE r->>'status'='published')<>65
+   OR (SELECT count(*) FROM jsonb_array_elements(plan->'records') r WHERE r->>'status'='draft')<>33 THEN
+  RAISE EXCEPTION 'Fixed owner plan mismatch'; END IF;
+ SELECT array_agg((r->>'csv_record')::integer ORDER BY (r->>'csv_record')::integer) INTO blocked
+ FROM jsonb_array_elements(plan->'records') r WHERE
+   coalesce(length(r->'values'->>'name'),0) NOT BETWEEN 1 AND 150
+   OR coalesce(length(r->'values'->>'description'),0) NOT BETWEEN 1 AND 3000
+   OR coalesce(length(r->'values'->>'address'),0) NOT BETWEEN 1 AND 500
+   OR coalesce(length(r->'values'->>'category'),0) NOT BETWEEN 1 AND 120;
+ IF blocked IS NOT NULL THEN RAISE EXCEPTION 'Mandatory Draft fields unresolved at CSV records %',blocked; END IF;
+ IF plan->'approved' IS DISTINCT FROM 'true'::jsonb
+   OR plan->'alias_mappings_approved' IS DISTINCT FROM 'true'::jsonb
+   OR plan->'registry_approved' IS DISTINCT FROM 'true'::jsonb
+   OR plan->'existing_auth_risk_acknowledged' IS DISTINCT FROM 'true'::jsonb THEN
+  RAISE EXCEPTION 'UNAPPROVED_OWNER98_PLAN'; END IF;
+ LOCK TABLE public.places IN SHARE ROW EXCLUSIVE MODE;
+ LOCK TABLE public.destination_categories IN SHARE ROW EXCLUSIVE MODE;
+ IF EXISTS(SELECT 1 FROM rosago_owner_catalog98.batches) THEN
+  RAISE EXCEPTION 'Owner batch already recorded; reconcile, never blindly rerun'; END IF;
+ IF (SELECT count(*) FROM public.places)<>50 THEN RAISE EXCEPTION 'Catalog inventory drift'; END IF;
+ FOR old IN SELECT value FROM jsonb_array_elements(plan->'baseline_rows') LOOP
+  SELECT * INTO STRICT actual FROM public.places WHERE id=(old->>'id')::uuid FOR UPDATE;
+  IF to_jsonb(actual)<>to_jsonb(jsonb_populate_record(NULL::public.places,old)) THEN
+   RAISE EXCEPTION 'Catalog baseline row drift'; END IF;
+ END LOOP;
+ IF EXISTS(SELECT 1 FROM jsonb_array_elements(plan->'records') r WHERE r->>'existing_id' IS NULL
+    AND EXISTS(SELECT 1 FROM public.places p WHERE p.id=(r->>'id')::uuid OR p.slug=r->>'slug')) THEN
+  RAISE EXCEPTION 'Reserved destination identity collision'; END IF;
+ IF (SELECT count(*) FROM public.destination_categories)<>7 THEN RAISE EXCEPTION 'Taxonomy preparation drift'; END IF;
+ INSERT INTO public.destination_categories(key,label,parent_key)
+ SELECT key,label,parent_key FROM jsonb_to_recordset(plan->'categories') AS c(key text,label text,parent_key text)
+ ON CONFLICT(key) DO NOTHING;
+ IF (SELECT count(*) FROM public.destination_categories)<>79 OR EXISTS(
+   SELECT 1 FROM jsonb_array_elements(plan->'categories') c WHERE NOT EXISTS(
+     SELECT 1 FROM public.destination_categories d WHERE d.key=c->>'key' AND d.label=c->>'label'
+       AND d.parent_key IS NOT DISTINCT FROM c->>'parent_key')) THEN RAISE EXCEPTION 'Taxonomy parity mismatch'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='destination-images' AND public IS TRUE) THEN
+  RAISE EXCEPTION 'Expected existing public image bucket required'; END IF;
+ FOR item IN SELECT value FROM jsonb_array_elements(plan->'images') LOOP
+  IF NOT EXISTS(SELECT 1 FROM storage.objects o WHERE o.bucket_id='destination-images'
+     AND o.name=item->>'object_name' AND o.metadata->>'mimetype'=item->>'mime_type'
+     AND (o.metadata->>'size')::bigint=(item->>'bytes')::bigint)
+    OR NOT EXISTS(SELECT 1 FROM rosago_owner_catalog98.upload_receipts r WHERE r.object_name=item->>'object_name'
+      AND r.sha256=item->>'expected_upload_sha256' AND r.bytes=(item->>'bytes')::bigint
+      AND r.mime_type=item->>'mime_type' AND r.verified_by='postgres') THEN
+   RAISE EXCEPTION 'Verified image upload receipt missing or mismatched'; END IF;
+ END LOOP;
+ ALTER TABLE public.places ADD CONSTRAINT places_owner98_verified_publication CHECK(
+  status<>'published' OR rosago_owner_catalog98.location_verified(id,name,address,latitude,longitude)) NOT VALID;
+ CREATE POLICY places_owner98_verified_anon ON public.places AS RESTRICTIVE FOR SELECT TO anon
+  USING(status='published' AND rosago_owner_catalog98.location_verified(id,name,address,latitude,longitude));
+ CREATE POLICY places_owner98_verified_user ON public.places AS RESTRICTIVE FOR SELECT TO authenticated
+  USING(public.rosago_is_admin() OR (status='published'
+    AND rosago_owner_catalog98.location_verified(id,name,address,latitude,longitude)));
+ FOR item IN SELECT value FROM jsonb_array_elements(plan->'records') LOOP
+  before_row:=NULL;
+  IF item->>'existing_id' IS NOT NULL THEN
+   SELECT to_jsonb(p) INTO STRICT before_row FROM public.places p WHERE p.id=(item->>'id')::uuid;
+   IF before_row->>'slug'<>item->>'slug' THEN RAISE EXCEPTION 'Immutable slug mismatch'; END IF;
+   UPDATE public.places p SET
+    (name,category,description,address,latitude,longitude,image_url,environment,tourism_type,tourism_category,
+     tourism_opening_hours_raw,tourism_closing_hours_raw,tourism_hours_status,tourism_source,tourism_source_row,operating_days_raw,status)=
+    (SELECT v.name,v.category,v.description,v.address,v.latitude,v.longitude,v.image_url,v.environment,v.tourism_type,v.tourism_category,
+      v.tourism_opening_hours_raw,v.tourism_closing_hours_raw,v.tourism_hours_status,v.tourism_source,v.tourism_source_row,v.operating_days_raw,'draft'
+     FROM jsonb_populate_record(NULL::public.places,item->'values') v)
+    WHERE p.id=(item->>'id')::uuid;
+  ELSE
+   INSERT INTO public.places(id,slug,name,category,description,address,latitude,longitude,image_url,environment,tourism_type,tourism_category,
+     tourism_opening_hours_raw,tourism_closing_hours_raw,tourism_hours_status,tourism_source,tourism_source_row,operating_days_raw,status)
+    SELECT (item->>'id')::uuid,item->>'slug',v.name,v.category,v.description,v.address,v.latitude,v.longitude,v.image_url,v.environment,v.tourism_type,v.tourism_category,
+     v.tourism_opening_hours_raw,v.tourism_closing_hours_raw,v.tourism_hours_status,v.tourism_source,v.tourism_source_row,v.operating_days_raw,'draft'
+     FROM jsonb_populate_record(NULL::public.places,item->'values') v;
+  END IF;
+  IF item->>'status'='published' THEN
+   IF item->'location_accepted' IS DISTINCT FROM 'true'::jsonb
+      OR item->'values'->>'latitude' IS NULL OR item->'values'->>'longitude' IS NULL THEN
+    RAISE EXCEPTION 'Published destination lacks accepted location evidence'; END IF;
+   INSERT INTO rosago_owner_catalog98.verified_locations
+    SELECT id,name,address,latitude,longitude,'owner-confirmed-researched-csv:'||(plan->>'source_csv_sha256'),SESSION_USER
+      FROM public.places WHERE id=(item->>'id')::uuid;
+   UPDATE public.places SET status='published' WHERE id=(item->>'id')::uuid;
+  END IF;
+  SELECT to_jsonb(p) INTO STRICT after_row FROM public.places p WHERE p.id=(item->>'id')::uuid;
+  ordinal:=ordinal+1;
+  INSERT INTO rosago_owner_catalog98.events(batch_id,ordinal,csv_record,destination_id,action,operator_name,before_row,after_row)
+   VALUES(plan->>'batch_id',ordinal,(item->>'csv_record')::integer,(item->>'id')::uuid,
+     CASE WHEN before_row IS NULL THEN 'owner_create' ELSE 'owner_update' END,SESSION_USER,before_row,after_row);
+  after_rows:=after_rows||jsonb_build_array(after_row);
+ END LOOP;
+ FOR item IN SELECT value FROM jsonb_array_elements(plan->'legacy_holds') LOOP
+  SELECT to_jsonb(p) INTO STRICT before_row FROM public.places p WHERE id=(item->>'id')::uuid;
+  UPDATE public.places SET status='draft' WHERE id=(item->>'id')::uuid RETURNING to_jsonb(places.*) INTO after_row;
+  ordinal:=ordinal+1;
+  INSERT INTO rosago_owner_catalog98.events(batch_id,ordinal,destination_id,action,operator_name,before_row,after_row)
+   VALUES(plan->>'batch_id',ordinal,(item->>'id')::uuid,'owner_hold_draft',SESSION_USER,before_row,after_row);
+  after_rows:=after_rows||jsonb_build_array(after_row);
+ END LOOP;
+ ALTER TABLE public.places VALIDATE CONSTRAINT places_owner98_verified_publication;
+ SELECT jsonb_build_object('total',count(*),'published',count(*) FILTER(WHERE status='published'),
+   'draft',count(*) FILTER(WHERE status='draft'),'archived',count(*) FILTER(WHERE status='archived')) INTO stats FROM public.places;
+ IF stats<>'{"total":120,"published":65,"draft":42,"archived":13}'::jsonb OR ordinal<>105 THEN
+  RAISE EXCEPTION 'Final counts or operator audit count mismatch'; END IF;
+ -- All original Archived records and original Drafts remain byte-for-byte unchanged.
+ FOR old IN SELECT value FROM jsonb_array_elements(plan->'baseline_rows') WHERE value->>'status'<>'published' LOOP
+  IF NOT EXISTS(SELECT 1 FROM public.places p WHERE p.id=(old->>'id')::uuid
+      AND to_jsonb(p)=to_jsonb(jsonb_populate_record(NULL::public.places,old))) THEN
+   RAISE EXCEPTION 'Untargeted Draft/Archived row changed'; END IF;
+ END LOOP;
+ INSERT INTO rosago_owner_catalog98.batches(batch_id,plan_sha256,operator_name,baseline,after_rows,status)
+  VALUES(plan->>'batch_id',plan->>'plan_sha256',SESSION_USER,plan->'baseline_rows',after_rows,'applied');
+ RETURN jsonb_build_object('batch_id',plan->>'batch_id','counts',stats,'csv_records',98,'operator_events',ordinal);
+END $owner98$;
+ALTER FUNCTION rosago_owner_catalog98.apply() OWNER TO postgres;
+REVOKE ALL ON FUNCTION rosago_owner_catalog98.apply() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION rosago_owner_catalog98.apply() TO postgres;
+COMMIT;
+-- Installation is separate from application; exact release approval required.
+-- Future qualified owner call: BEGIN ISOLATION LEVEL SERIALIZABLE;
+-- SELECT rosago_owner_catalog98.apply(); COMMIT;

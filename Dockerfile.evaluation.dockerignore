@@ -1,0 +1,15 @@
+# Deny by default. Never send credentials, git, reports, accounts or DB dumps.
+**
+!/*.py
+!/requirements.txt
+!/requirements-render.txt
+!/static/
+!/static/**
+!/templates/
+!/templates/**
+!/data/
+!/data/santa_rosa_places/
+!/data/santa_rosa_places/weather_metadata.json
+!/evaluation/
+!/evaluation/synthetic_places.json
+

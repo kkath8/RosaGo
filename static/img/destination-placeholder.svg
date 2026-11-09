@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">Destination photo unavailable</title>
+  <desc id="description">A generic RosaGo image placeholder, not a photograph of a destination.</desc>
+  <rect width="640" height="360" rx="24" fill="#f8f3eb"/>
+  <rect x="224" y="72" width="192" height="132" rx="18" fill="#fffdf8" stroke="#8e3b2c" stroke-width="5"/>
+  <circle cx="365" cy="113" r="15" fill="#c99a1c"/>
+  <path d="m239 186 50-57 37 39 25-25 50 43" fill="none" stroke="#8e3b2c" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="320" y="260" text-anchor="middle" fill="#63291f" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="600">Photo unavailable</text>
+  <text x="320" y="294" text-anchor="middle" fill="#766556" font-family="Inter, system-ui, sans-serif" font-size="17">RosaGo</text>
+</svg>

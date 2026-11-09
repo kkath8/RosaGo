@@ -14,7 +14,8 @@ from uuid import UUID
 import httpx
 from postgrest.exceptions import APIError
 
-from place_model import CATEGORIES, Place, TOURISM_TYPES, TOURISM_HOURS_STATUSES
+from place_model import CATEGORIES, Place, TOURISM_TYPES, TOURISM_HOURS_STATUSES, ENVIRONMENTS
+from destination_categories import flexible_catalog_enabled
 
 
 PROJECTION = 'id,name,slug,description,category,address,latitude,longitude,image_url,created_at,updated_at'
@@ -123,6 +124,12 @@ def parse_place_row(row) -> Place:
     latitude, longitude = row['latitude'], row['longitude']
     if (latitude is None) != (longitude is None):
         raise PlacesConsistencyError()
+    environment = row.get('environment')
+    if environment is not None and (type(environment) is not str or environment not in ENVIRONMENTS):
+        raise PlacesConsistencyError()
+    days = row.get('operating_days_raw')
+    if days is not None and (type(days) is not str or not 1 <= len(days) <= 2000 or not days.strip()):
+        raise PlacesConsistencyError()
     return Place(
         id=_uuid(row['id']), name=_text(row['name'], 150), slug=slug,
         description=_text(row['description'], 3000), category=category,
@@ -130,7 +137,7 @@ def parse_place_row(row) -> Place:
         latitude=None if latitude is None else _coordinate(latitude, 90),
         longitude=None if longitude is None else _coordinate(longitude, 180), image_url=image_url,
         created_at=_timestamp(row['created_at']), updated_at=_timestamp(row['updated_at']),
-        **_tourism_metadata(row))
+        environment=environment, operating_days_raw=days, **_tourism_metadata(row))
 
 
 def _rows(response, maximum):
@@ -167,7 +174,7 @@ class PlacesService:
     Programming errors and cancellation signals propagate unchanged.
     """
 
-    def __init__(self, public_client_factory, *, tourism_metadata_enabled=False):
+    def __init__(self, public_client_factory, *, tourism_metadata_enabled=False, environment_enabled=False):
         if not callable(public_client_factory):
             raise TypeError('A scoped public client factory is required.')
         self._clients = public_client_factory
@@ -175,6 +182,12 @@ class PlacesService:
             raise TypeError('Tourism metadata enablement must be boolean.')
         # Explicit rollout switch: never select unapplied database columns.
         self._projection = TOURISM_PROJECTION if tourism_metadata_enabled else PROJECTION
+        if type(environment_enabled) is not bool:
+            raise TypeError('Environment enablement must be boolean.')
+        if environment_enabled:
+            self._projection += ',environment'
+        if flexible_catalog_enabled():
+            self._projection += ',operating_days_raw'
 
     def list_published(self, *, category: str | None = None,
                        limit: int = 50, offset: int = 0) -> tuple[Place, ...]:

@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
 {% block title %}{{ place.name }} | RosaGo{% endblock %}
 {% block content %}
-{% set category_labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'industrial': 'Industrial Tourism'} %}
 <div class="destination-page">
-<nav class="destination-breadcrumb" aria-label="Breadcrumb"><a href="{{ url_for('index') }}">Home</a><span aria-hidden="true">&rsaquo;</span><a href="{{ url_for('places_list') }}">Explore</a><span aria-hidden="true">&rsaquo;</span><span>{{ place.name }}</span></nav>
+<nav class="destination-navigation" aria-label="Destination navigation">
 <a class="secondary-button back-link" href="{{ url_for('places_list') }}">Back to Explore</a>
+<a class="secondary-button destination-dashboard-link" href="{{ url_for('index') }}">Dashboard</a>
+</nav>
 {% if place.slug.startswith('rosago-test-v1-') %}<p class="catalog-disclosure">Development example: this is a synthetic test record, not a real business or attraction.</p>{% endif %}
 {% set weather_labels = {'indoor': 'Primarily indoor', 'covered': 'Mostly covered', 'mixed': 'Mix of indoor/covered and outdoor areas', 'outdoor': 'Primarily outdoor'} %}
 <article class="place-detail">
@@ -17,6 +18,7 @@
                 {% if place.tourism_type %}<span class="tourism-type-badge">{{ place.tourism_type }}</span>{% endif %}
                 </div>
                 <h1 class="page-heading">{{ place.name }}</h1>
+                {% if catalog_preview %}{% include 'preview/status.html' %}{% endif %}
             </header>
             <p class="destination-description">{{ place.description }}</p>
             <table class="destination-facts">
@@ -24,6 +26,8 @@
                 <tbody>
                     {% if place.address %}<tr><th scope="row">Address</th><td>{{ place.address }}</td></tr>{% endif %}
                     <tr><th scope="row">Category</th><td>{{ category_labels[place.category] }}</td></tr>
+                    <tr><th scope="row">Environment</th><td>{{ place.environment or 'Not recorded' }}</td></tr>
+                    {% if place.operating_days_raw %}<tr><th scope="row">Operating days (unverified)</th><td class="itinerary-prose">{{ place.operating_days_raw }}</td></tr>{% endif %}
                     {% if destination_weather.exposure in weather_labels %}<tr class="destination-weather-setting"><th scope="row">Weather setting</th><td>{{ weather_labels[destination_weather.exposure] }}</td></tr>{% endif %}
                 </tbody>
             </table>
@@ -49,21 +53,25 @@
                         {% if place.tourism_closing_hours_raw %}<tr><th scope="row">Closing Hours</th><td>{{ place.tourism_closing_hours_raw }}</td></tr>{% endif %}
                     </tbody></table>
                     {% endif %}
-                    <p class="tourism-hours-notice">Hours provided by City Tourism; verification recommended.</p>
+                    <p class="tourism-hours-notice">{% if catalog_preview %}Hours from the researched CSV; not confirmed for this preview.{% else %}Hours provided by City Tourism; verification recommended.{% endif %}</p>
                     {% endif %}
                 </div>
                 {% endif %}
             </section>
             {% endif %}
             <div class="add-place-entry">
+                {% if catalog_preview %}<a class="site-button" href="{{ url_for(preview_planner_endpoint or 'planner') }}">Planner simulation</a>{% else %}
                 <a class="site-button" href="{{ url_for('trips_add_place', slug=place.slug) }}" data-add-to-trip>Add to Trip</a>
                 {% if place.latitude is defined and place.longitude is defined and place.latitude is not none and place.longitude is not none %}<a class="site-button site-button-secondary" href="{{ url_for('map_index', destination=place.slug) }}">Open Map</a>{% endif %}
+                {% endif %}
             </div>
+            {% if not catalog_preview %}
             <p class="trip-help">Choose a saved trip to add this destination.</p>
             <div class="local-actions"><button type="button" class="mini-button" data-action="save" data-id="{{ place.id }}" aria-pressed="false">Save</button><button type="button" class="mini-button" data-action="visit" data-id="{{ place.id }}" aria-pressed="false">Mark Visited</button><button type="button" class="mini-button" data-action="bag" data-id="{{ place.id }}">+ Bag</button></div>
+            {% endif %}
         </div>
     </div>
 </article>
-<section class="card"><h2>Private Notes</h2><p class="trip-help">Saved on this browser for your current RosaGo profile. Notes are not sent to Tourism or stored with your account.</p><form data-place-note="{{ place.id }}"><label for="place-note">Your note</label><textarea id="place-note" name="note" maxlength="500" rows="4"></textarea><button class="site-button">Save note</button></form></section>
+{% if not catalog_preview %}<section class="card"><h2>Private Notes</h2><p class="trip-help">Saved on this browser for your current RosaGo profile. Notes are not sent to Tourism or stored with your account.</p><form data-place-note="{{ place.id }}"><label for="place-note">Your note</label><textarea id="place-note" name="note" maxlength="500" rows="4"></textarea><button class="site-button">Save note</button></form></section>{% endif %}
 </div>
 {% endblock %}

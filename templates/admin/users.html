@@ -1,12 +1,12 @@
 {% extends 'admin/base.html' %}
 {% block title %}Users | RosaGo Admin{% endblock %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow">Administration</p><h1>Users</h1><p class="intro">Account directory with limited identity information.</p></div></div>
-<form class="panel attention-filter" method="get"><div class="field"><label for="user-query">Search name or email</label><input id="user-query" type="search" name="q" value="{{ q }}" maxlength="150"></div><button class="button" type="submit">Search Users</button><a class="secondary-button" href="{{ url_for('admin.users') }}">Clear Search</a></form>
+<div class="page-heading"><div><p class="eyebrow">Administration</p><h1>User Management</h1><p class="intro">Account directory with limited identity information.</p></div></div>
+<form class="panel attention-filter admin-list-toolbar" method="get"><div class="field"><label for="user-query">Search name or email</label><input placeholder="Name or email" id="user-query" type="search" name="q" value="{{ q }}" maxlength="150"></div><button class="button" type="submit">Search Users</button><a class="secondary-button" href="{{ url_for('admin.users') }}">Clear Search</a></form>
 <p class="section-note">Account disabling and re-enabling are unavailable. This directory shows basic account identity only.</p>
-{% if data is none %}<p class="notice" role="status">User oversight is unavailable. The restricted operational backend capability requires deployment verification.</p>
+{% if data is none %}<p class="notice" role="status">User information is temporarily unavailable. Please try again later.</p>
 {% elif not data.users %}<p class="panel empty-state">No users found.</p>
-{% else %}<p class="section-note">{{ data.users_matching }} matching users · Page {{ page }} · 25 per page</p>
-<section class="panel catalog-table-panel"><table class="catalog-table"><caption class="visually-hidden">User directory</caption><thead><tr><th>User</th><th>Email</th><th>Name</th><th>Account created</th></tr></thead><tbody>{% for user in data.users %}<tr><th scope="row">{{ user.identifier }}</th><td data-label="Email">{{ user.email or 'Not supplied' }}</td><td data-label="Name">{{ user.name or 'Not supplied' }}</td><td data-label="Account created">{{ user.created_at }}</td></tr>{% endfor %}</tbody></table></section>{% endif %}
+{% else %}<p class="section-note">{{ data.users_matching }} matching users Â· Page {{ page }} Â· 25 per page</p>
+<h2 class="visually-hidden">User Management</h2><section class="panel catalog-table-panel"><div class="admin-table-scroll" tabindex="0" role="region" aria-label="User Management table"><table class="admin-table admin-user-table"><caption class="visually-hidden">User directory</caption><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Account created</th><th scope="col">User ID</th></tr></thead><tbody>{% for user in data.users %}<tr><th scope="row">{{ user.name or 'Not supplied' }}</th><td>{{ user.email or 'Not supplied' }}</td><td><time data-admin-date="datetime" datetime="{{ user.created_at }}">{{ user.created_at }}</time></td><td class="admin-table-secondary"><code>{{ user.identifier }}</code></td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
 <nav class="catalog-pagination" aria-label="User pages">{% if previous_url %}<a class="secondary-button" href="{{ previous_url }}">Previous page</a>{% endif %}{% if next_url %}<a class="secondary-button" href="{{ next_url }}">Next page</a>{% endif %}</nav>
 {% endblock %}

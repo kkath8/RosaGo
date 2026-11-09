@@ -58,8 +58,9 @@ class RoutingServiceTests(unittest.TestCase):
                 result = self.request(service, mode=mode)
                 request = self.requests[0]
                 self.assertEqual(request.method, 'POST')
+                self.assertEqual(request.url.host, 'api.heigit.org')
                 self.assertEqual(request.headers['authorization'], 'private-routing-fixture')
-                self.assertEqual(request.url.path, '/v2/directions/' + profile + '/geojson')
+                self.assertEqual(request.url.path, '/openrouteservice/v2/directions/' + profile + '/geojson')
                 self.assertEqual(json.loads(request.content)['coordinates'], [[121.0, 14.0], [121.02, 14.0]])
                 self.assertNotIn('private-routing-fixture', json.dumps(result) + repr(service))
                 self.assertTrue(self.clients[0].is_closed)

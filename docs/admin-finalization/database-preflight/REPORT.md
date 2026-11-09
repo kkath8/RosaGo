@@ -815,7 +815,7 @@ an empty ledger must never be used to justify replaying 0010/0011/transition SQL
 | RosaGo-only, outside the Tourism plan | **28** | 16 untouched + 12 archived test records | 16 |
 
 The 20 Tourism-backed records match the exact source label/source-row/UUID entries
-in `data/santa_rosa_places/tourism_transition_plan.json`; there are zero partial
+in `data/santa_rosa_places/archive/tourism_transition_plan.json`; there are zero partial
 source/source-row pairs. The other 28 have both provenance fields NULL: 16 match
 the plan's untouched RosaGo identities and 12 are archived `rosago-test-v1-*`
 catalog records. Thus RosaGo-only here means **not part of this recorded Tourism

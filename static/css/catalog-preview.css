@@ -1,0 +1,16 @@
+/* Preview-only additions; the existing User typography/cards/theme remain. */
+.catalog-preview .preview-banner { padding: 16px max(20px, calc((100% - 1180px)/2)); border-bottom: 2px solid var(--site-gold); background: var(--site-tint); }
+.catalog-preview .preview-banner p { margin: 6px 0 0; }
+.catalog-preview .preview-record-status { padding: 10px; margin: 10px 0; border: 1px solid var(--site-border); border-radius: 12px; font-size: .85rem; }
+.catalog-preview .preview-record-status p { margin-bottom: 6px; }
+.catalog-preview .preview-record-status .badge { white-space: normal; }
+.catalog-preview .category-nav { max-height: 190px; overflow-y: auto; margin-bottom: 12px; }
+.catalog-preview .site-header .header-utilities { flex-wrap: wrap; padding-block: 12px; }
+.catalog-preview .site-header .site-nav { display: flex; width: auto; gap: 8px; margin: 0; }
+.catalog-preview .preview-simulation-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 16px 0; }
+.catalog-preview .preview-simulation-form label { display: grid; gap: 4px; }
+.catalog-preview .preview-simulation-form select { max-width: 100%; }
+@media (max-width: 600px) {
+    .catalog-preview .site-header .site-nav { order: 3; flex-basis: 100%; justify-content: center; }
+    .catalog-preview .site-header button { margin-left: auto; }
+}

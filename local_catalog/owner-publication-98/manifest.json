@@ -1,0 +1,115 @@
+{
+  "target_project_ref": "brnkigrrqdrywahvcbvc",
+  "review_only": true,
+  "executable": false,
+  "hosted_application_qualified": false,
+  "inputs_sha256": {
+    "local_catalog/production-first-publication-batch-v2.review.json": "8ef4f994b43505d8012b3213405b7e26e4e13233fd5b4f7b4909b36f89aa367e",
+    "local_catalog/production-publication/change-set.review.json": "67d6b9d8193a292ebb2d0a8835375c64d6ab49ac837657ee745eac1bfc83bbad",
+    "local_catalog/production-destinations-latest-owner-export.json": "7da487c17e0d433ba3cc64718dd413e402c07b5ece74faa6cbba651a5380d8b0",
+    "local_catalog/category-registry.merged-resort.review.json": "4bf3910d37e29b417dc40368b6406ad4f6561421439f419a4cc714dccddacbef",
+    "local_catalog/production-catalog-latest-schema-preflight-corrected.json": "d66d82b0431414932089c7ed2380fd19e430b88fb7e93301bca4acff9d4756d3",
+    "local_catalog/catalog_extension.production-bound-v2.review.sql": "fbae5e46f01de839d0722f4396fa626bd531ab811b3b2cbfb7ecd46fae180a08",
+    "local_catalog/destination-images.final-mapping.review.json": "0c41a58c76d38028feeaf8916dfb20a909cd79ba78fb5879da484610539ac8d1"
+  },
+  "preserved_original_package_sha256": {
+    "local_catalog/production-publication/category-registry.review.json": "2e0038fb307de60aaff2a45451dfdafadc878429be9cff91816f82241148d02d",
+    "local_catalog/production-publication/change-set.review.json": "67d6b9d8193a292ebb2d0a8835375c64d6ab49ac837657ee745eac1bfc83bbad",
+    "local_catalog/production-publication/fresh-evidence.json": "1acfcb2f8986005fd281f7c86472f6e49f5125dacfcf47aa0f279d954323b924",
+    "local_catalog/production-publication/image-uploads.review.json": "794f4de131b8b987c09de3de09992305d91a8b78a86a0fcc1c9a68a003f8458b",
+    "local_catalog/production-publication/manifest.json": "176c811d76e1f3aedc892f753d521106aa761f19dbf543d41008a29b9743e580",
+    "local_catalog/production-publication/postflight-anon.readonly.sql": "2051eacafb6f78e8a9d3438f549ac39c0b85a87c68c7b38f2eca5bfe53879b4c",
+    "local_catalog/production-publication/postflight.readonly.sql": "27a724287b2858366f55ff4ff22e96a4769b0c52827060b7e6f139083a7e16d1",
+    "local_catalog/production-publication/prepare-cutover.review.sql": "69d544190790c5d90c2050366fa42a7da77122295722c071a909997dc7de4b83",
+    "local_catalog/production-publication/README.md": "b0bd7ee981cced4a59899cc71302d5d83829b3732b6b4a8b33ba2d67b47857bc",
+    "local_catalog/production-publication/registry.review.sql": "eb0c4f1548a9c0227741f92e1720d59f1a25d99c6e822c009734dd05dab49496",
+    "local_catalog/production-publication/release-index.json": "0f24da96d49ee30a119b275960284e5d0d51a0181452977dc8778420c627d78c",
+    "local_catalog/production-publication/storage-permissions.readonly.sql": "c7484a3ef3b7edfbcbf1aa783b49292daa9e02f728528a3da0d35c2b4a09fad7",
+    "local_catalog/production-publication/storage-preflight.readonly.sql": "68fb352cf25f96260e20d081c706311f466a0a395151d28a1419f3c9116d3a9b"
+  },
+  "source_csv_sha256": "c55ed7076b59d611bc57eb0d59b0c6c425b301e4999655b01a17a9a8ca87ed2a",
+  "counts": {
+    "csv_destinations": 98,
+    "csv_published": 65,
+    "csv_draft": 33,
+    "existing_matches": 28,
+    "new_destinations": 70,
+    "existing_published_to_draft": 21,
+    "non_csv_published_to_draft": 7,
+    "unchanged_original_drafts": 2,
+    "unchanged_archived": 13,
+    "conditional_final_total": 120,
+    "conditional_final_published": 65,
+    "conditional_final_draft": 42,
+    "conditional_final_archived": 13,
+    "missing_required_records": 7,
+    "schema_compatible_csv_records": 91,
+    "hypothetical_partial_total": 113,
+    "hypothetical_partial_published": 65,
+    "hypothetical_partial_draft": 35,
+    "hypothetical_partial_archived": 13,
+    "partial_import_authorized": false,
+    "image_uploads": 51,
+    "preserved_first65_covers": 3,
+    "first65_placeholders": 11,
+    "additional_draft_image_uploads": 0
+  },
+  "files": [
+    {
+      "file": "alias-decisions.review.json",
+      "sha256": "fc88a62ce0fd1a85020add559c8069b9ae4af36461ae0709cd10e0dacaa51740"
+    },
+    {
+      "file": "apply.review.sql",
+      "sha256": "eac66e80a28fad048be5cfe194fa51e365fa3213dd6378b83d5c712aaa9a0d9b"
+    },
+    {
+      "file": "apply.with-proposed-resolutions.review.sql",
+      "sha256": "b739aa226c1660a4749ad10d0eb1228c0cbb26d790ccedd8d70c414ffb91686b"
+    },
+    {
+      "file": "category-registry.review.json",
+      "sha256": "8199a9482eabfcdb6fd98ad726dd9f51b95f9bf82c253c1de999762d6f2ea9f5"
+    },
+    {
+      "file": "change-set.review.json",
+      "sha256": "d611aaf6bdd783cf9dc4e9c95564880fb07f5d18a8549a3f8c934d818768aa1b"
+    },
+    {
+      "file": "change-set.with-proposed-resolutions.review.json",
+      "sha256": "9dce30639e58888b65c08664241ba8caacf0da2ec0744494e87abe87c5b7f64e"
+    },
+    {
+      "file": "destinations.review.csv",
+      "sha256": "860e2c99b06b9faa92e53b6395e75415e41e59e622ffa894c177c2ec868b4ed9"
+    },
+    {
+      "file": "image-uploads.review.json",
+      "sha256": "d7fdb66a7352c6144395087c5c09ba1269c1636f02ddad90be165e35b00aa31f"
+    },
+    {
+      "file": "postflight.readonly.sql",
+      "sha256": "4b0b3f628ceb16808e96a7bdc03d9a883ab34b69b9419798071854397dfeb8d4"
+    },
+    {
+      "file": "preflight.readonly.sql",
+      "sha256": "46d8344534c955205c138d0cb964e9982e2e3e60fec1ddf7841045aea46c9814"
+    },
+    {
+      "file": "README.md",
+      "sha256": "c0b1570c0edf91290a7a7749856bc800f8b72bd62fae63584cf1aff2d39db929"
+    },
+    {
+      "file": "required-content-decisions.review.json",
+      "sha256": "528aa17b978bd2fd605b7a4da8038e35b1bf03b638fc895db0d805a34ccb2ae5"
+    },
+    {
+      "file": "rollback.review.sql",
+      "sha256": "825b429bfb02cacc0241e5a108464d586df6933b7fb09e80e8c7f6ba6086ea45"
+    },
+    {
+      "file": "schema.review.sql",
+      "sha256": "a52653f7f7b909f81f4e909a81a30417b1be325db500aff65184a11810d82e58"
+    }
+  ]
+}

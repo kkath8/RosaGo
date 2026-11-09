@@ -7,7 +7,6 @@
 .public-site .legal-navigation a[aria-current] { color: var(--site-red); font-weight: 700; }
 .public-site{font-family:var(--site-sans)}
 .public-site :is(button,input,select,textarea),.public-site .leaflet-container{font-family:var(--site-sans)}
-.public-site .site-header{border-top:5px solid #eec35c}
 .public-site .header-utilities{width:min(calc(100% - 48px),1320px);min-height:76px;gap:20px;flex-wrap:nowrap;display:flex;align-items:center}
 .public-site .site-brand{font-size:1.75rem;flex:none}
 .public-site .site-nav{display:flex;flex:1;width:auto;max-width:none;padding:0;margin:0;align-items:center;justify-content:center;gap:2px;border:0;flex-wrap:nowrap}

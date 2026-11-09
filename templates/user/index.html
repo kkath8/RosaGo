@@ -2,11 +2,11 @@
 {% block title %}Profile | RosaGo{% endblock %}
 {% block extra_head %}<meta name="referrer" content="same-origin"><link rel="stylesheet" href="{{ url_for('static', filename='css/account-management.css') }}">{% endblock %}
 {% block content %}
-{% set interests = [('dining','Dining'),('nature','Nature'),('shopping','Shopping'),('attraction','Attractions'),('heritage','Heritage'),('industrial','Industrial Tourism'),('accommodation','Accommodation')] %}
+{% set interests = catalog_category_choices %}
 <section class="management-page profile-page" aria-labelledby="profile-title" data-profile-design="preferences-v2">
 <header class="management-heading"><h1 id="profile-title">Profile</h1><p>Manage your personal information and travel preferences.</p></header>
 <div data-profile-management><div data-travel-profile>
-<div class="identity-summary"><span class="profile-avatar user-avatar" data-avatar>{{ (first_name[:1] ~ last_name[:1]) | upper or 'T' }}</span><div class="identity-details"><strong data-profile-full-name>{{ [first_name, last_name] | select | join(' ') or 'Your profile' }}</strong><p>{{ user_email }}</p><fieldset class="identity-colors"><legend>Profile Avatar</legend><div class="preference-chips avatar-choices">{% for color,label in [('', 'Default'),('#8e3b2c','Brick'),('#c99a1c','Gold'),('#3b6ea5','Blue'),('#2f6b4f','Green'),('#6b3a6b','Purple')] %}<label class="preference-chip"><input type="radio" name="avatar_color" value="{{ color }}">{{ label }}</label>{% endfor %}</div></fieldset></div></div>
+<div class="identity-summary"><span class="profile-avatar user-avatar" data-avatar data-user-initials>{{ profile_initials(first_name, last_name) }}</span><div class="identity-details"><strong data-profile-full-name>{{ [first_name, last_name] | select | join(' ') or 'Your profile' }}</strong><p>{{ user_email }}</p><fieldset class="identity-colors"><legend>Profile Avatar</legend><div class="preference-chips avatar-choices">{% for color,label in [('', 'Default'),('#8e3b2c','Brick'),('#c99a1c','Gold'),('#3b6ea5','Blue'),('#2f6b4f','Green'),('#6b3a6b','Purple')] %}<label class="preference-chip"><input type="radio" name="avatar_color" value="{{ color }}">{{ label }}</label>{% endfor %}</div></fieldset></div></div>
 {% if profile is defined and profile is none %}<p class="account-status" role="status">Your profile information is currently unavailable.</p>{% endif %}
 {% for success in get_flashed_messages(category_filter=['profile_success']) %}<p class="account-status" role="status">{{ success }}</p>{% endfor %}
 <div class="profile-form-surface">

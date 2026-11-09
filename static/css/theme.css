@@ -16,6 +16,8 @@ html[data-theme="dark"] {
     --site-red: #f0a28b;
     --site-deep-red: #ffd2b7;
     --site-gold: #eec35c;
+    --site-shell-bg: #251c17;
+    --site-shell-ink: var(--site-ink);
     --site-shadow: 0 2px 16px #0004;
     --theme-primary: #a74a37;
     --theme-primary-hover: #923e2e;
@@ -38,11 +40,11 @@ html[data-theme="dark"] .public-site :is(.site-header,.dropdown-links,.shell-pag
 html[data-theme="dark"] .public-site :is(.site-nav a,.nav-dropdown>summary,.management-links a,.mobile-tabs a,.mobile-tabs button) { color: var(--site-ink); border-color: var(--site-border); }
 html[data-theme="dark"] .public-site :is(.site-nav a,.nav-dropdown>summary,.dropdown-links a):hover { background: var(--site-raised); color: var(--site-ink); }
 html[data-theme="dark"] .public-site :is(.site-nav a[aria-current],.nav-dropdown>summary.on,.nav-dropdown[open]>summary,.mobile-tabs [aria-current]) { color: var(--site-gold); background: var(--site-tint); border-color: var(--site-gold); }
-html[data-theme="dark"] .public-site .site-brand { color: var(--site-red); }
+html[data-theme="dark"] .public-site .site-brand { color: var(--site-shell-ink); }
 html[data-theme="dark"] .public-site .site-brand span { color: var(--site-gold); border-color: var(--site-gold); }
 html[data-theme="dark"] .public-site :is(.user-avatar,.planning-mode .mode-icon) { background: var(--theme-selected); color: var(--site-ink); border-color: var(--site-border); }
 html[data-theme="dark"] .public-site :is(.header-icon,.header-bell) { color: var(--site-red); background: var(--site-surface); border-color: var(--site-border); }
-html[data-theme="dark"] .public-site .site-footer { background: #251c17; color: var(--site-ink); }
+html[data-theme="dark"] .public-site :is(.site-header,.site-footer) { background: var(--site-shell-bg); color: var(--site-shell-ink); }
 html[data-theme="dark"] .public-site :is(.footer-inner,.footer-grid a) { color: var(--site-ink); }
 html[data-theme="dark"] .public-site .footer-grid .footer-brand { background: var(--site-raised); color: var(--site-red); }
 /* Form controls, native checks and browser autofill. */

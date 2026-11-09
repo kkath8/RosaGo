@@ -1,0 +1,26 @@
+# PREPARED ONLY. Production session startup remains deliberately blocked.
+# Creating this service still requires separate approval.
+services:
+  - type: web
+    name: rosago
+    runtime: python
+    autoDeployTrigger: "off"
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: gunicorn --config gunicorn.conf.py production_wsgi:app
+    healthCheckPath: /health/ready
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.18
+      - key: ROSAGO_AUTH_MODE
+        value: production
+      - key: ROSAGO_PUBLIC_ORIGIN
+        sync: false
+      - key: FLASK_SECRET_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+

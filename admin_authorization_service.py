@@ -16,7 +16,7 @@ def is_current_admin(context: AuthenticatedContext) -> bool:
     The normal-auth scope establishes authority and owns the client's lifetime.
     A valid Python context type alone is not proof of authentication.
     """
-    if (type(context) is not AuthenticatedContext
+    if (type(context) is not AuthenticatedContext or context.realm != 'admin'
             or type(context.user_id) is not str or not context.user_id.strip()
             or context.client is None):
         raise AdminAuthorizationError()
