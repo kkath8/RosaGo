@@ -90,15 +90,16 @@ class MapRouteTests(unittest.TestCase):
             styles = ['/static/css/theme.css', '/static/css/site.css']
             if places:
                 styles.append('/static/vendor/leaflet/leaflet.css')
+            styles.extend(['/static/css/destination-images.css', '/static/css/workspace-ui.css'])
             self.assertEqual([node.attrs['href'] for node in page.find('link', rel='stylesheet') if node.attrs['href'].startswith('/static/')], styles)
             scripts = page.find('script')
             if places:
                 self.assertEqual([node.attrs.get('src') for node in scripts], [
                     '/static/js/theme.js', '/static/vendor/leaflet/leaflet.js',
-                    '/static/js/map.js', '/static/js/personal-state.js',
+                    '/static/js/map.js', '/static/js/destination-images.js', '/static/js/personal-state.js',
                     '/static/js/user-ui.js', '/static/js/account-management.js', None])
                 self.assertNotIn('defer', scripts[0].attrs)  # Theme applies before paint.
-                for script in scripts[1:6]:
+                for script in scripts[1:-1]:
                     self.assertIn('defer', script.attrs)
                 self.assertEqual(scripts[-1].attrs, {'id': 'map-data', 'type': 'application/json'})
                 self.assertEqual(len(page.find('meta', name='referrer', content='strict-origin-when-cross-origin')), 1)
@@ -221,7 +222,7 @@ class MapRouteTests(unittest.TestCase):
         page = Document(html)
         self.assertEqual([node.attrs.get('src') for node in page.find('script')], [
             '/static/js/theme.js', '/static/vendor/leaflet/leaflet.js',
-            '/static/js/map.js', '/static/js/personal-state.js',
+            '/static/js/map.js', '/static/js/destination-images.js', '/static/js/personal-state.js',
             '/static/js/user-ui.js', '/static/js/account-management.js', None])
         self.assertEqual(len(page.find('script', id='map-data', type='application/json')), 1)
         self.assertEqual(page.find('img'), [])

@@ -1,3 +1,4 @@
+import test_registration
 """Default Dashboard landing preserves auth checkpoints and fixed continuations."""
 import time
 import unittest
@@ -15,7 +16,7 @@ class DashboardLoginRedirectTests(unittest.TestCase):
 
     def test_normal_login_lands_on_existing_authenticated_dashboard_and_profile_remains(self):
         self.app.extensions['rosago_places'] = Mock(list_published=Mock(return_value=()))
-        response = self.client.post('/login', data=self.credentials)
+        response = test_registration.post_user_login(self, data=self.credentials)
         self.assertEqual((response.status_code, response.location), (303, '/'))
         self.assertNotEqual(response.location, '/user')
         self.assertEqual(self.app.url_map.bind('localhost').match('/')[0], 'index')
@@ -36,25 +37,25 @@ class DashboardLoginRedirectTests(unittest.TestCase):
         response = self.client.get('/user/settings')
         self.assertEqual((response.status_code, response.location), (302, '/login?login_required=1'))
         self.assertEqual(self.client.get(response.location).status_code, 200)
-        response = self.client.post('/login', data=self.credentials)
+        response = test_registration.post_user_login(self, data=self.credentials)
         self.assertEqual((response.status_code, response.location), (303, '/'))
 
     def test_only_existing_slug_continuation_is_supported_and_next_cannot_redirect(self):
         for next_value in ('https://attacker.invalid', '//attacker.invalid', '/user/settings',
                            '/admin', 'javascript:alert(1)'):
-            response = self.client.post('/login', data=self.credentials | {'next': next_value})
+            response = test_registration.post_user_login(self, data=self.credentials | {'next': next_value})
             self.assertEqual((response.status_code, response.location), (303, '/'))
-        response = self.client.post('/login', data=self.credentials | {
+        response = test_registration.post_user_login(self, data=self.credentials | {
             'next': 'https://attacker.invalid', 'add_place': 'kanin-club'})
         self.assertEqual((response.status_code, response.location), (303, '/user/trips/add-place/kanin-club'))
         duplicated = MultiDict(self.credentials)
         duplicated.add('add_place', 'kanin-club'); duplicated.add('add_place', 'other')
-        self.assertEqual(self.client.post('/login', data=duplicated).location, '/')
+        self.assertEqual(test_registration.post_user_login(self, data=duplicated).location, '/')
 
     def test_failed_login_stays_on_form_without_authority_or_redirect(self):
         self.login_client.auth.sign_in_with_password.side_effect = login.AuthApiError(
             'private-provider-message', 400, 'invalid_credentials')
-        response = self.client.post('/login', data=self.credentials)
+        response = test_registration.post_user_login(self, data=self.credentials)
         self.assertEqual(response.status_code, 401)
         self.assertNotIn('Location', response.headers)
         self.assertIn(b'Invalid email or password.', response.data)
@@ -65,7 +66,7 @@ class DashboardLoginRedirectTests(unittest.TestCase):
     def test_verified_email_still_requires_login_then_defaults_to_dashboard(self):
         provider = Mock(verify=Mock(return_value=True))
         self.app.extensions['rosago_email_verification'] = provider
-        response = self.client.post('/register', data=self.valid)
+        response = test_registration.post_public_form(self, '/register', data=self.valid)
         self.assertEqual((response.status_code, response.location), (303, '/verify-email'))
         with self.client.session_transaction() as session:
             pending = self.app.extensions['rosago_email_pending'].get(session['pending_email_verification'])
@@ -76,7 +77,7 @@ class DashboardLoginRedirectTests(unittest.TestCase):
         self.assertTrue(Document(success.get_data(as_text=True)).find('a', href='/login'))
         self.assertFalse(self.client.get('/auth/status').json['authenticated'])
         self.assertEqual(self.client.get('/login').status_code, 200)
-        response = self.client.post('/login', data=self.credentials)
+        response = test_registration.post_user_login(self, data=self.credentials)
         self.assertEqual((response.status_code, response.location), (303, '/'))
 
     def test_password_reset_still_returns_to_login_then_dashboard(self):
@@ -93,5 +94,5 @@ class DashboardLoginRedirectTests(unittest.TestCase):
         self.assertFalse(grants.valid(handle))
         self.assertFalse(self.client.get('/auth/status').json['authenticated'])
         self.assertEqual(self.client.get(response.location).status_code, 200)
-        response = self.client.post('/login', data=self.credentials)
+        response = test_registration.post_user_login(self, data=self.credentials)
         self.assertEqual((response.status_code, response.location), (303, '/'))

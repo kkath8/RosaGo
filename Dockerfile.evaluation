@@ -1,0 +1,16 @@
+# Candidate Linux build only. Existing production session gate still blocks serving.
+FROM python:3.13.18-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app
+COPY requirements.txt requirements-render.txt ./
+RUN pip install --no-cache-dir -r requirements-render.txt && pip check
+COPY *.py ./
+COPY static/ ./static/
+COPY templates/ ./templates/
+COPY data/santa_rosa_places/weather_metadata.json ./data/santa_rosa_places/weather_metadata.json
+COPY evaluation/synthetic_places.json ./evaluation/synthetic_places.json
+RUN python -m compileall -q /app && useradd --uid 10001 --create-home rosago
+USER 10001:10001
+EXPOSE 10000
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "evaluation_wsgi:app"]
+

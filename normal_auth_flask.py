@@ -12,6 +12,7 @@ from normal_auth_coordinator import (
     SessionBusy, SupabaseAdapters, VerifiedLoginCredentials,
 )
 from normal_auth_store import NormalAuthStore
+from session_realms import SessionStorageUnavailable
 
 
 EXTENSION_KEY = 'rosago_normal_auth'
@@ -31,11 +32,18 @@ def init_normal_auth(app, url, public_key):
     """Register once per app; constructors create no user SDK/HTTP clients."""
     if EXTENSION_KEY in app.extensions:
         raise RuntimeError('Normal authentication is already initialized.')
-    store = NormalAuthStore()
-    adapters = SupabaseAdapters(url, public_key)
+    if 'rosago_shared_sessions' in app.extensions:
+        from shared_session_runtime import session_model
+        store = session_model(app, 'user', 'auth')
+    else:
+        store = NormalAuthStore()
+    from shared_session_runtime import auth_adapters
+    adapters = auth_adapters(app,url,public_key)
+    from shared_session_runtime import provider_checker
     coordinator = NormalAuthCoordinator(
         store, refresh_transport=adapters.refresh,
-        client_factory=adapters.database_client, issuer=adapters.issuer)
+        client_factory=adapters.database_client, issuer=adapters.issuer,
+        provider_session_check=provider_checker(app))
     dependencies = NormalAuthDependencies(store, adapters, coordinator)
     app.extensions[EXTENSION_KEY] = dependencies
     return dependencies
@@ -47,12 +55,18 @@ def get_normal_auth_dependencies():
 
 def read_auth_session_id():
     """Read a candidate only; cookie identity and recovery keys grant nothing."""
+    from session_realms import AdminBrowserSession
+    if isinstance(session, AdminBrowserSession):
+        return None
     handle = session.get('auth_session_id')
     return handle if type(handle) is str and handle.strip() else None
 
 
 def clear_normal_auth_authority():
     """Explicit cookie cleanup only; does not revoke records or recovery state."""
+    from session_realms import AdminBrowserSession
+    if isinstance(session, AdminBrowserSession):
+        return
     for key in ('auth_session_id', 'user_id', 'user_email'):
         session.pop(key, None)
 
@@ -69,6 +83,12 @@ def logout_normal_session():
     serialization/delivery cannot be atomic with this process-local store;
     a retained old cookie still points to revoked server-side authority.
     """
+    from redis_session_flask import shared_interface, shared_logout
+    if shared_interface():
+        from session_realms import AdminBrowserSession
+        if isinstance(session, AdminBrowserSession):
+            raise LocalLogoutError()
+        return shared_logout()
     try:
         handle = read_auth_session_id()
         if handle is not None:
@@ -92,11 +112,20 @@ def establish_normal_session(credentials, *, clock=time.time):
     serialization/delivery. A Python result type is a server-side contract,
     not proof for objects reconstructed from browser input.
     """
+    from redis_session_flask import shared_interface, finish_login
+    if shared_interface():
+        from session_realms import AdminBrowserSession
+        if type(credentials) is not VerifiedLoginCredentials or isinstance(session, AdminBrowserSession):
+            raise SessionEstablishmentError()
+        return finish_login(credentials)
     new_handle = None
     store = None
     previous = {}
     try:
         if type(credentials) is not VerifiedLoginCredentials:
+            raise SessionEstablishmentError()
+        from session_realms import AdminBrowserSession
+        if isinstance(session, AdminBrowserSession):
             raise SessionEstablishmentError()
         store = get_normal_auth_dependencies().store
         old_handle = read_auth_session_id()
@@ -211,7 +240,7 @@ def normal_authenticated():
             failure = NormalAuthEntryError('unauthenticated')
         except SessionBusy:
             failure = NormalAuthEntryError('busy')
-        except ClientUnavailable:
+        except (ClientUnavailable,SessionStorageUnavailable):
             failure = NormalAuthEntryError('unavailable')
         else:
             absent = object()

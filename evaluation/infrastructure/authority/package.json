@@ -1,0 +1,7 @@
+{
+  "name": "rosago-evaluation-authority-local-review",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "node --test --test-isolation=none test/*.test.mjs"},
+  "devDependencies": {"wrangler": "4.158.0", "miniflare": "5.20261104.0-beta", "esbuild": "0.28.2"}
+}

@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import httpx
 from normal_auth_coordinator import AuthenticatedContext
-from normal_auth_flask import normal_authenticated
+from admin_session_flask import admin_authenticated as normal_authenticated
 from admin_places_service import (
     destination_counts, list_destinations, AdminPlacesError, PROJECTION, MAX_OFFSET,
 )
@@ -28,7 +28,7 @@ class AdminPlacesServiceTests(unittest.TestCase):
             getattr(self.query, method).return_value = self.query
         self.client = Mock(spec=['table'])
         self.client.table.return_value = self.query
-        self.context = AuthenticatedContext('handle', 'user', 'email', self.client)
+        self.context = AuthenticatedContext('handle', 'user', 'email', self.client, realm='admin')
 
     def test_list_projection_statuses_filter_and_bound(self):
         for status in ('draft', 'published', 'archived'):
@@ -112,7 +112,7 @@ class AdminPlacesRouteTests(unittest.TestCase):
             self.clients.append(client)
             return client
         self.dependencies.adapters._http_factory = factory
-        return test_registration.seed_normal_session(self)
+        return test_registration.seed_admin_session(self)
 
     def test_real_counts_listing_filter_and_disclosure(self):
         self.install_catalog()

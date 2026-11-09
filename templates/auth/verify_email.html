@@ -1,4 +1,5 @@
 {% from 'auth/required.html' import required_mark %}
+{% set admin_registration = admin_registration | default(false) %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,28 +11,31 @@
     <title>Verify your email | RosaGo</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
     <script src="{{ url_for('static', filename='js/verification.js') }}" defer></script>
+    {% include 'partials/workspace_ui.html' %}
 </head>
 <body class="auth-site">
 <main class="registration-layout">
     <section class="welcome"><a class="brand" href="{{ url_for('index') }}">Rosa<span>Go</span></a><p class="brand-description">Smart Tourism System for Santa Rosa, Laguna</p></section>
-    <section class="form-panel" aria-labelledby="verification-title">
+    <section class="form-panel verification-panel" aria-labelledby="verification-title">
     <div class="registration-card">
+        {% if admin_registration %}<p class="eyebrow">Admin access</p><p class="form-intro">Admin access requires separate project owner approval after email verification.</p>{% endif %}
         {% if verified %}
         <h1 id="verification-title">Email verified</h1>
-        <p>Your email address has been successfully verified. You can now sign in to your RosaGo account.</p>
-        <a class="submit-button" href="{{ url_for('login') }}">Continue to Login</a>
+        <p>Your email address has been successfully verified. {% if admin_registration %}Return to Admin login once the project owner approves your access.{% else %}You can now sign in to your RosaGo account.{% endif %}</p>
+        <a class="submit-button" href="{{ url_for('admin.login') if admin_registration else url_for('login') }}">Continue to Login</a>
         {% elif pending %}
         <h1 id="verification-title">Verify your email</h1>
-        <p>We sent a verification code to your email address. Enter the code below to verify your RosaGo account.</p>
+        <p>If this address needs verification, check your email for a code and enter it below. A new code may not be sent for an account that is already registered and verified.</p>
+        <p>Already have an account? <a href="{{ url_for('admin.login') if admin_registration else url_for('login') }}">Sign in with your existing account</a> instead of registering again.{% if admin_registration %} User and Admin access use the same account; the project owner must approve Admin membership separately.{% endif %}</p>
         {% if message %}<p class="form-status" data-state="error" role="alert">{{ message }}</p>{% endif %}
-        <form method="post" action="{{ url_for('verify_email') }}">
+        <form method="post" action="{{ url_for('verify_email', workspace='admin') if admin_registration else url_for('verify_email') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf }}">
             <div class="field"><label for="verification-code">Verification Code {{ required_mark() }}</label>
             <input id="verification-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10" required></div>
             <button class="submit-button" type="submit">Verify Email</button>
         </form>
         <p>Didn't receive the code?</p>
-        <form method="post" action="{{ url_for('resend_verification') }}">
+        <form method="post" action="{{ url_for('resend_verification', workspace='admin') if admin_registration else url_for('resend_verification') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf }}">
             <button class="secondary-button" id="verification-resend" type="submit" data-cooldown="{{ cooldown }}"{% if cooldown %} disabled{% endif %}>{% if cooldown %}Resend code in {{ '%02d:%02d'|format(cooldown // 60, cooldown % 60) }}{% else %}Resend verification code{% endif %}</button>
         </form>
@@ -41,7 +45,7 @@
         <h1 id="verification-title">Verify your email</h1>
         <p role="status">{{ message or 'There is no pending verification in this browser. Return to registration to begin. Verification sessions also end after a server restart or inactivity period.' }}</p>
         {% endif %}
-        {% if not verified %}<p><a class="secondary-button" href="{{ url_for('register') }}">Back to registration</a> · <a class="secondary-button" href="{{ url_for('login') }}">Continue to Login</a></p>{% endif %}
+        {% if not verified %}<p><a class="secondary-button" href="{{ url_for('register', workspace='admin') if admin_registration else url_for('register') }}">Back to registration</a> · <a class="secondary-button" href="{{ url_for('admin.login') if admin_registration else url_for('login') }}">Continue to Login</a></p>{% endif %}
     </div>
     </section>
 </main>

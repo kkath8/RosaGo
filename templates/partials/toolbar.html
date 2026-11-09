@@ -5,6 +5,6 @@
             <button class="site-button" type="submit">Search</button>
         </form>
         <a class="topbar-profile" href="{{ url_for('user_index') }}" aria-label="Your profile">
-            <span class="user-avatar" aria-hidden="true">{% if user_email is defined and user_email %}{{ user_email[0] | upper }}{% else %}RG{% endif %}</span>
+            <span class="user-avatar" aria-hidden="true" data-user-initials>{{ profile_initials(profile.first_name, profile.last_name) if profile is defined and profile else profile_initials() }}</span>
             <span>Profile</span>
         </a>

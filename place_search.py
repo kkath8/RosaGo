@@ -2,14 +2,10 @@
 import unicodedata
 
 from places_service import PlacesConsistencyError, PlacesValidationError
+from destination_categories import CATEGORY_LABELS as _CATEGORY_LABELS
 
 
 MAX_QUERY_LENGTH = 200
-_CATEGORY_LABELS = {
-    'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping',
-    'accommodation': 'Accommodation', 'nature': 'Nature',
-    'heritage': 'Heritage', 'industrial': 'Industrial Tourism',
-}
 
 
 def normalize_query(value):

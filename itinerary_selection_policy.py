@@ -5,6 +5,7 @@ from uuid import UUID
 from itinerary_builder import MAX_DESTINATIONS
 from recommendation_engine import MAX_CANDIDATES, RecommendationCandidate
 from place_model import CATEGORIES
+from destination_categories import category_matches
 from itinerary_geography import coordinates, distance_km, visit_order
 
 POLICY_VERSION = 'pace-count-category-tourism-cluster-v3'
@@ -29,7 +30,7 @@ def select_destinations(preferences, matched, *, place_count=None, places=()):
         raise SelectionPolicyError()
     interests = preferences.get('interests')
     pace = preferences.get('trip_pace')
-    if (type(interests) is not list or not 1 <= len(interests) <= len(CATEGORIES)
+    if (type(interests) is not list or not 1 <= len(interests) <= 7
             or any(type(item) is not str or item not in CATEGORIES for item in interests)
             or len(set(interests)) != len(interests)
             or type(pace) is not str or pace not in DESTINATIONS_PER_DAY):
@@ -51,7 +52,7 @@ def select_destinations(preferences, matched, *, place_count=None, places=()):
     for candidate in matched:
         if (type(candidate) is not RecommendationCandidate
                 or type(candidate.place_id) is not str
-                or type(candidate.category) is not str or candidate.category not in interests
+                or type(candidate.category) is not str or not any(category_matches(candidate.category, interest) for interest in interests)
                 or type(candidate.deterministic_score) is not int or candidate.deterministic_score != 1
                 or type(candidate.tourism_priority) is not int or candidate.tourism_priority not in (0, 1, 2)):
             raise SelectionPolicyError()

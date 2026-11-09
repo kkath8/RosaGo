@@ -1,0 +1,30 @@
+{
+    "purpose":  "Historical reference only; never import or execute automatically",
+    "files":  [
+                  {
+                      "original":  "data/santa_rosa_places/places.json",
+                      "archived":  "data/santa_rosa_places/archive/places.json",
+                      "sha256":  "35741e489f701479b04422bad440e5943662efea0458ff16e1a6c00b5f819632"
+                  },
+                  {
+                      "original":  "data/santa_rosa_places/publish.sql",
+                      "archived":  "data/santa_rosa_places/archive/publish.sql",
+                      "sha256":  "bf040bcf3f2e92f913dd1835a3aed3853962574ab575fecfa987f30d369d83a2"
+                  },
+                  {
+                      "original":  "data/santa_rosa_places/tourism_transition_plan.json",
+                      "archived":  "data/santa_rosa_places/archive/tourism_transition_plan.json",
+                      "sha256":  "19572dc85b7fbf8296ecdc7d1ba16166550c6f32a77c374e2a135fd01eebedd0"
+                  },
+                  {
+                      "original":  "data/santa_rosa_places/tourism_transition_review.sql",
+                      "archived":  "data/santa_rosa_places/archive/tourism_transition_review.sql",
+                      "sha256":  "c48dbd7da80bca5065a7de51e11c66960cad6e53637559326ca32cb6236ec9ea"
+                  },
+                  {
+                      "original":  "data/santa_rosa_places/README.md",
+                      "archived":  "data/santa_rosa_places/archive/README.original.md",
+                      "sha256":  "d636d590438782862e5c7838c640ea88d7352c9e4660133a7464a8f4c9764708"
+                  }
+              ]
+}

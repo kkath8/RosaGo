@@ -1,0 +1,111 @@
+{
+  "review_only": true,
+  "target_project_ref": "brnkigrrqdrywahvcbvc",
+  "hosted_changes": 0,
+  "live_signins": 0,
+  "native_postgres_checks_passed": 40,
+  "offline_tests_passed": 42,
+  "fresh_inventory_schema_storage_validated": true,
+  "source_images_reprocessed": false,
+  "auth_restore_replay_resolved": false,
+  "production_publication_safe": false,
+  "remote_deployment": "NO-GO",
+  "files": [
+    {
+      "file": "local_catalog\\production-publication\\category-registry.review.json",
+      "sha256": "2e0038fb307de60aaff2a45451dfdafadc878429be9cff91816f82241148d02d"
+    },
+    {
+      "file": "local_catalog\\production-publication\\change-set.review.json",
+      "sha256": "67d6b9d8193a292ebb2d0a8835375c64d6ab49ac837657ee745eac1bfc83bbad"
+    },
+    {
+      "file": "local_catalog\\production-publication\\fresh-evidence.json",
+      "sha256": "1acfcb2f8986005fd281f7c86472f6e49f5125dacfcf47aa0f279d954323b924"
+    },
+    {
+      "file": "local_catalog\\production-publication\\image-uploads.review.json",
+      "sha256": "794f4de131b8b987c09de3de09992305d91a8b78a86a0fcc1c9a68a003f8458b"
+    },
+    {
+      "file": "local_catalog\\production-publication\\manifest.json",
+      "sha256": "176c811d76e1f3aedc892f753d521106aa761f19dbf543d41008a29b9743e580"
+    },
+    {
+      "file": "local_catalog\\production-publication\\postflight-anon.readonly.sql",
+      "sha256": "2051eacafb6f78e8a9d3438f549ac39c0b85a87c68c7b38f2eca5bfe53879b4c"
+    },
+    {
+      "file": "local_catalog\\production-publication\\postflight.readonly.sql",
+      "sha256": "27a724287b2858366f55ff4ff22e96a4769b0c52827060b7e6f139083a7e16d1"
+    },
+    {
+      "file": "local_catalog\\production-publication\\prepare-cutover.review.sql",
+      "sha256": "69d544190790c5d90c2050366fa42a7da77122295722c071a909997dc7de4b83"
+    },
+    {
+      "file": "local_catalog\\production-publication\\README.md",
+      "sha256": "b0bd7ee981cced4a59899cc71302d5d83829b3732b6b4a8b33ba2d67b47857bc"
+    },
+    {
+      "file": "local_catalog\\production-publication\\registry.review.sql",
+      "sha256": "eb0c4f1548a9c0227741f92e1720d59f1a25d99c6e822c009734dd05dab49496"
+    },
+    {
+      "file": "local_catalog\\production-publication\\storage-permissions.readonly.sql",
+      "sha256": "c7484a3ef3b7edfbcbf1aa783b49292daa9e02f728528a3da0d35c2b4a09fad7"
+    },
+    {
+      "file": "local_catalog\\production-publication\\storage-preflight.readonly.sql",
+      "sha256": "68fb352cf25f96260e20d081c706311f466a0a395151d28a1419f3c9116d3a9b"
+    },
+    {
+      "file": "local_catalog/catalog_extension.production-bound-v2.review.sql",
+      "sha256": "fbae5e46f01de839d0722f4396fa626bd531ab811b3b2cbfb7ecd46fae180a08"
+    },
+    {
+      "file": "local_catalog/mapped_publication_guard.authority-fail-closed.review.sql",
+      "sha256": "f476e339e0ee833aa68837e7bf3bf1fb59bce605c074e71de1a9546309e9f0eb"
+    },
+    {
+      "file": "local_catalog/publication-package-with-rollback-qualification.json",
+      "sha256": "ae2cee4f1ac6cd82ce29c0604d79a4543e1bec9dd2d8681ea073d2e1108ac514"
+    },
+    {
+      "file": "tools/prepare_production_publication.py",
+      "sha256": "4e8d0c62c94acca64b0d8482b280b22973a398ce2baf57ec80fa53400b7223ef"
+    },
+    {
+      "file": "tools/qualify_publication_package.py",
+      "sha256": "884ada0380d89a4a84c4622dad16fd04edb596b465eacec3c9b6c85ab524a8e5"
+    },
+    {
+      "file": "tools/qualify_catalog_migrations_local.py",
+      "sha256": "9aae75b5942fa0e82a116490fff9c4ade5ad77d2e5c8040700d4db2e18d8513b"
+    },
+    {
+      "file": "tools/validate_publication_evidence.py",
+      "sha256": "012ee730ce90817965429727cade30eed1c4db996f376ef2ddae9ee51416a149"
+    },
+    {
+      "file": "tests/test_production_publication.py",
+      "sha256": "a2a6b7c54854ce8c03c44782e3550f88690c8d8050ba1da3ba7bee6b842d2d1a"
+    },
+    {
+      "file": "admin_photo_service.py",
+      "sha256": "b7146462d2903dc9762e16ab22dd625c1c44cf7b977f1c7b0b57b03e34724143"
+    },
+    {
+      "file": "server_data_gateway.py",
+      "sha256": "5934d2d8c0a356e299897eb2a902e1206112e0a898f65d31807699d24ba05db0"
+    }
+  ],
+  "preserved_evidence": {
+    "data/santa_rosa_places/weather_metadata.json": "cdab900f6c1c652f3800ae83347fd0cdf9848c8d5a39277cb67acfd1fd6be724",
+    "docs/production-readiness/remote-evaluation/linux-build-results.json": "b3645b00f1ebe1a724e96ccf8d0f9831ef98cb1e627d27d5249b7d73f10a470d",
+    "data/imports/rosago_pois_import_source.csv": "c55ed7076b59d611bc57eb0d59b0c6c425b301e4999655b01a17a9a8ca87ed2a",
+    "local_catalog/production-destinations-owner-export.json": "390435d62c88baa6786443c43d5544dd377bc9ca1ff96e1dd18d127976846d32",
+    "local_catalog/production-catalog-schema-preflight.json": "7294b7da8e64d778bd500f2fe6dc9effed8bd0f142205504166bccd39cbe889e",
+    "local_catalog/destination-images.final-mapping.review.json": "0c41a58c76d38028feeaf8916dfb20a909cd79ba78fb5879da484610539ac8d1"
+  }
+}

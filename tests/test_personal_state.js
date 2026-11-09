@@ -1,10 +1,10 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-function page(scope, storage = new Map()) {
+function page(scope, storage = new Map(), registry = null) {
     const listeners = {}, session = new Map();
     const context = vm.createContext({structuredClone, console,
-        document:{body:{dataset:{uiScope:scope}}},
+        document:{body:{dataset:{uiScope:scope}},getElementById:id=>id==='category-registry-data'&&registry?{textContent:JSON.stringify(registry)}:null},
         localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},
         sessionStorage:{getItem:k=>session.get(k),setItem:(k,v)=>session.set(k,v),removeItem:k=>session.delete(k)},
         CustomEvent:class {constructor(type){this.type=type;}},
@@ -13,6 +13,9 @@ function page(scope, storage = new Map()) {
     return {p:context.P,storage,listeners};
 }
 const id='00000000-0000-0000-0000-000000000001';
+const dynamic=page('cccccccccccccccccccccccc',new Map(),{'specialty-coffee':'Specialty Coffee'});
+dynamic.p.change(s=>{s.prefs.interests=['specialty-coffee'];});
+assert.equal(page('cccccccccccccccccccccccc',dynamic.storage,{'specialty-coffee':'Specialty Coffee'}).p.get().prefs.interests[0],'specialty-coffee');
 const a=page('aaaaaaaaaaaaaaaaaaaaaaaa'), b=page('bbbbbbbbbbbbbbbbbbbbbbbb',a.storage);
 a.p.toggle('saved',id);assert.equal(a.p.get().saved[0],id);assert.equal(b.p.get().saved.length,0);
 // Reload uses the same existing namespace; favorites never populate Trip Bag.

@@ -1,0 +1,34 @@
+{
+  "local_only": true,
+  "remote_deployment": "NO-GO",
+  "hosted_changes": 0,
+  "image_processing_repeated": false,
+  "worksheet_rows": {
+    "destinations-98.csv": 98,
+    "aliases.csv": 10,
+    "proposed-archives.csv": 7,
+    "category-conflicts.csv": 2,
+    "category-parents.csv": 73
+  },
+  "offline_tests_passed": 6,
+  "network_connections_prohibited_in_tests": true,
+  "original_inputs_and_final_image_mapping_unchanged": true,
+  "files": [
+    {
+      "file": "tools/export_owner_destination_review.py",
+      "sha256": "cb33f33716ff353ad1dab880bac527c7fba2acf872f122a946af9782b8cc89b9"
+    },
+    {
+      "file": "tests/test_owner_destination_review.py",
+      "sha256": "9e20c43b3164640db41ce3e7747ce4213dd543d9153fd23015b454b641a4d00b"
+    },
+    {
+      "file": "local_catalog/owner-review/README.md",
+      "sha256": "9b5f5049b5ee368ccf6e92e2d4f8955596c1b29b91c8b17c0b1fc81eca01c85e"
+    },
+    {
+      "file": "local_catalog/FINAL_PUBLICATION_DECISION_CHECKLIST.md",
+      "sha256": "87dd7a277bf41decd603077224e19d742d90a2b6a5e81b1d7c9cdeff2801ac7e"
+    }
+  ]
+}

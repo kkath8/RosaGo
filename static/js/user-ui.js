@@ -3,6 +3,8 @@
     'use strict';
     const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
     const P=RosaGoPersonal, labels={accommodation:'Accommodation',attraction:'Attractions',dining:'Dining',shopping:'Shopping',nature:'Nature',heritage:'Heritage',industrial:'Industrial Tourism'};
+    const categoryRegistry=document.getElementById('category-registry-data');
+    if(categoryRegistry)Object.assign(labels,JSON.parse(categoryRegistry.textContent));
     const make=(tag,text='',className='')=>{const el=document.createElement(tag);el.textContent=text;if(className)el.className=className;return el;};
     const action=(label,name,id)=>{const b=make('button',label,'mini-button');b.type='button';b.dataset.action=name;if(id)b.dataset.id=id;return b;};
     const link=(label,url,className='secondary-button')=>{const a=make('a',label,className);a.href=url;return a;};
@@ -34,8 +36,13 @@
     function localButton(label,name,id,pressed){const b=action(label,name,id);b.setAttribute('aria-pressed',String(pressed));return b;}
     function card(place){
         const state=P.get(),article=make('article','','local-place-card');article.dataset.placeId=place.id;
-        const visual=make('div','','local-card-art'),img=document.createElement('img');img.className='local-place-visual';img.alt=place.image_url?place.name:'';
-        img.src=place.image_url||('/static/img/categories/'+place.category+'.svg');visual.append(img,make('span',labels[place.category]||place.category,'local-card-category'));
+        const visual=make('div','','local-card-art'),img=document.createElement('img');img.className='local-place-visual';
+        img.dataset.destinationImage='';img.dataset.placeholderAlt='Photo unavailable for '+place.name;
+        img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';
+        img.alt=place.image_url?place.name:img.dataset.placeholderAlt;
+        img.src=place.image_url||(window.RosaGoImages?.placeholder||'/static/img/destination-placeholder.svg');
+        if(!place.image_url)img.classList.add('destination-photo-placeholder');
+        visual.append(img,make('span',labels[place.category]||place.category,'local-card-category'));
         const body=make('div');body.append(make('h2',place.name));
         if(place.tourism_type||place.tourism_category)body.append(make('p',[place.tourism_type,place.tourism_category].filter(Boolean).join(' · ')));
         body.append(make('p',place.address),make('p',place.description,'destination-excerpt'));
@@ -153,6 +160,24 @@
             else if(name==='assistant-prompt'){const field=$('#assistant-message');field.value=target.dataset.prompt;field.focus({preventScroll:true});}
         }catch(error){toast(error.message||'This device action could not be completed.');}
     });
+    // Public pages do not resolve authentication just to render a logout
+    // button. Obtain its User-only token on demand, with no Admin authority.
+    document.addEventListener('submit',event=>{
+        const form=event.target;
+        if(!form.action||new URL(form.action,location.href).pathname!=='/logout')return;
+        const field=form.querySelector('[name="csrf_token"]');
+        if(field?.value)return;
+        event.preventDefault();
+        if(form.dataset.csrfPending)return;
+        form.dataset.csrfPending='true';
+        fetch('/auth/logout-token',{credentials:'same-origin',cache:'no-store'}).then(r=>{
+            if(!r.ok)throw new Error('Logout unavailable');return r.json();
+        }).then(data=>{
+            if(typeof data.csrf_token!=='string'||!data.csrf_token)throw new Error('Logout unavailable');
+            const token=field||document.createElement('input');token.type='hidden';token.name='csrf_token';token.value=data.csrf_token;
+            if(!field)form.append(token);delete form.dataset.csrfPending;form.requestSubmit();
+        }).catch(()=>{delete form.dataset.csrfPending;toast('Reload this page before signing out.');});
+    });
     document.addEventListener('submit',event=>{const form=event.target;
         if(form.matches('[data-confirm-delete]')&&!confirm('Delete this saved trip and its destinations?')){event.preventDefault();return;}
         if(form.action&&new URL(form.action,location.href).pathname==='/logout')P.clearActive();
@@ -171,7 +196,7 @@
     addEventListener('scroll',()=>$('.site-header')?.classList.toggle('scrolled',scrollY>8),{passive:true});
     addEventListener('rosago:personal',refresh);
     if(P.hasAccountScope()&&document.body.dataset.authenticated!=='true'){
-        for(const account of $$('.header-account')){const form=document.createElement('form');form.method='post';form.action='/logout';const button=make('button','Logout','account-logout-button');button.type='submit';form.append(button);account.replaceChildren(form);}
+        for(const account of $$('.header-account')){const form=document.createElement('form');form.method='post';form.action='/logout';const csrf=document.createElement('input');csrf.type='hidden';csrf.name='csrf_token';csrf.value=document.querySelector('meta[name="user-logout-csrf"]')?.content||'';form.append(csrf);const button=make('button','Logout','account-logout-button');button.type='submit';form.append(button);account.replaceChildren(form);}
     }
     setupSettings();refresh();loadTrips();
     if($('[data-dashboard-weather]'))requestJSON('/api/weather').then(data=>{

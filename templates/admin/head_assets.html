@@ -1,4 +1,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/design-tokens.css') }}">
-{% include 'partials/theme_head.html' %}
-{% include 'partials/fonts.html' %}
+{% if request.endpoint != 'admin.login' %}{% include 'partials/theme_head.html' %}{% endif %}
+<script src="{{ url_for('static', filename='js/admin-preferences.js') }}"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/destination-images.css') }}">
+<script src="{{ url_for('static', filename='js/destination-images.js') }}" data-destination-placeholder="{{ url_for('static', filename='img/destination-placeholder.svg') }}" defer></script>
+{% include 'partials/workspace_ui.html' %}

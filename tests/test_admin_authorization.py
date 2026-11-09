@@ -18,7 +18,7 @@ class AdminServiceTests(unittest.TestCase):
         client = Mock(spec=['rpc'])
         query = client.rpc.return_value
         query.retry.return_value = query
-        context = AuthenticatedContext('handle', 'user', 'irrelevant@example.invalid', client)
+        context = AuthenticatedContext('handle', 'user', 'irrelevant@example.invalid', client, realm='admin')
         for value in (True, False):
             client.reset_mock()
             query.execute.return_value = SimpleNamespace(data=value)
@@ -43,7 +43,7 @@ class AdminServiceTests(unittest.TestCase):
 class AdminBoundaryTests(unittest.TestCase):
     def setUp(self):
         test_registration.RegistrationTests.setUp(self)
-        self.dependencies = self.app.extensions['rosago_normal_auth']
+        self.dependencies = self.app.extensions['rosago_admin_auth']
         self.value = False
         self.status = 200
         self.requests = []
@@ -51,7 +51,7 @@ class AdminBoundaryTests(unittest.TestCase):
 
         def respond(request):
             self.requests.append(request)
-            self.assertIsNotNone(g.auth)
+            self.assertTrue(g.get('admin_auth') is not None or __import__('flask').request.endpoint == 'admin.login')
             if request.url.path.endswith('/rosago_admin_operational_overview'):
                 return httpx.Response(503, json={'message': 'Unavailable'})
             if request.url.path == '/rest/v1/places':
@@ -85,7 +85,7 @@ class AdminBoundaryTests(unittest.TestCase):
 
     def test_unauthenticated_and_forged_flags(self):
         for state in ({}, {'is_admin': True, 'role': 'admin', 'user_id': 'user-123'}):
-            with self.client.session_transaction() as session:
+            with self.client.session_transaction(path='/admin') as session:
                 session.clear(); session.update(state)
             response = self.client.get('/admin')
             self.protected(response, 302)
@@ -93,7 +93,7 @@ class AdminBoundaryTests(unittest.TestCase):
         self.assertEqual(self.requests, [])
 
     def test_membership_revocation_and_render_isolation(self):
-        test_registration.seed_normal_session(self)
+        test_registration.seed_admin_session(self)
         self.protected(self.client.get('/admin'), 403)
         seen = []
         def inspect(sender, template, context, **kwargs):
@@ -110,12 +110,12 @@ class AdminBoundaryTests(unittest.TestCase):
         self.value = False
         self.protected(self.client.get('/admin'), 403)
         self.assertEqual(sum(r.url.path == '/rest/v1/rpc/rosago_is_admin' for r in self.requests), 3)
-        with self.client.session_transaction() as session:
+        with self.client.session_transaction(path='/admin') as session:
             self.assertNotIn('is_admin', session)
             self.assertNotIn('role', session)
 
     def test_failures_and_error_paths_are_private(self):
-        handle = test_registration.seed_normal_session(self)
+        handle = test_registration.seed_admin_session(self)
         for value in (None, 'true', 1, [True], {'role': 'admin'}):
             self.value = value
             self.protected(self.client.get('/admin'), 503)

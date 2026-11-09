@@ -243,7 +243,7 @@ scope and observation time; missing capability must not appear as zero.
 | `0004`–`0007`, `0010` | Draft/preferences/preview lifecycle and itinerary foundations under own-user RLS | No Admin aggregate authorization or durable generation-event log. |
 | `0008`/`0009` | Membership predicate and Admin all-status catalog SELECT | No catalog write rights, user directory or global trip read rights. |
 | `0011_places_tourism_metadata.sql` | Type/category/raw hours/status/source/source row | Existing metadata foundation, not a new schema requirement if deployed. No verified-hours status. |
-| `data/santa_rosa_places/publish.sql` | Separate reviewed transition drops published-coordinate requirement and adds industrial support | Lives outside numbered migrations; target environment may differ from original schema. Never rerun it as part of Admin UI startup. |
+| `data/santa_rosa_places/archive/publish.sql` | Separate reviewed transition drops published-coordinate requirement and adds industrial support | Lives outside numbered migrations; target environment may differ from original schema. Never rerun it as part of Admin UI startup. |
 | Tourism transition plan/review SQL | Reviewed import proposal and provenance | Review artifacts are not the runtime catalog or a transaction audit log. |
 | Weather JSON sidecar | Exposure and verification provenance with identity binding | No DB-backed editor, version history UI or automatic identity repair. |
 

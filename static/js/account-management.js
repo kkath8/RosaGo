@@ -4,6 +4,21 @@
     const P = typeof RosaGoPersonal === 'undefined' ? null : RosaGoPersonal;
     if (!P) return;
     const $ = selector => document.querySelector(selector);
+    function updateInitials(value) {
+        if (typeof value !== 'string' || !value.trim() || [...value].length > 4) return false;
+        for (const avatar of document.querySelectorAll('[data-user-initials]')) avatar.textContent = value;
+        return true;
+    }
+    // Profile already has the authoritative server value. Other User pages
+    // resolve it without persisting names/initials in browser storage.
+    const profileAvatar = $('.profile-avatar[data-user-initials]');
+    if (profileAvatar) updateInitials(profileAvatar.textContent);
+    else if (document.body.dataset.userAvatarUrl && window.fetch) {
+        fetch(document.body.dataset.userAvatarUrl, {credentials:'same-origin', cache:'no-store', headers:{Accept:'application/json'}})
+            .then(response => response.ok && response.headers.get('content-type')?.includes('application/json') ? response.json() : null)
+            .then(value => { if (value) updateInitials(value.initials); })
+            .catch(() => { /* Keep the safe server-rendered fallback. */ });
+    }
     const personal = document.body.dataset.personalized !== 'false';
     const quiz = $('.itinerary-form');
     function defaults() {
@@ -62,9 +77,10 @@
                     status.textContent=specific?'':'Your save could not be confirmed. Check your profile before trying again.';return;
                 }
                 if(!page.querySelector('[data-profile-management]'))throw new Error('Unconfirmed save');
+                const savedAvatar=page.querySelector('.profile-avatar[data-user-initials]');
+                if(!savedAvatar||!updateInitials(savedAvatar.textContent))throw new Error('Unconfirmed profile identity');
                 const persisted=P.change(next=>{Object.assign(next.prefs,preferences);next.profile.color=color;next.options=options;});
                 $('[data-profile-full-name]').textContent=[form.elements.first_name.value.trim(),form.elements.last_name.value.trim()].join(' ');
-                $('.profile-avatar').textContent=(form.elements.first_name.value.trim()[0]+form.elements.last_name.value.trim()[0]).toUpperCase();
                 status.textContent=persisted?'Profile updated successfully.':'Your name was updated. Travel preferences could not be remembered; please try again.';
             }catch(_){status.textContent='Your save could not be confirmed. Check your profile before trying again.';}
             finally{saving=false;button.disabled=false;}

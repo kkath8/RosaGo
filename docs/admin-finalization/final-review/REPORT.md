@@ -1,5 +1,8 @@
 # RosaGo final deployment review
 
+> Historical catalog artifacts now live in `data/santa_rosa_places/archive/`. Their bytes are preserved; `weather_metadata.json` remains at its original runtime path.
+
+
 **CURRENT RESULT: 0012 LIVE ADMIN FUNCTIONAL TEST PASSED — READY FOR 0013 DEPLOYMENT REVIEW.**
 
 The operator clarified that both original-record changes were intentional manual

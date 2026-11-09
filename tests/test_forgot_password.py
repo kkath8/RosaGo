@@ -27,11 +27,18 @@ class ForgotPasswordTests(unittest.TestCase):
         return httpx.Response(self.status, json={'detail': 'private-provider-detail'})
 
     def submit(self, **data):
-        return self.client.post('/forgot-password', data={'email': 'ana@example.com', **data})
+        return test_registration.post_public_form(self, '/forgot-password', data={'email': 'ana@example.com', **data})
 
     def pending_id(self):
         with self.client.session_transaction() as current:
             return current.get('pending_recovery_id')
+
+    def test_configured_https_callback_is_sent_instead_of_localhost(self):
+        self.app.view_functions['forgot_password'].__globals__['PUBLIC_ORIGIN'] = 'https://rosago.example'
+        response = self.submit()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.requests[-1].url.params['redirect_to'],
+                         'https://rosago.example/auth/reset-callback')
 
     def test_page_and_links_without_authentication_calls(self):
         response = self.client.get('/forgot-password')

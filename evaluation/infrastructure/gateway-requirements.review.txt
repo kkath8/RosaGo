@@ -1,0 +1,4 @@
+# Optional candidate only; not added to the active Render requirements.
+# Must be installed/qualified on Linux before any gateway activation.
+psycopg[binary]==3.3.8
+psycopg_pool==3.3.1

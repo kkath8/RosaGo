@@ -1,0 +1,3 @@
+# Optional LOCAL Phase 2M dependencies. Not included by active requirements.txt.
+psycopg[binary]==3.3.8
+psycopg_pool==3.3.1

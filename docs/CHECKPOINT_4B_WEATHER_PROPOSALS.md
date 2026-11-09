@@ -1,5 +1,8 @@
 # Checkpoint 4B: curated weather exposure and explicit proposals
 
+> Historical catalog artifacts now live in `data/santa_rosa_places/archive/`. Their bytes are preserved; `weather_metadata.json` remains at its original runtime path.
+
+
 ## Review status
 
 Weather proposal infrastructure is ready, but curated destination verification is

@@ -74,11 +74,11 @@ class PendingEmailStore:
             self._records[handle] = replace(record, **changes)
             return record, 0
 
-    def finish(self, handle, *, verified=False, resent=False, limited=False):
+    def finish(self, handle, *, verified=False, resent=False, limited=False, uncertain=False):
         with self._lock:
             record = self._records.get(handle)
             if record is not None:
-                changes = {'busy':False, 'verified':record.verified or verified}
+                changes = {'busy':bool(uncertain), 'verified':record.verified or verified}
                 if resent or limited:
                     changes['resend_at'] = self.clock() + 60
                     self._email_resends[record.email.casefold()] = changes['resend_at']

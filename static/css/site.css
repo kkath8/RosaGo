@@ -21,9 +21,9 @@
 .public-site .user-workspace { width: 100%; flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .public-site .site-main, .public-site .footer-inner { width: min(100%, 1180px); margin-inline: auto; }
 .public-site .site-main { flex: 1; min-width: 0; padding: 24px 20px 64px; overflow-wrap: anywhere; }
-.public-site .site-header { position: sticky; top: 0; z-index: 1000; width: 100%; background: #fff; border-top: 5px solid var(--site-gold); border-bottom: 1px solid var(--site-border); }
+.public-site .site-header { position: sticky; top: 0; z-index: 1000; width: 100%; background: var(--site-shell-bg); color: var(--site-shell-ink); border-top: 0; border-bottom: 1px solid var(--site-border); }
 .public-site .header-utilities { width: min(100% - 40px, 1240px); margin: auto; display: flex; align-items: center; gap: 24px; min-height: 72px; }
-.public-site .site-brand { flex: none; text-decoration: none; color: var(--site-red); font: 700 2rem/1 var(--site-logo); letter-spacing: -.04em; }
+.public-site .site-brand { flex: none; text-decoration: none; color: var(--site-shell-ink); font: 700 2rem/1 var(--site-logo); letter-spacing: -.04em; }
 .public-site .site-brand span { color: #d6a21c; border-bottom: 3px solid #d6a21c; }
 .public-site .site-topbar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 20px; }
 .public-site .topbar-search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }

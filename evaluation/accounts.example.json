@@ -1,0 +1,17 @@
+{
+  "status": "PLAN_ONLY_NO_ACCOUNTS_CREATED",
+  "real_respondent_credentials": false,
+  "identities": [
+    {
+      "participant_code": "evaluation-user-001",
+      "realm": "User",
+      "membership": "no Admin membership"
+    },
+    {
+      "participant_code": "evaluation-admin-001",
+      "realm": "Admin",
+      "membership": "test project only"
+    }
+  ],
+  "provisioning": "After separate approval, create unique temporary credentials privately in the evaluation project using operator-owned test email aliases. Do not use real respondent email/passwords or share one Admin identity. No passwords/tokens belong in this file."
+}

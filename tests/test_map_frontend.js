@@ -18,6 +18,7 @@ function run(markers, options = {}) {
     }
     for (const id of ['places-map', 'map-data', 'map-failure', 'map-tile-failure']) elements.set(id, element('div'));
     elements.get('map-data').textContent = options.json ?? JSON.stringify(markers);
+    if (options.registry) elements.set('category-registry-data', {textContent: JSON.stringify(options.registry)});
     if (options.noContainer) elements.delete('places-map');
     if (options.noData) elements.delete('map-data');
     const map = { setView(...args) { calls.views.push(args); },
@@ -166,4 +167,19 @@ test('published maps larger than the old 50-record page retain every marker', ()
     const { calls, elements } = run(Array(51).fill(place()));
     assert.equal(calls.markers.length, 51);
     assert.equal(elements.get('map-failure').hidden, true);
+});
+
+test('reviewed dynamic category labels render as text and retain all 98 markers', () => {
+    const { calls, elements } = run(Array.from({length:98}, () => place({category:'specialty-coffee'})),
+        {registry:{'specialty-coffee':'Specialty Coffee'}});
+    assert.equal(calls.markers.length, 98);
+    assert.equal(calls.markers[0].popup.children[1].textContent, 'Specialty Coffee');
+    assert.equal(elements.get('map-failure').hidden, true);
+});
+
+test('unregistered dynamic categories fail before tiles or markers are created', () => {
+    const { calls, elements } = run([place({category:'not-approved'})], {registry:{nature:'Nature'}});
+    assert.equal(calls.tiles.length, 0);
+    assert.equal(calls.markers.length, 0);
+    assert.equal(elements.get('map-failure').hidden, false);
 });

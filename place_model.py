@@ -1,10 +1,11 @@
 """Dependency-free public Place values shared by catalog reads and pure policy."""
 from dataclasses import dataclass
 from datetime import datetime
+from destination_categories import CATEGORIES
 
 
-CATEGORIES = frozenset(('attraction', 'dining', 'shopping', 'accommodation', 'nature', 'heritage', 'industrial'))
 TOURISM_TYPES = frozenset(('Local', 'Common'))
+ENVIRONMENTS = ('Indoor', 'Outdoor', 'Mix of Both')
 TOURISM_HOURS_STATUSES = frozenset(('unverified', 'verify_required', 'not_supplied'))
 
 
@@ -28,6 +29,8 @@ class Place:
     tourism_hours_status: str | None = None
     tourism_source: str | None = None
     tourism_source_row: int | None = None
+    environment: str | None = None
+    operating_days_raw: str | None = None
 
     def __repr__(self):
         return '<Place redacted>'

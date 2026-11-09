@@ -1,0 +1,11 @@
+/* Shared cover presentation; never assigns a photo to a destination record. */
+.public-site .destination-visual img.destination-photo-placeholder[data-destination-image],
+.public-site .local-place-visual.destination-photo-placeholder[data-destination-image],
+.admin-site img.destination-photo-placeholder {
+    object-fit: contain;
+    background: #f8f3eb;
+}
+.public-site .destination-visual img.destination-photo-placeholder {
+    padding: 8px;
+}
+img[data-destination-image] { max-width: 100%; }

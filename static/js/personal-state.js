@@ -2,7 +2,10 @@
 const RosaGoPersonal = (() => {
     'use strict';
     const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-    const categories = ['accommodation','attraction','dining','shopping','nature','heritage','industrial'];
+    const registry = typeof document !== 'undefined' && typeof document.getElementById === 'function'
+        ? document.getElementById('category-registry-data') : null;
+    const categories = registry ? Object.keys(JSON.parse(registry.textContent))
+        : ['accommodation','attraction','dining','shopping','nature','heritage','industrial'];
     const colors = ['', '#8e3b2c', '#c99a1c', '#3b6ea5', '#2f6b4f', '#6b3a6b'];
     const defaults = () => ({version:1,saved:[],visited:[],bag:[],notes:{},checklists:{},reminders:[],read:[],dismissed:[],
         prefs:{size:'medium',compact:false,interests:[],pace:'balanced',companions:'friends',transportation:'private_car',budgetPreference:'',weather:true,events:true,trips:true,home:'',contrast:false},

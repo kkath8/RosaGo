@@ -1,0 +1,104 @@
+{
+  "target_project_ref": "jfaufpfzfhysqkhcdsrs",
+  "schema_approval_received": true,
+  "execution_performed": true,
+  "write_mechanism_selected_or_connected": true,
+  "read_only_mcp_preserved": true,
+  "schema_only": true,
+  "seed_included": false,
+  "ordered_migrations": [
+    {
+      "version": "20261107000101",
+      "file": "20261107000101_0001_profiles.sql",
+      "reviewed_source": "evaluation/setup/0001_profiles.sql",
+      "sha256": "513d2887e9e7ee14295ca673508fdcf3bf146bdc323364b18d7947eec8b0bf65"
+    },
+    {
+      "version": "20261107000102",
+      "file": "20261107000102_0002_places.sql",
+      "reviewed_source": "evaluation/setup/0002_places.sql",
+      "sha256": "6e1497d1bbc8f145cfa9e26d2e6e8b4592b3c7a31f487afb522b9c43e4414ec2"
+    },
+    {
+      "version": "20261107000103",
+      "file": "20261107000103_0003_trips.sql",
+      "reviewed_source": "evaluation/setup/0003_trips.sql",
+      "sha256": "418c0add1d20d2bef592aff1b872603e943133549c9c72ca1f8ac01e37ea5a86"
+    },
+    {
+      "version": "20261107000104",
+      "file": "20261107000104_0004_itinerary_foundation.sql",
+      "reviewed_source": "evaluation/setup/0004_itinerary_foundation.sql",
+      "sha256": "551c4b20c901e58b822f4fe070e8cada9a97bf5e20156298aa50f24ec2d311bc"
+    },
+    {
+      "version": "20261107000105",
+      "file": "20261107000105_0005_itinerary_draft_lifecycle.sql",
+      "reviewed_source": "evaluation/setup/0005_itinerary_draft_lifecycle.sql",
+      "sha256": "ac27ee2058c902fa2d4d38cef2cd6edb3c7b63a733cd83a5015e61669544f904"
+    },
+    {
+      "version": "20261107000106",
+      "file": "20261107000106_0006_itinerary_preference_extension.sql",
+      "reviewed_source": "evaluation/setup/0006_itinerary_preference_extension.sql",
+      "sha256": "13ea3ee92d5902d8c4778d3f4b756358a495232c44bf70b05cd2b0956372600c"
+    },
+    {
+      "version": "20261107000107",
+      "file": "20261107000107_0007_itinerary_preview_lifecycle.sql",
+      "reviewed_source": "evaluation/setup/0007_itinerary_preview_lifecycle.sql",
+      "sha256": "1592eaa79d97cdb2c2ee841cd878beb2c808138c0cbe79986e5a539270465671"
+    },
+    {
+      "version": "20261107000108",
+      "file": "20261107000108_0008_admin_authorization.sql",
+      "reviewed_source": "evaluation/setup/0008_admin_authorization.sql",
+      "sha256": "20e7000b09b73068302e83bc5aa119a60f9e52d30ff41ee7d0b889e3d0b89e7e"
+    },
+    {
+      "version": "20261107000109",
+      "file": "20261107000109_0009_admin_places_read.sql",
+      "reviewed_source": "evaluation/setup/0009_admin_places_read.sql",
+      "sha256": "e2ddda9706a77b3f8f37bca4540fdbf4fe61c2c1eec16e31b8b6b035a5f32c83"
+    },
+    {
+      "version": "20261107000110",
+      "file": "20261107000110_0010_itinerary_preview_adjustment.sql",
+      "reviewed_source": "evaluation/setup/0010_itinerary_preview_adjustment.sql",
+      "sha256": "15e415f377695dfa0544bb9c752475a699885e2a7f7a162b53ca92803b6ca93f"
+    },
+    {
+      "version": "20261107000111",
+      "file": "20261107000111_0011_places_tourism_metadata.sql",
+      "reviewed_source": "evaluation/setup/0011_places_tourism_metadata.sql",
+      "sha256": "5e2fb0d99e34ea3c80b9f038f6c860b146a08fd5f6c23e52c406a722fd8c9225"
+    },
+    {
+      "version": "20261107000112",
+      "file": "20261107000112_0012_admin_management.sql",
+      "reviewed_source": "evaluation/setup/0012_admin_management.sql",
+      "sha256": "dd51447edb430221cdef47e2661246d6e547ce256d0831ebe9555d4992705076"
+    },
+    {
+      "version": "20261107000113",
+      "file": "20261107000113_0013_admin_destination_audit.sql",
+      "reviewed_source": "evaluation/setup/0013_admin_destination_audit.sql",
+      "sha256": "6a1ad41a0a10b475fcdb64837239d58f62a6baf56731fd277a83bd5e72ac46e6"
+    },
+    {
+      "version": "20261107000114",
+      "file": "20261107000114_0013b_destination_photo_contract.sql",
+      "reviewed_source": "evaluation/setup/0013b_destination_photo_contract.sql",
+      "sha256": "d72091e34d528803254b2b2377575e8a9246e3904820ee99767bf6473a883e3e"
+    },
+    {
+      "version": "20261107000115",
+      "file": "20261107000115_0014_destination_environment.sql",
+      "reviewed_source": "evaluation/setup/0014_destination_environment.sql",
+      "sha256": "d61dc54fe8fa829c13c978aa5508769a5ce67c9100e32a44422d29baa043cdc4"
+    }
+  ],
+  "execution_mechanism": "Owner-operated npx Supabase CLI; MCP remains read-only",
+  "hosted_postflight_verified": true,
+  "postflight_evidence": "docs/production-readiness/remote-evaluation/schema-only-approval-status.json"
+}

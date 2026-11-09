@@ -1,0 +1,7 @@
+# LOCAL TEST ONLY. Not a deployment image or production startup approval.
+# Build the current-source restore-replay-base-check image first.
+FROM rosago-evaluation:restore-replay-base-check
+USER root
+COPY requirements-postgres-isolated.txt /tmp/gateway-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/gateway-requirements.txt && pip check
+USER 10001:10001

@@ -1,3 +1,4 @@
+import test_registration
 """Browser-session settings validation and real protected-route integration."""
 import unittest
 from unittest.mock import Mock, patch
@@ -171,7 +172,7 @@ class SettingsRouteTests(unittest.TestCase):
     def test_logout_clears_display_choice_and_fresh_browser_starts_without_it(self):
         self.post('weather')
         with patch.dict(self.namespace, logout_normal_session=Mock(return_value=None)):
-            self.assertEqual(self.client.post('/logout').status_code, 303)
+            self.assertEqual(test_registration.post_user_logout(self).status_code, 303)
         with self.client.session_transaction() as session:
             self.assertEqual(dict(session), {})
         self.assertEqual(self.client.get('/user/settings').status_code, 302)

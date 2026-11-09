@@ -1,10 +1,48 @@
 {% extends 'admin/base.html' %}
+{% from 'partials/icons.html' import icon %}
 {% block title %}Admin Settings | RosaGo Admin{% endblock %}
+{% macro select(name,label,options) %}<div class="field"><label for="pref-{{ name }}">{{ label }}</label><select id="pref-{{ name }}" name="{{ name }}">{% for value,text in options %}<option value="{{ value }}">{{ text }}</option>{% endfor %}</select></div>{% endmacro %}
+{% macro switch(name,label,description,checked=false) %}<label class="admin-setting-switch" for="pref-{{ name }}"><span><strong>{{ label }}</strong><small id="help-{{ name }}">{{ description }}</small></span><input id="pref-{{ name }}" name="{{ name }}" type="checkbox" role="switch" aria-describedby="help-{{ name }}"{% if checked %} checked{% endif %}></label>{% endmacro %}
 {% block content %}
-<div class="admin-utility-page">
-<header class="utility-heading"><p class="eyebrow">Administration</p><h1>Admin Settings</h1><p class="intro">Choose how the Admin workspace looks on this device.</p></header>
-<section class="panel settings-appearance" aria-labelledby="appearance-heading"><h2 id="appearance-heading">Appearance</h2><p class="muted">Use the same RosaGo theme across Admin and User pages in this browser.</p><div class="admin-theme-controls settings-theme-controls" role="group" aria-label="Appearance"><button type="button" data-set-theme="light" aria-pressed="true">Light</button><button type="button" data-set-theme="dark" aria-pressed="false">Dark</button></div><p class="settings-theme-status" data-theme-status role="status">Theme changes apply immediately and are saved on this device.</p></section>
-<p class="section-note">Appearance changes do not change your account access or destination data.</p>
-<div class="utility-links"><a class="secondary-button" href="{{ url_for('admin.account') }}">Admin Account</a><a class="secondary-button" href="{{ url_for('admin.help_page') }}">Admin Help</a></div>
+<div class="admin-settings-page">
+<header class="utility-heading"><p class="eyebrow">Administration</p><h1>Admin Settings</h1><p class="intro">Workspace preferences for this browser, separate from your account.</p></header>
+<p class="section-note admin-preferences-scope">Preferences stay in this browser. Theme applies immediately; save other changes below.</p>
+<form data-admin-preferences-form>
+<div class="admin-settings-grid">
+<section class="panel admin-settings-card settings-appearance" aria-labelledby="appearance-heading">
+<div class="admin-settings-heading">{{ icon('Settings') }}<h2 id="appearance-heading">Appearance &amp; Display</h2></div>
+<div class="admin-theme-controls settings-theme-controls" role="group" aria-label="Appearance"><button type="button" data-set-theme="light" aria-pressed="true">Light</button><button type="button" data-set-theme="dark" aria-pressed="false">Dark</button></div>
+<p class="settings-theme-status" data-theme-status role="status">Choose Light or Dark to apply it across RosaGo.</p>
+<fieldset class="admin-density-options"><legend>Table density</legend><div class="admin-segmented"><label><input type="radio" name="density" value="comfortable" checked><span>Comfortable</span></label><label><input type="radio" name="density" value="compact"><span>Compact</span></label></div></fieldset>
+{{ switch('reduceMotion','Reduce animations','Limit workspace motion. Your operating system preference is always respected.') }}
+</section>
+<section class="panel admin-settings-card" aria-labelledby="notifications-heading">
+<div class="admin-settings-heading">{{ icon('Alerts') }}<h2 id="notifications-heading">In-app Notices</h2></div>
+{{ switch('reviewAlerts','Catalog review alerts','Show the existing dashboard review card. Review lists remain available.',true) }}
+{{ switch('successNotices','Successful action confirmations','Show confirmations after successful Admin actions.',true) }}
+<p class="section-note">Errors, warnings, unavailable states and security notices always remain visible.</p>
+</section>
+<section class="panel admin-settings-card" aria-labelledby="destinations-heading">
+<div class="admin-settings-heading">{{ icon('Destinations') }}<h2 id="destinations-heading">Destination Defaults</h2></div>
+{{ select('sort','Default order',[('slug','Existing catalog order'),('newest','Newest'),('oldest','Oldest'),('name','Name A–Z')]) }}
+<p class="section-note">Newest and Oldest use the destination creation date.</p>
+{{ select('pageSize','Destinations per page',[('25','25 records'),('10','10 records'),('50','50 records')]) }}
+{{ select('status','Default publication filter',[('all','All statuses'),('published','Published'),('draft','Draft'),('archived','Archived')]) }}
+<p class="section-note">Explicit filters override defaults. These choices never change destination status.</p>
+</section>
+<section class="panel admin-settings-card" aria-labelledby="dates-heading">
+<div class="admin-settings-heading">{{ icon('Planner') }}<h2 id="dates-heading">Date &amp; Time</h2></div>
+{{ select('timeFormat','Time format',[('12','12-hour'),('24','24-hour')]) }}
+{{ select('dateFormat','Date format',[('dmy','Day Month Year'),('mdy','Month Day, Year'),('iso','Year-Month-Day')]) }}
+<p class="section-note">Admin record dates use Asia/Manila. Stored timestamps and original audit details stay unchanged.</p>
+</section>
+</div>
+<div class="admin-preferences-save"><button class="button" type="submit" data-save-preferences disabled>Save Preferences</button><p data-preferences-status role="status" aria-live="polite">Save to apply workspace preferences. Theme is saved separately.</p></div>
+<noscript><p class="notice">Enable JavaScript to save browser-local workspace preferences.</p></noscript>
+</form>
+<div class="admin-settings-grid">
+<section class="panel admin-settings-card" aria-labelledby="security-heading"><div class="admin-settings-heading">{{ icon('Profile') }}<h2 id="security-heading">Account &amp; Security</h2></div><div class="actions"><a class="secondary-button" href="{{ url_for('admin.account') }}">Admin Account</a><a class="secondary-button" href="{{ url_for('forgot_password') }}">Change Password</a><form method="post" action="{{ url_for('admin.logout') }}"><input type="hidden" name="csrf_token" value="{{ logout_csrf }}"><button class="warning-button" type="submit">Log Out of Admin</button></form></div><p class="section-note">Logout ends this Admin session. Account security is managed by the existing authentication flow.</p></section>
+<section class="panel admin-settings-card" aria-labelledby="system-heading"><div class="admin-settings-heading">{{ icon('Dashboard') }}<h2 id="system-heading">RosaGo System Information</h2></div><dl class="utility-facts"><dt>Workspace</dt><dd>RosaGo Admin</dd><dt>Preferences</dt><dd>This browser only</dd><dt>Display timezone</dt><dd>Asia/Manila</dd></dl><div class="actions"><a class="secondary-button" href="{{ url_for('admin.help_page') }}">Help</a><a class="secondary-button" href="{{ url_for('admin.audit_logs') }}">Audit Logs</a></div></section>
+</div>
 </div>
 {% endblock %}

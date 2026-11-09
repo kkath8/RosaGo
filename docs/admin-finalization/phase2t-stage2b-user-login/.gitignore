@@ -1,0 +1,2 @@
+# Disposable browser metadata is local-only and must never be staged.
+browser-profile/

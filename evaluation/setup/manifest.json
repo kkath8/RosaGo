@@ -1,0 +1,100 @@
+{
+  "target_project_ref": "jfaufpfzfhysqkhcdsrs",
+  "hosted_execution_authorized": false,
+  "ordered_files": [
+    {
+      "file": "0001_profiles.sql",
+      "source": "migrations/0001_profiles.sql",
+      "source_sha256": "3d1164c291775e56a6d52eec0f47f8169a5ae811c5de8410864b705a00b406f5",
+      "prepared_sha256": "513d2887e9e7ee14295ca673508fdcf3bf146bdc323364b18d7947eec8b0bf65"
+    },
+    {
+      "file": "0002_places.sql",
+      "source": "migrations/0002_places.sql",
+      "source_sha256": "472757526f37398e67408bd4871f6cb729c66084c29d09a38349d4e0d81864ea",
+      "prepared_sha256": "6e1497d1bbc8f145cfa9e26d2e6e8b4592b3c7a31f487afb522b9c43e4414ec2"
+    },
+    {
+      "file": "0003_trips.sql",
+      "source": "migrations/0003_trips.sql",
+      "source_sha256": "419cbf2977a0b3646326d041338af66277d4f7a8340e3a6a1ad24f4eb187cb6d",
+      "prepared_sha256": "418c0add1d20d2bef592aff1b872603e943133549c9c72ca1f8ac01e37ea5a86"
+    },
+    {
+      "file": "0004_itinerary_foundation.sql",
+      "source": "migrations/0004_itinerary_foundation.sql",
+      "source_sha256": "0754c2aa007f95d61158468f627ece33bf8b8183ccb7d0cc8d372a4b840b9298",
+      "prepared_sha256": "551c4b20c901e58b822f4fe070e8cada9a97bf5e20156298aa50f24ec2d311bc"
+    },
+    {
+      "file": "0005_itinerary_draft_lifecycle.sql",
+      "source": "migrations/0005_itinerary_draft_lifecycle.sql",
+      "source_sha256": "935cc40b7d783e78b11f1ee64f660456d3f3f42c6617fe35d7d32442bc382e9a",
+      "prepared_sha256": "ac27ee2058c902fa2d4d38cef2cd6edb3c7b63a733cd83a5015e61669544f904"
+    },
+    {
+      "file": "0006_itinerary_preference_extension.sql",
+      "source": "migrations/0006_itinerary_preference_extension.sql",
+      "source_sha256": "9964ebb0cbfa2e7918c1a95cdfe231d4615e77201ecfd4ed0d9afa6f950e6ce1",
+      "prepared_sha256": "13ea3ee92d5902d8c4778d3f4b756358a495232c44bf70b05cd2b0956372600c"
+    },
+    {
+      "file": "0007_itinerary_preview_lifecycle.sql",
+      "source": "migrations/0007_itinerary_preview_lifecycle.sql",
+      "source_sha256": "3778620a60a981a7dc4cc26919d211835e71255d27ca0a4fad56f59ac0141e22",
+      "prepared_sha256": "1592eaa79d97cdb2c2ee841cd878beb2c808138c0cbe79986e5a539270465671"
+    },
+    {
+      "file": "0008_admin_authorization.sql",
+      "source": "migrations/0008_admin_authorization.sql",
+      "source_sha256": "76ea17dafa602ce8fc79e14ea98812137fb41ed0c273e73ea0daee3eef3f3553",
+      "prepared_sha256": "20e7000b09b73068302e83bc5aa119a60f9e52d30ff41ee7d0b889e3d0b89e7e"
+    },
+    {
+      "file": "0009_admin_places_read.sql",
+      "source": "migrations/0009_admin_places_read.sql",
+      "source_sha256": "1dcdd7957924d92edc763fce3f4e46ce8f8cd8264b486c8a52ef48fa9230c75b",
+      "prepared_sha256": "e2ddda9706a77b3f8f37bca4540fdbf4fe61c2c1eec16e31b8b6b035a5f32c83"
+    },
+    {
+      "file": "0010_itinerary_preview_adjustment.sql",
+      "source": "migrations/0010_itinerary_preview_adjustment.sql",
+      "source_sha256": "d645d17e4481f489ab6c84755db4a68c85da27281487abc12e752699ebd28abe",
+      "prepared_sha256": "15e415f377695dfa0544bb9c752475a699885e2a7f7a162b53ca92803b6ca93f"
+    },
+    {
+      "file": "0011_places_tourism_metadata.sql",
+      "source": "migrations/0011_places_tourism_metadata.sql",
+      "source_sha256": "19818f77516dab5c90f90a36dd8102b43a7b8c6f2f0b4b4cb7eb1d04252cc183",
+      "prepared_sha256": "5e2fb0d99e34ea3c80b9f038f6c860b146a08fd5f6c23e52c406a722fd8c9225"
+    },
+    {
+      "file": "0012_admin_management.sql",
+      "source": "migrations/0012_admin_management.sql",
+      "source_sha256": "d98c2e724ddc87908b891ea54ef4eb4ec40ebdf12abb75265c8874fae73bd45e",
+      "prepared_sha256": "dd51447edb430221cdef47e2661246d6e547ce256d0831ebe9555d4992705076"
+    },
+    {
+      "file": "0013_admin_destination_audit.sql",
+      "source": "migrations/0013_admin_destination_audit.sql",
+      "source_sha256": "38951c705b6370210cbd935bdffaff272ce4d5c2f88418df877adcd3eea082af",
+      "prepared_sha256": "6a1ad41a0a10b475fcdb64837239d58f62a6baf56731fd277a83bd5e72ac46e6"
+    },
+    {
+      "file": "0013b_destination_photo_contract.sql",
+      "source": "tools/admin_destination_photo_contract.sql",
+      "source_sha256": "cc3801bb9fdafd745a46281ae5e951b1915abe7943d05250c4d0eaebe440a115",
+      "prepared_sha256": "d72091e34d528803254b2b2377575e8a9246e3904820ee99767bf6473a883e3e"
+    },
+    {
+      "file": "0014_destination_environment.sql",
+      "source": "migrations/0014_destination_environment.sql",
+      "source_sha256": "f76b86f5d2979dd37bab3e3bf4a7b44f18a44378cc570a4ce7139141eeca24b6",
+      "prepared_sha256": "d61dc54fe8fa829c13c978aa5508769a5ce67c9100e32a44422d29baa043cdc4"
+    }
+  ],
+  "photo_function_expected_md5": "148b4df23e340c9a434ad16013200e92",
+  "accounts_or_production_data_included": false,
+  "synthetic_seed_sha256": "6a9cdc841255ddf3f258b1edffd09122add3fc47ae350aca11be6d3a4bdae71e",
+  "synthetic_seed_runs_after": "0014_destination_environment.sql"
+}

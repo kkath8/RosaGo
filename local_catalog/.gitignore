@@ -1,0 +1,4 @@
+# Approved snapshots, editable copies and generated plans stay local by default.
+/*.json
+!/manifest.json
+/.test-*/

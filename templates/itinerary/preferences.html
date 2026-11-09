@@ -3,6 +3,7 @@
 {% block extra_head %}<meta name="referrer" content="same-origin">{% endblock %}
 {% block content %}
 {% set labels = {'attraction': 'Attractions', 'dining': 'Dining', 'shopping': 'Shopping', 'accommodation': 'Accommodation', 'nature': 'Nature', 'heritage': 'Heritage', 'industrial': 'Industrial Tourism', 'walking': 'Walking', 'bicycle': 'Bicycle', 'motorcycle': 'Motorcycle', 'private_car': 'Private Car', 'public_transport': 'Public Transport', 'ride_hailing': 'Ride-Hailing / Taxi', 'mixed_transport': 'Mixed Transport', 'sightseeing': 'Sightseeing', 'food_trip': 'Food Trip', 'outdoor_activities': 'Outdoor Activities', 'culture_heritage': 'Culture & Heritage', 'relaxation': 'Relaxation', 'indoor': 'Mostly Indoor', 'outdoor': 'Mostly Outdoor', 'mixed': 'Mix of Both'} %}
+{% set labels = dict(labels, **category_labels) %}
 {% set pace_notes = {'relaxed': 'Fewer suggested destinations per day', 'balanced': 'Moderate number of suggested destinations per day', 'packed': 'More suggested destinations per day'} %}
 {% macro choices(name, options, kind, descriptions=none) %}
 <div class="itinerary-choices{% if descriptions %} itinerary-choices-detailed{% endif %}">

@@ -1,0 +1,99 @@
+﻿csv_number,name,action,id,slug,status,category,latitude,longitude,description_missing,alias_confirmation_required,issues
+1,Enchanted Kingdom,update,7544a303-a669-41ad-9723-21b440c8e1ff,enchanted-kingdom,published,theme-park-tourist-attraction,14.2819473,121.0953936,False,False,
+2,Nuvali Lakeside / Park,update,4751680c-faab-4043-9d5b-d55053e54415,nuvali,draft,nature-outdoor-recreation,,,False,True,"Unresolved location: retain Draft; Approve existing UUID alias; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+3,Ayala Malls Solenad (Ayala Malls Nuvali),update,772aa257-089e-426b-9669-d4da7a6492c1,solenad-1-2-and-3,draft,shopping-mall-lifestyle-dining,14.2375,121.0579,False,True,Approve existing UUID alias
+4,Paseo Outlets,update,a984ad59-ed4d-43b8-89c1-33852877cfe0,paseo-de-santa-rosa,published,outlet-shopping-dining,14.24754,121.06361,False,False,
+5,SM City Santa Rosa,update,277837ea-06bf-43ab-a509-c6d88cb44956,sm-city-santa-rosa,published,shopping-mall-entertainment,14.3128,121.0986,False,False,
+6,Robinsons Sta. Rosa,update,428a525e-259d-4a89-90f4-1c231c6d6eae,robinson-s-santa-rosa,published,shopping-mall-retail,14.3189,121.0964,False,False,
+7,Vista Mall Sta. Rosa,update,1f04e93e-6227-42fb-be7f-e19970476efb,vista-mall-santa-rosa,published,shopping-mall-lifestyle,14.24383,121.05812,False,False,
+8,S&R Membership Shopping Nuvali,add,53225084-33f6-5ba2-a5d8-b36d0aa1f4f2,destination-5322508433f65ba2a5d8b36d0aa1f4f2,published,warehouse-club-supermarket,14.2357428,121.0544903,False,False,
+9,Landers Superstore Nuvali,add,e04d47e6-ae6c-54b6-9f42-b218189a6d4c,destination-e04d47e6ae6c54b69f42b218189a6d4c,published,warehouse-supermarket,14.23411,121.05675,False,False,
+10,WalterMart Santa Rosa,update,0a98d162-51ba-410f-b917-4b95720f105b,waltermart-santa-rosa,draft,shopping-mall-supermarket,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+11,Balibago Complex,add,c100d611-2ac0-57e4-8455-e2728293f65b,destination-c100d6112ac057e48455e2728293f65b,published,commercial-district-shopping-transport,14.2944,121.1058,False,False,
+12,Fort Santo Domingo / Cuartel de Santo Domingo,update,20fb152e-b13b-422a-a21f-4c24dc487a0e,cuartel-de-santo-domingo,draft,historical-landmark-heritage,14.23081,121.04986,False,True,Approve existing UUID alias
+13,Santa Rosa de Lima Parish Church,update,2b258daf-2ede-4e12-8961-c36965d1f278,santa-rosa-parish-church,published,religious-site-heritage,14.314024,121.111321,False,False,
+14,Timezone Solenad 3,add,9f273d69-eb4d-5c08-bd51-286dd683fc06,destination-9f273d69eb4d5c08bd51286dd683fc06,published,arcade-indoor-entertainment,14.2364839,121.0577614,False,False,
+15,SM Game Park - Santa Rosa,add,b529e1f1-a764-5ae1-be8f-ba2d346acdb4,destination-b529e1f1a7645ae1be8fba2d346acdb4,published,arcade-amusement-center,14.312778,121.097222,False,False,
+16,McDonald's Nuvali Santa Rosa,add,f39afe9b-0632-5136-abc6-812a0a84dabb,destination-f39afe9b06325136abc6812a0a84dabb,published,fast-food-burger-restaurant,14.31346,121.11161,False,False,
+17,Jollibee Balibago Crossing,add,4a70ef35-1ebe-5766-b71d-98f8c0076a58,destination-4a70ef351ebe5766b71d98f8c0076a58,published,fast-food-filipino-fast-food,14.2940258,121.104284,False,False,
+18,Jollibee Balibago Complex,add,3fab3397-d886-53fb-8eda-c9fd5eb96881,destination-3fab3397d88653fb8edac9fd5eb96881,published,fast-food-filipino-fast-food,14.29389,121.10417,False,False,
+19,Jollibee Sta. Rosa Bayan,add,3a7cc4dc-033c-51c7-8820-c719a2a81b2d,destination-3a7cc4dc033c51c78820c719a2a81b2d,published,fast-food-filipino-fast-food,14.3131,121.1115,False,False,
+20,Jollibee Golden City,add,56a5a473-c6b0-5223-9673-0601b333666d,destination-56a5a473c6b0522396730601b333666d,published,fast-food-filipino-fast-food,14.289149,121.108634,False,False,
+21,Chowking Sta. Rosa Balibago,update,9c745f18-aebc-43f3-96da-fdd1a9dd787d,destination-259a1938b66048a6995604bbfd989a76,published,fast-food-chinese-filipino,14.2933684,121.1030992,False,False,
+22,Chowking Sta. Rosa Bayan,add,9afaf811-439c-5c48-85c4-a475fb11a47c,destination-9afaf811439c5c4885c4a475fb11a47c,draft,food-and-beverage-fast-food,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+23,Burger King - SM Sta. Rosa,add,acfc6a0b-ad23-5a83-a662-f4b735656726,destination-acfc6a0bad235a83a662f4b735656726,published,fast-food-burger-restaurant,14.3118166,121.0987853,False,False,
+24,Pizza Hut - SM City Santa Rosa,add,ff553f72-aabc-5a53-82df-1c2b74d9a3a6,destination-ff553f72aabc5a5382df1c2b74d9a3a6,published,pizza-restaurant-fast-casual,14.3128,121.0986,False,False,
+25,Nono's - SM Santa Rosa,add,478bf8c6-dec4-55e2-a263-5d20f832c19d,destination-478bf8c6dec455e2a2635d20f832c19d,published,restaurant-cafe-bakery,14.31278,121.09861,False,False,
+26,Ipponyari Santa Rosa,update,929c8840-9203-4ceb-929a-a47b80240305,ipponyari-santa-rosa,published,japanese-restaurant,14.249167,121.0625,False,False,
+27,Pho Saigon Vietnamese Restaurant - Sta. Rosa,add,24e45b07-ab48-5ff1-b934-e9f2be78aca1,destination-24e45b07ab485ff1b934e9f2be78aca1,published,vietnamese-restaurant,14.2882,121.0968,False,False,
+28,Taste of Joy Sta. Rosa,update,cc208fcc-bfff-4846-ad51-08915d0c3100,taste-of-joy-sta-rosa,published,filipino-restaurant,14.2950533,121.1063468,False,False,
+29,Three Monkeys Brews & Bites,add,a41883b6-273f-57ba-9ee3-6000d6b6ef82,destination-a41883b6273f57ba9ee36000d6b6ef82,published,cafe-coffee-shop-casual-dining,14.2403506,121.0627297,False,False,
+30,Bad H Coffee Bar - Specialty Coffee,add,98e05f57-afec-5087-8bab-c7fc7bb78c61,destination-98e05f57afec50878babc7fc7bb78c61,published,cafe-specialty-coffee,14.3114,121.11778,False,False,
+31,UCC Clockwork Nuvali,add,3e4ff442-b30b-5e89-867e-b292923c2dd2,destination-3e4ff442b30b5e89867eb292923c2dd2,published,cafe-restaurant,14.2368,121.0569,False,False,
+32,Amare La Cucina Nuvali,add,9760cd6c-b889-5aa6-ac66-51bcd2170f0a,destination-9760cd6cb8895aa6ac6651bcd2170f0a,published,italian-restaurant-pizzeria,14.236819,121.056869,False,False,
+33,Ebi 10,add,744b980b-00a8-57c5-b505-8152a128f881,destination-744b980b00a857c5b5058152a128f881,published,japanese-restaurant-tempura,14.236516,121.057686,False,False,
+34,The Café Mediterranean,add,ad5bad52-7531-5475-bf77-f9a202924024,destination-ad5bad5275315475bf77f9a202924024,published,mediterranean-restaurant,14.236516,121.057686,False,False,
+35,Manam Comfort Filipino - Nuvali,add,a73bcd94-38cf-50a7-b303-58b5f504073f,destination-a73bcd9438cf50a7b30358b5f504073f,published,filipino-restaurant,14.2374,121.057,False,False,
+36,The Morning After,add,ff2f8fc0-7272-569f-8135-825a1c25d1ea,destination-ff2f8fc07272569f8135825a1c25d1ea,published,breakfast-restaurant-cafe,14.236819,121.056869,False,False,
+37,Nonna's Pasta and Pizzeria,add,a49e3fcc-9d7a-5e83-beb2-e259a364bc8b,destination-a49e3fcc9d7a5e83beb2e259a364bc8b,published,italian-restaurant-pizzeria,14.2378,121.0567,False,False,
+38,Bistro Charlemagne,add,c66f0507-9f1c-5b4a-be2f-b13406a24d86,destination-c66f05079f1c5b4abe2fb13406a24d86,published,restaurant-eurasian-cuisine,14.2374,121.057,False,False,
+39,Gerry's Grill - Ayala Malls Solenad,add,5b8ad701-dd46-57f7-80df-3b7b112829bc,destination-5b8ad701dd4657f780df3b7b112829bc,published,filipino-restaurant-grill,14.2381,121.0565,False,False,
+40,TGI Fridays Nuvali,add,9b2fe492-b0bd-5e33-9b5e-c783dcd874ee,destination-9b2fe492b0bd5e339b5ec783dcd874ee,published,american-restaurant-bar-and-grill,14.2378392,121.0571708,False,False,
+41,Bites & Barrels Gastropub,add,9d776af0-8c10-5ce9-89e8-bc8201dfba13,destination-9d776af08c105ce989e8bc8201dfba13,published,gastropub-restaurant,14.2426483,121.0575532,False,False,
+42,Santa Rosa Arch,update,5591677c-107e-4960-b36a-fbd475965e4f,santa-rosa-arch,draft,historical-landmark-heritage,14.31519,121.11146,False,True,Approve existing UUID alias
+43,The City of Santa Rosa Museum (Museo de Santa Rosa),update,b2b0dab7-f8b1-4c1a-8828-bcff6fa5db40,the-city-of-santa-rosa-museum,draft,museum-cultural-heritage,14.3125,121.1111,False,True,Approve existing UUID alias
+44,Arambulo Ancestral House,update,639dc783-b54c-4deb-9ab5-7d7781030fe5,arambulo-ancestral-house,draft,heritage-site-historical-house,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+45,Zavalla Ancestral House,update,2ba8d0cb-5b67-4aeb-82b2-7fc702cd90ec,zavalla-ancestral-house,published,heritage-site-historical-house,14.3130999,121.1114527,False,False,
+46,Gonzales Ancestral House,update,5e8083a4-e365-4ffa-8f65-504d081e62a6,gonzales-ancestral-house,draft,heritage-site-historical-house,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+47,Toyota Santa Rosa (Toyota Motor Philippines),update,c4927777-5067-40bc-92af-0cc143deac11,toyota-santa-rosa,draft,industrial-tourism-manufacturing,14.2818,121.08671,False,True,Approve existing UUID alias
+48,Coca-Cola Santa Rosa (Coca-Cola Beverages Philippines),update,22c498a5-2540-421b-b355-afbf5017c463,coca-cola-santa-rosa,draft,industrial-tourism-manufacturing,14.2836,121.0844,False,True,Approve existing UUID alias
+49,Monde Nissin Santa Rosa Plant,update,8253f1f0-acc7-4a7a-aad5-a3fe4c4ccdd0,monde-nissin-santa-rosa,draft,industrial-tourism-manufacturing,14.2907546,121.098102,False,True,Approve existing UUID alias
+50,Mitsubishi Motors Philippines Corporation,update,fe47d1c8-2078-4615-8ee9-9fb07393b658,mitsubishi-motors-santa-rosa,draft,industrial-tourism-manufacturing,14.2649,121.0646,False,True,Approve existing UUID alias
+51,Fun Farm at Sta. Elena,update,184cb1aa-fa72-42ba-a94d-07e097f33d83,fun-farm-sta-elena,draft,agritourism-nature-park,14.2455521,121.0827255,False,True,Approve existing UUID alias
+52,Santa Rosa City Auditorium,update,2f344787-301d-426c-b5a1-83939848ce01,city-auditorium,published,auditorium-civic-center,14.31509,121.11423,False,False,
+53,City of Santa Rosa Multi-Purpose Complex,update,1a850644-f471-4cef-ab13-4d434cfe834c,city-of-santa-rosa-multi-purpose-complex,published,sports-complex-events-arena,14.311917,121.104778,False,False,
+54,Laguna Central,update,1205e2c0-1280-4503-9ce4-483a9be33a75,laguna-central,published,shopping-mall-commercial-center,14.25012,121.06451,False,False,
+55,Yamazaki Kitchen Laguna,update,4a436763-acde-4968-94d9-c3453e1bfc44,yamazaki-kitchen-laguna,published,japanese-restaurant-izakaya-restobar,14.3128843,121.1138483,False,False,
+56,Nuvali Sand Courts,add,29a6ad75-b052-5cb9-aee2-60fc23fe0d7b,destination-29a6ad75b0525cb9aee260fc23fe0d7b,draft,beach-volleyball-court,14.233799,121.058404,True,False,Approve supported description proposal
+57,"ACES Badminton and Pickleball Center - Santa Rosa, Laguna",add,e5c0610b-7648-5430-ac60-ab50942c36b8,destination-e5c0610b76485430ac60ab50942c36b8,published,badminton-pickleball-court,14.3001,121.1039,False,False,
+58,Winner Badminton Court,add,4f9d0ef1-0411-531e-85d5-44820b99d18a,destination-4f9d0ef10411531e85d544820b99d18a,draft,badminton-court,14.27626,121.09815,True,False,Approve supported description proposal
+59,Court Zero Pickleball Court,add,396bdadf-49d8-5b4f-8f95-a1dde0f2786c,destination-396bdadf49d85b4f8f95a1dde0f2786c,draft,pickleball-court,14.2727,121.0858,True,False,Approve supported description proposal
+60,Infinite Badminton & Sports Center,add,0de51602-119c-553d-8428-c38520fec09f,destination-0de51602119c553d8428c38520fec09f,draft,badminton-court,14.2908,121.1075,True,False,Approve supported description proposal
+61,Pickle G Society,add,2634816f-d1c4-5f90-87c6-51692e7c5dae,destination-2634816fd1c45f9087c651692e7c5dae,published,pickleball-court,14.2705,121.111,False,False,
+62,TCC - The Common Court,add,d0ba276d-5030-54e7-a8f2-3bc5896f01fe,destination-d0ba276d503054e7a8f23bc5896f01fe,published,pickleball-court,14.275,121.1122,False,False,
+63,Pickle Patio,add,b76af90b-e95d-54ab-ab16-acb65a79fd7d,destination-b76af90be95d54abab16acb65a79fd7d,published,pickleball-court,14.2447,121.1098,False,False,
+64,Tagapo Basketball Court,add,1425d100-9caf-5846-868a-5a66edc6f21f,destination-1425d1009caf5846868a5a66edc6f21f,published,basketball-court,14.319013,121.10289,False,False,
+65,Mabuhay Homes Basketball Court,add,d4f27202-d201-5cd9-b648-acc63dbb303f,destination-d4f27202d2015cd9b648acc63dbb303f,published,basketball-court,14.28828,121.12038,False,False,
+66,Golden City Clubhouse Basketball Court,add,aaaa70ad-60ea-5698-9cc1-ad5b641326c9,destination-aaaa70ad60ea56989cc1ad5b641326c9,published,basketball-court,14.29143,121.11649,False,False,
+67,Balibago Court,add,f6bb2503-565f-5c60-ad1b-064b993dc90e,destination-f6bb2503565f5c60ad1b064b993dc90e,published,basketball-volleyball-court,14.2946,121.1054,False,False,
+68,Seda Nuvali,add,476a5454-2085-59f9-8d13-709350e2c397,destination-476a5454208559f98d13709350e2c397,published,hotel-swimming-pool,14.238454,121.059759,False,False,
+69,Technopark Hotel,add,479c73cf-c8c7-5d98-b582-5ad0a5eb5a84,destination-479c73cfc8c75d98b5825ad0a5eb5a84,published,hotel-swimming-pool,14.2536,121.0775,False,False,
+70,Terrazas de Teodora Pavilion and Resort,add,7c3b26b1-e0a6-5f1a-aa78-b735c3b2ee46,destination-7c3b26b1e0a65f1aaa78b735c3b2ee46,draft,,14.28328,121.12424,False,False,Approve shared resort category/parent
+71,Garden Villas 1 Clubhouse (Pool),add,cd4339d1-0c01-5a5a-af49-72ff2e9d7ee4,destination-cd4339d10c015a5aaf4972ff2e9d7ee4,published,community-swimming-pool,14.3077242,121.1177737,False,False,
+72,Summer's Place Resort,add,874e0a4e-586d-5cc3-afd2-46d72c84a44a,destination-874e0a4e586d5cc3afd246d72c84a44a,draft,,14.2858,121.1214,False,False,Approve shared resort category/parent
+73,Popong Resort,add,5f737b27-1f0b-5f9f-a71a-2779fe9416d0,destination-5f737b271f0b5f9fa71a2779fe9416d0,draft,,14.2989385,121.1158524,False,False,Approve shared resort category/parent
+74,Paseo Premiere Hotel,add,3ef16df1-43b1-5535-9bdc-ff55a050b894,destination-3ef16df143b155359bdcff55a050b894,published,4-star-hotel-lodging,14.24763,121.06643,False,False,
+75,Hotel Sogo Santa rosa,add,73be1bcd-53bc-5c34-b2a4-48377ea1c430,destination-73be1bcd53bc5c34b2a448377ea1c430,published,2-star-hotel-motel-lodging,14.3183,121.1119,False,False,
+76,El Cielito Hotel - Sta. Rosa,add,3428899a-8ce0-5388-a5de-fcf6d5626bf0,destination-3428899a8ce05388a5defcf6d5626bf0,published,tourist-inn,14.270426,121.081467,False,False,
+77,My Hotel Sta. Rosa,add,87580d66-1d7d-5dc0-8398-e4ee8ee0656b,destination-87580d661d7d5dc08398e4ee8ee0656b,published,budget-hotel-inn,14.2843,121.0889,False,False,
+78,Sans Hotel,add,a7eebb6d-d3d9-5549-b6a6-f34a386ad236,destination-a7eebb6dd3d95549b6a6f34a386ad236,published,3-star-modern-economy-hotel-lodging,14.28895,121.09986,False,False,
+79,Mariposa Budget Hotel Sta. Rosa,add,d823033f-48db-5c1d-8a5a-7c819a12eb41,destination-d823033f48db5c1d8a5a7c819a12eb41,published,budget-hotel-motel-lodging,14.32135,121.0973,False,False,
+80,Candy Inn Motel,add,e7410d18-7b3d-500c-9676-5a513c8ac22f,destination-e7410d187b3d500c96765a513c8ac22f,published,motel,14.30695,121.10169,False,False,
+81,E.M. Drive Inn,add,f057353f-0053-5656-b764-9222875c1ccb,destination-f057353f00535656b7649222875c1ccb,published,motel,14.3079,121.1095,False,False,
+82,Golden Gate Inn,add,509bd685-fc2d-54dc-be6b-d037c024932f,destination-509bd685fc2d54dcbe6bd037c024932f,published,inn,14.32005,121.09686,False,False,
+83,Madie's Place,add,d546b704-0130-5ef4-b0b9-c36ef13e2f8f,destination-d546b70401305ef4b0b9c36ef13e2f8f,published,bed-and-breakfast-transcient-guest-house-private-stay-venue,14.266336,121.104738,False,False,
+84,Amethyst Econotel,add,c6b3dad3-8210-5374-a68f-e2d912b04e4b,destination-c6b3dad382105374a68fe2d912b04e4b,published,economy-hotel,14.2933,121.1054,False,False,
+85,Asiatel Econo Hotel,add,9e2debaa-e58a-5e7a-bba7-18ea30349627,destination-9e2debaae58a5e7abba718ea30349627,published,economy-hotel,14.3013,121.0824,False,False,
+86,Calypso Resort Hotel,add,d0cd73c0-19b2-551e-a5c6-0faa6a18427c,destination-d0cd73c019b2551ea5c60faa6a18427c,published,resort-hotel,14.30179,121.10422,False,False,
+87,Lolo Uweng Chapel,add,23619aef-8169-51c4-b88c-f2b1598bdec2,destination-23619aef816951c4b88cf2b1598bdec2,draft,religious-pilgrimage-site,,,False,False,"Unresolved location: retain Draft; Decide tourism type or explicitly accept NULL; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+88,KFC Paseo de Sta. Rosa,add,a4a979d9-9b2a-5f73-971a-80b37538c10c,destination-a4a979d99b2a5f73971a80b37538c10c,draft,food-and-beverage-fast-food,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+89,Victory Central Mall,add,0da2d81b-b0c8-58ab-aee4-52eeaef16806,destination-0da2d81bb0c858abaee452eeaef16806,draft,intermodal-transport-oriented-community-shopping-mall,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+90,Target Mall,update,7ae6a3e8-2768-440b-a7f8-f97620cfbe22,target-mall,draft,shopping-and-retail-transit-hub,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+91,Cafe Maestro,add,238b295f-30ca-502c-8758-f6323f801ea5,destination-238b295f30ca502c8758f6323f801ea5,draft,cafe-coffee-shop-casual-dining,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+92,Cafe Royal,add,5bf05c22-d1a8-5ff9-8f2b-fbdb0b9a6cb9,destination-5bf05c22d1a85ff98f2bfbdb0b9a6cb9,draft,cafe-coffee-shop-casual-dining,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+93,Cafe de Rosa,add,9fdb1089-f8ab-5dab-83ef-cfa49ff16dd9,destination-9fdb1089f8ab5dab83efcfa49ff16dd9,draft,cafe-coffee-shop,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+94,Cafe Amelia,add,525f4994-7872-576a-a409-b3e322b545a9,destination-525f49947872576aa409b3e322b545a9,draft,cafe-specialty-coffee-shop,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+95,Kafé Lando,add,3ace88d2-6df9-54f6-85c6-142872be710e,destination-3ace88d26df954f685c6142872be710e,draft,cafe-filipino-restaurant,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+96,Island Foodpark,add,4046710b-ecdd-53bb-a1bd-eb713fa1bf19,destination-4046710becdd53bba1bdeb713fa1bf19,draft,food-park-food-stalls,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+97,Grill Yard,add,586797fd-a1a7-5354-baa4-84b57722e366,destination-586797fda1a75354baa484b57722e366,draft,casual-dining-restaurant-and-specialty-cafe,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."
+98,Mary Grace,add,af44a0bf-7b34-59e7-9b08-07f47bc32f29,destination-af44a0bf7b3459e79b0807f47bc32f29,draft,cafe-bakery-restaurant,,,False,False,"Unresolved location: retain Draft; Unresolved coordinate pair omitted; source/old pair retained in review backup, not asserted verified."

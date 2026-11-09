@@ -32,10 +32,12 @@ class CatalogReadTests(unittest.TestCase):
             getattr(self.query, key).return_value = self.query
         self.client = Mock(spec=['table'])
         self.client.table.return_value = self.query
-        self.context = AuthenticatedContext('handle', 'user', 'private@example.invalid', self.client)
+        self.context = AuthenticatedContext('handle', 'user', 'private@example.invalid', self.client, realm='admin')
 
     def read(self, records, **filters):
         fields = (PROJECTION + ',tourism_type,tourism_category').split(',')
+        if filters.get('sort') in ('newest', 'oldest'):
+            fields.append('created_at')
         self.query.execute.return_value = SimpleNamespace(count=len(records),
             data=[{key: r[key] for key in fields} for r in records])
         return catalog_page(self.context, tourism_metadata_enabled=True, **filters)
@@ -89,6 +91,29 @@ class CatalogReadTests(unittest.TestCase):
                 validate_catalog_filters(**({'tourism_metadata_enabled': True} | values))
         self.client.table.assert_not_called()
 
+    def test_sorting_uses_creation_date_and_name_before_display_pagination(self):
+        rows = [record(1, name='Zulu', created_at='2026-01-01T00:00:00Z'),
+                record(2, name='alpha', created_at='2026-03-01T00:00:00Z'),
+                record(3, name='Alpha', created_at='2026-03-01T00:00:00Z')]
+        self.assertEqual([p.slug for p in self.read(rows, sort='newest').rows], ['fixture-002','fixture-003','fixture-001'])
+        self.assertEqual([p.slug for p in self.read(rows, sort='oldest').rows], ['fixture-001','fixture-002','fixture-003'])
+        self.assertEqual([p.slug for p in self.read(rows, sort='name').rows], ['fixture-002','fixture-003','fixture-001'])
+        records = [record(n) for n in range(1,32)]
+        first = self.read(records, page_size=10)
+        second = self.read(records, page_size=10, offset=10)
+        self.assertEqual((len(first.rows),len(second.rows),first.matching,first.total), (10,10,31,31))
+        self.assertEqual(second.rows[0].slug, 'fixture-011')
+        self.assertEqual(len(self.read(records, page_size=50).rows),31)
+
+    def test_invalid_preferences_and_invalid_creation_dates_fail_closed(self):
+        for values in ({'page_size':True},{'page_size':1000},{'page_size':'10'},{'sort':'name.desc'},{'sort':[]}):
+            with self.subTest(values=values), self.assertRaises(AdminPlacesFilterError):
+                validate_catalog_filters(**values)
+        self.client.table.assert_not_called()
+        for timestamp in ('bad',None,'2026-01-01T00:00:00'):
+            with self.subTest(timestamp=timestamp), self.assertRaises(AdminPlacesError):
+                self.read([record(created_at=timestamp)], sort='newest')
+
     def test_detail_validates_shared_metadata_and_coordinates_without_normalizing(self):
         r = record(1, tourism_type='Local', tourism_category='Original category',
                    tourism_opening_hours_raw=' 11:00 AM* ', tourism_closing_hours_raw='Verify',
@@ -123,8 +148,43 @@ class DestinationReviewRoutes(unittest.TestCase):
     tearDown = foundation.AdminBoundaryTests.tearDown
     protected = foundation.AdminBoundaryTests.protected
 
+    def test_pagination_preferences_keep_filters_and_require_valid_admin_access(self):
+        self.install_catalog()
+        self.records = [record(n, status='draft') for n in range(1,32)]
+        response = self.client.get('/admin/places?sort=newest&page_size=10&status=draft')
+        self.protected(response,200)
+        page = Document(response.get_data(as_text=True))
+        table = page.find('tbody')[0]
+        self.assertEqual(len([n for n in page.find('tr') if table in n.ancestors]),10)
+        next_link = next(a.attrs['href'] for a in page.find('a') if a.text == 'Next page')
+        for fragment in ('sort=newest','page_size=10','status=draft','offset=10'):
+            self.assertIn(fragment,next_link)
+        self.protected(self.client.get(next_link),200)
+        for query in ('sort=bad','page_size=1000','page_size=010','page_size=10&page_size=50'):
+            self.protected(self.client.get('/admin/places?'+query),400)
+        self.value = False
+        self.protected(self.client.get('/admin/places?sort=name&page_size=50'),403)
+
+    def test_supported_page_sizes_change_rendered_rows_and_preserve_search_on_next_page(self):
+        self.install_catalog()
+        self.records = [record(n, status='draft') for n in range(1,32)]
+        for size in (10,25,50):
+            response = self.client.get(f'/admin/places?sort=oldest&page_size={size}&status=draft&q=Fixture')
+            self.protected(response,200)
+            page = Document(response.get_data(as_text=True)); table = page.find('tbody')[0]
+            self.assertEqual(len([row for row in page.find('tr') if table in row.ancestors]), min(size,31))
+            links = [a.attrs['href'] for a in page.find('a') if a.text == 'Next page']
+            self.assertEqual(bool(links),size<31)
+            if links:
+                for fragment in ('sort=oldest','status=draft','q=Fixture',f'offset={size}'):
+                    self.assertIn(fragment, links[0])
+                if size != 25:
+                    self.assertIn(f'page_size={size}', links[0])
+                following = Document(self.client.get(links[0]).get_data(as_text=True)); body = following.find('tbody')[0]
+                self.assertEqual(len([row for row in following.find('tr') if body in row.ancestors]),min(size,31-size))
+
     def install_catalog(self):
-        test_registration.seed_normal_session(self)
+        test_registration.seed_admin_session(self)
         self.value = True
         guard = patch.dict(os.environ, ROSAGO_TOURISM_METADATA_ENABLED='true')
         guard.start()
@@ -201,7 +261,9 @@ class DestinationReviewRoutes(unittest.TestCase):
             self.assertEqual(len(Document(response.get_data(as_text=True)).find('form')), 2 if suffix else 1)
         page = Document(self.client.get('/admin/places/fixture-001/edit').get_data(as_text=True))
         self.assertTrue(all('readonly' not in n.attrs for n in page.find('input') if n.attrs.get('type') != 'hidden'))
-        self.assertTrue(all('disabled' not in n.attrs for n in page.find('select')))
+        self.assertTrue(all('disabled' not in n.attrs for n in page.find('select')
+                            if n.attrs.get('id') != 'environment'))
+        self.assertIn('disabled', page.find('select', id='environment')[0].attrs)
         self.assertIn(b'Coordinates not yet provided.', self.client.get('/admin/places/fixture-002').data)
         self.assertIn(b'Unknown', self.client.get('/admin/places/fixture-003').data)
         self.assertIn(b'Not classified', self.client.get('/admin/places/fixture-003').data)

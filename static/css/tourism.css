@@ -48,6 +48,9 @@
 .public-site .destination-visual svg, .public-site .destination-visual img { display: block; width: 100%; height: 100%; }
 .public-site .destination-visual img { object-fit: cover; }
 .public-site .place-detail { max-width: none; }
+.public-site .destination-navigation { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+.public-site .destination-navigation a { min-height: 44px; }
+.public-site .destination-navigation .destination-dashboard-link { display: none; }
 .public-site .destination-detail-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: start; }
 .public-site .destination-detail-grid > .destination-visual { height: 300px; border: 1.5px solid #e3d3a3; border-bottom: 3px solid var(--site-gold); border-radius: 14px; }
 .public-site .destination-heading h1 { font-size: 2rem; margin: 10px 0; }
@@ -62,6 +65,8 @@
 .public-site .tourism-hours-notice { font-size: .8rem; color: var(--site-muted); margin: 10px 0 0; }
 .public-site .add-place-entry { gap: 10px; margin: 18px 0 0; }
 @media (max-width: 860px) {
+    .public-site .destination-navigation .destination-dashboard-link { display: inline-flex; }
+    .public-site .destination-navigation a { padding: 10px 12px; font-size: .85rem; color: var(--site-red); }
     .public-site .explore-layout, .public-site .destination-detail-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
     .public-site .explore-filters { position: static; }
     .public-site .explore-filters .category-nav ul { display: flex; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; }

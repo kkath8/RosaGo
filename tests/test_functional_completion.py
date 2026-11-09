@@ -1,3 +1,4 @@
+import test_registration
 """Offline Flask flows with real publication filtering/search/auth adapters."""
 from contextlib import contextmanager
 from types import SimpleNamespace
@@ -183,7 +184,7 @@ class AddToTripLoginTests(unittest.TestCase):
         form = Document(self.client.get(response.location).get_data(as_text=True))
         self.assertTrue(form.find('input', name='add_place', value='kanin-club'))
         self.assertFalse(form.find('input', id='remember-me'))
-        response = self.client.post('/login', data=self.credentials | {'add_place': 'kanin-club'})
+        response = test_registration.post_user_login(self, data=self.credentials | {'add_place': 'kanin-club'})
         self.assertEqual((response.status_code, response.location), (303, target))
         with self.client.session_transaction() as session:
             self.assertEqual(set(session), {'auth_session_id'})
@@ -217,16 +218,16 @@ class AddToTripLoginTests(unittest.TestCase):
         for slug in ('https://attacker.invalid', '//attacker.invalid', '../admin',
                      'kanin?next=https://attacker.invalid', 'x' * 121, ''):
             with self.subTest(slug=slug):
-                response = self.client.post('/login', data=self.credentials | {'add_place': slug})
+                response = test_registration.post_user_login(self, data=self.credentials | {'add_place': slug})
                 self.assertEqual((response.status_code, response.location), (303, '/'))
         values = MultiDict(self.credentials)
         values.add('add_place', 'kanin-club'); values.add('add_place', 'other')
-        self.assertEqual(self.client.post('/login', data=values).location, '/')
+        self.assertEqual(test_registration.post_user_login(self, data=values).location, '/')
 
     def test_failed_login_retains_destination_without_granting_authority(self):
         self.login_client.auth.sign_in_with_password.side_effect = login.AuthApiError(
             'private-provider-message', 400, 'invalid_credentials')
-        response = self.client.post('/login', data=self.credentials | {'add_place': 'kanin-club'})
+        response = test_registration.post_user_login(self, data=self.credentials | {'add_place': 'kanin-club'})
         self.assertEqual(response.status_code, 401)
         self.assertIn(b'name="add_place" value="kanin-club"', response.data)
         self.assertNotIn(b'private-provider-message', response.data)

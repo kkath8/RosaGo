@@ -51,6 +51,12 @@ class UserProfile:
         return '<UserProfile redacted>'
 
 
+def profile_initials(first_name=None, last_name=None):
+    """Display saved-name initials consistently; never infer identity from email."""
+    return ''.join(value.strip()[:1].upper() for value in (first_name, last_name)
+                   if isinstance(value, str) and value.strip()) or 'RG'
+
+
 def _name(value):
     if value is None:
         return None

@@ -1,0 +1,8 @@
+{% set review = preview_records[place.slug] %}
+<div class="preview-record-status">
+<p class="badge">CSV #{{ review.number }} · {{ review.status }}</p>
+{% if not review.location_accepted %}<p>Location unresolved — excluded from the Planner simulation.</p>{% endif %}
+{% if review.description_proposed %}<p>Proposed description — awaiting approval.</p>{% endif %}
+{% if review.issues %}<details><summary>Pending decisions</summary><ul>{% for issue in review.issues %}<li>{{ issue }}</li>{% endfor %}</ul></details>{% endif %}
+<p class="trip-help">{{ review.photo_note }}</p>
+</div>
