@@ -1,8 +1,9 @@
-"""Explicit local composition for backend-neutral shared authentication.
+"""Backend-neutral shared authentication composition.
 
-No environment factory, production activation or infrastructure qualification.
-Production startup remains unconditionally refused in session_realms. Each
-worker must construct its own backend clients after fork.
+LocalSessionRuntime retains its historical name for compatibility. Local test
+injection never authorizes public hosting. Production installs this composition
+only through production_session_runtime's source-bound release and live checks.
+Each worker must construct its own backend clients after fork.
 """
 from dataclasses import dataclass, field
 import os

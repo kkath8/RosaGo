@@ -17,3 +17,11 @@ limit_request_line = 4094
 limit_request_fields = 50
 limit_request_field_size = 4094
 
+
+def worker_exit(server, worker):
+    # preload_app stays False: pools and authority clients belong to one worker.
+    application = getattr(worker, 'wsgi', None)
+    resources = getattr(application, 'extensions', {}).get('rosago_production_sessions')
+    if resources is not None:
+        resources.close()
+

@@ -1,4 +1,6 @@
 -r requirements.txt
 # Render/Linux only; reviewed pin, not installed in the Windows environment.
 gunicorn==26.2.0
+psycopg[binary]==3.3.8
+psycopg-pool==3.3.1
 

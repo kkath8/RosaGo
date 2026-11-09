@@ -272,11 +272,11 @@ class SupabaseAdapters:
             yield client
 
     def _provider_session_operation(self, record, issuer, realm, *, logout=False, presence=False):
-        """Inactive bounded transport boundary; no factory/route invokes it yet.
+        """Bounded provider transport used by the qualified shared composition.
 
         Inputs must be the server record established by verified login/refresh.
         None means unconfirmed outcome; never retry a provider mutation here.
-        The evaluation RPC is installed, but live behavior remains unqualified.
+        Target RPC installation and real-provider behavior require qualification.
         Absence/unknown response is unavailable, never a fallback to JWT expiry.
         """
         try:
@@ -338,9 +338,8 @@ class NormalAuthCoordinator:
         self._issuer = issuer
         self._clock = clock
         self._threshold = refresh_seconds
-        # Optional server-injected qualification boundary, not a production
-        # transport. Existing local factories do not supply it; production startup
-        # stays closed. The checker must establish current provider-session state
+        # Optional for historical local tests; mandatory in the production
+        # composition. The checker must establish current provider-session state
         # for this exact issuer/user/session, with bounded authenticated I/O.
         # get_claims/get_user or token expiry alone are not revocation proof.
         self._provider_session_check = provider_session_check
