@@ -201,16 +201,19 @@ def rotate_admin_browser(auth_handle):
 def init_session_realms(app, *, mode='development', local_runtime=None):
     if mode not in ('development', 'redis-local', 'production'):
         raise RuntimeError('Invalid ROSAGO_AUTH_MODE.')
-    # Shared adapters can be qualified locally. Production still requires a
-    # separate infrastructure/failover/configuration readiness approval.
     if mode == 'production':
-        raise RuntimeError('Production authentication requires a reviewed shared session backend; memory mode is local only.')
-    if local_runtime is not None and mode != 'redis-local':
+        if local_runtime is not None:
+            raise RuntimeError('Production authentication requires a reviewed shared session backend; local runtime injection is forbidden.')
+        from production_session_runtime import install
+        import os
+        install(app,os.environ)
+    elif local_runtime is not None and mode != 'redis-local':
         raise RuntimeError('Injected shared runtime is local qualification only.')
     if app.config.get('APPLICATION_ROOT', '/') != '/':
         raise RuntimeError('Local session realms currently require a root-mounted app.')
-    app.extensions['rosago_login_challenges'] = LoginChallenges()
-    app.session_interface = RealmSessionInterface(AdminWebStore(), secure=False)
+    if mode != 'production':
+        app.extensions['rosago_login_challenges'] = LoginChallenges()
+        app.session_interface = RealmSessionInterface(AdminWebStore(), secure=False)
     if mode == 'redis-local':
         import os
         from redis_session_store import local_realms, RedisChallenges

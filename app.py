@@ -163,8 +163,9 @@ def browser_security_headers(response):
 
 @app.get('/health/ready')
 def production_readiness():
-    # Liveness is not proof of qualified public authentication/recovery.
-    return {'ready': False, 'production_sessions_qualified': False}, 503
+    worker=current_app.extensions.get('rosago_production_sessions')
+    ready=worker is not None and worker.readiness() is True
+    return {'ready':ready,'production_sessions_qualified':ready}, 200 if ready else 503, {'Cache-Control':'no-store'}
 # Recheck edited Jinja files even when the local server runs without a debugger.
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.globals['password_rules'] = PASSWORD_RULES
